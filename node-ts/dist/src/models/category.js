@@ -22,15 +22,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -53,18 +44,16 @@ const CategorySchema = new mongoose_1.Schema({
     timestamps: true
 });
 // Custom validation to check uniqueness of category for ownerId and brancheId combination
-CategorySchema.pre('validate', function (next) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const existingCategory = yield mongoose_1.default.models.Category.findOne({
-            category: next.category,
-            brancheId: next.brancheId,
-        });
-        if (existingCategory) {
-            const error = new Error('Category must be unique for brancheId combination');
-            next.invalidate('category', error.message);
-        }
-        next();
+CategorySchema.pre('validate', async function (next) {
+    const existingCategory = await mongoose_1.default.models.Category.findOne({
+        category: next.category,
+        brancheId: next.brancheId,
     });
+    if (existingCategory) {
+        const error = new Error('Category must be unique for brancheId combination');
+        next.invalidate('category', error.message);
+    }
+    next();
 });
 CategorySchema.plugin(mongoose_unique_validator_1.default);
 const CategoryModel = mongoose_1.default.model('Category', CategorySchema);

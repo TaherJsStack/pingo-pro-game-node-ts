@@ -1,11 +1,12 @@
 import express, { Router, Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
-import * as BrancheController from '../../controllers/api/branche';
+import {BrancheController} from '../../controllers/api/branche';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
 import { IBranche } from '../../models/branche';
 
 const router: Router = express.Router();
+const brancheController:BrancheController = new BrancheController();
 
 interface CreateItemRequest extends Request {
   authData: {
@@ -30,7 +31,7 @@ router.post(
     }
     
     // Call controller method to create item
-    await BrancheController.createItem(req as CreateItemRequest, res);
+    await brancheController.createItem(req as CreateItemRequest, res);
   }
 );
 
@@ -53,13 +54,13 @@ router.put(
     }
 
     // Call controller method to update item
-    await BrancheController.updateItem(req, res);
+    await brancheController.updateItem(req, res);
   }
 );
 
 // Other routes for GET (Read) and DELETE operations...
-router.get("",  BrancheController.getAllItems);
+router.get("",  brancheController.getAllItems);
 
-router.get("/getBranche/:id",  BrancheController.getItemById);
+router.get("/getBranche/:id",  brancheController.getItemById);
 
 export default router;

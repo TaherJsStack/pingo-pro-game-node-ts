@@ -1,11 +1,12 @@
 import express, { Request, Response, Router } from 'express';
 import { check, validationResult } from 'express-validator';
-import * as PricingController from '../../controllers/api/pricing';
+import {PricingController} from '../../controllers/api/pricing';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
 import { IPricing } from '../../models/pricing';
 
 const router: Router = express.Router();
+const pricingController: PricingController = new PricingController()
 
 interface CreateItemRequest extends Request {
   body: IPricing;
@@ -33,7 +34,7 @@ router.post(
     }
     
     // Call controller method to create item
-    await PricingController.createItem(req as CreateItemRequest, res);
+    await pricingController.createItem(req as CreateItemRequest, res);
   }
 );
 
@@ -56,7 +57,7 @@ router.put(
     }
 
     // Call controller method to update item
-    await PricingController.updateItem(req, res);
+    await pricingController.updateItem(req, res);
   }
 );
 
@@ -79,13 +80,13 @@ router.put(
     }
 
     // Call controller method to update item
-    await PricingController.updateCategoryStopAllCategoresReletedToBill(req, res);
+    await pricingController.updateCategoryStopAllCategoresReletedToBill(req, res);
   }
 );
 
 // Other routes for GET (Read) and DELETE operations...
-router.get("",        PricingController.getAllItems);
+router.get("",        pricingController.getAllItems);
 
-router.delete('/:id', PricingController.deleteItem)
+router.delete('/:id', pricingController.deleteItem)
 
 export default router;

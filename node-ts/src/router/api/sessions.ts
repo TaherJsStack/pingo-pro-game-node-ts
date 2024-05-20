@@ -1,11 +1,13 @@
 import express, { Router, Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
-import * as SessionsController from '../../controllers/api/session';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
 import { ISession } from '../../models/session';
+import { SessionController } from '../../controllers/api/session';
 
 const router: Router = express.Router();
+
+const sessionController: SessionController = new SessionController()
 
 interface CreateItemRequest extends Request {
   authData: {
@@ -32,7 +34,7 @@ router.post(
     }
     
     // Call controller method to create item
-    await SessionsController.createItem(req as CreateItemRequest, res);
+    await sessionController.createItem(req as CreateItemRequest, res);
   }
 );
 
@@ -53,15 +55,15 @@ router.put(
     }
 
     // Call controller method to update item
-    await SessionsController.updateItem(req, res);
+    await sessionController.updateItem(req, res);
   }
 );
 
 // Other routes for GET (Read) and DELETE operations...
-router.get("",  SessionsController.getAllItems);
+router.get("",  sessionController.getAllItems);
 
-router.delete('/:id', SessionsController.deleteItem)
-router.delete('/deleteSessionItem/:id/:endIn', SessionsController.deleteSessionItem)
-router.delete('/deleteAllReletedToBill/:id/:endIn', SessionsController.deleteAllReletedToBill)
+router.delete('/:id', sessionController.deleteItem)
+router.delete('/deleteSessionItem/:id/:endIn', sessionController.deleteSessionItem)
+router.delete('/deleteAllReletedToBill/:id/:endIn', sessionController.deleteAllReletedToBill)
 
 export default router;

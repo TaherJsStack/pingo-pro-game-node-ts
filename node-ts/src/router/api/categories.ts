@@ -1,12 +1,11 @@
 import express, { Router, Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
-// import { RequestHandler } from 'express-validator/src/base';
-import * as CategoriesController from '../../controllers/api/categories';
-// import checkAuth from '../../middleware/check-auth';
+import {CategoryController} from '../../controllers/api/categories';
 import signReqData from '../../middleware/sign-req-data';
 import { ICategory } from '../../models/category';
 
 const router: Router = express.Router();
+const categoryController:CategoryController = new CategoryController();
 
 interface CreateItemRequest extends Request {
   authData: {
@@ -34,7 +33,7 @@ router.post(
     }
     
     // Call controller method to create item
-    await CategoriesController.createItem(req as CreateItemRequest, res);
+    await categoryController.createItem(req as CreateItemRequest, res);
   }
 );
 
@@ -57,21 +56,13 @@ router.put(
     }
 
     // Call controller method to update item
-    await CategoriesController.updateItem(req, res);
+    await categoryController.updateItem(req, res);
   }
 );
 
-// Route: PUT /items/:id (Update item)
+// Route: PUT /updateCategoryStopAllCategoresReletedToBill/:id (Stop all related categories)
 router.put(
   '/updateCategoryStopAllCategoresReletedToBill/:id',
-  // [
-  //   // Validation rules using express-validator
-  //   check('branche').optional().notEmpty().withMessage('branche is required'),
-  //   check('address')
-  //     .optional()
-  //     .notEmpty()
-  //     .withMessage('address is required')
-  // ],
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -80,13 +71,20 @@ router.put(
     }
 
     // Call controller method to update item
-    await CategoriesController.updateCategoryStopAllCategoresReletedToBill(req, res);
+    await categoryController.updateCategoryStopAllCategoresReletedToBill(req, res);
   }
 );
 
-// Other routes for GET (Read) and DELETE operations...
-router.get("", CategoriesController.getAllItems);
+// Route: GET /items (Get all items)
+router.get('', categoryController.getAllItems);
 
-router.delete('/:id', CategoriesController.deleteItem);
+// Route: GET /items/pagination (Get all items with pagination)
+router.get('/pagination', categoryController.getAllItemsPagination);
+
+// Route: GET /items/:id (Get item by ID)
+router.get('/:id', categoryController.getItemById);
+
+// Route: DELETE /items/:id (Delete item)
+router.delete('/:id', categoryController.deleteItem);
 
 export default router;

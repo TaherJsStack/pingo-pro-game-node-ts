@@ -1,21 +1,9 @@
 import express from "express";
-import {
-    saveAuth,
-    updateOne,
-    updatePassword,
-    getAllItems,
-    checkEmail,
-    getById,
-    deleteOne,
-} from "../../controllers/api/employees";
+import {EmployeesController} from "../../controllers/api/employees";
 
 const employeesRouter = express.Router();
 
-// Import middlewares if needed
-// import signReqData from '../../middleware/sign-req-data';
-// import checkAuth from '../../middleware/check-auth';
-// import checkAdmin from '../../middleware/check-admin';
-// import checkUpdate from '../../middleware/check-update';
+const { saveAuth, updateOne, updatePassword, getAllItems, checkEmail, getById, deleteOne } = new EmployeesController();
 
 employeesRouter.post("/", saveAuth);
 

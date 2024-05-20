@@ -1,11 +1,13 @@
 import express, { Router } from "express";
 import { Request, Response } from "express";
-import { getGroupedInvoicesByClosedBy } from "../../controllers/api/statistics";
+import { StatisticsController } from "../../controllers/api/statistics";
 
 const router: Router = express.Router();
+const statisticsController: StatisticsController = new StatisticsController();
+
 
 router.get("/getGroupedInvoicesByClosedBy", (req: Request, res: Response) => {
-  getGroupedInvoicesByClosedBy(req, res);
+  statisticsController.getGroupedInvoicesByClosedBy(req, res);
 });
 
 export default router;

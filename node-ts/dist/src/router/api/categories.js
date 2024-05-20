@@ -1,47 +1,14 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const express_validator_1 = require("express-validator");
-// import { RequestHandler } from 'express-validator/src/base';
-const CategoriesController = __importStar(require("../../controllers/api/categories"));
-// import checkAuth from '../../middleware/check-auth';
+const categories_1 = require("../../controllers/api/categories");
 const sign_req_data_1 = __importDefault(require("../../middleware/sign-req-data"));
 const router = express_1.default.Router();
+const categoryController = new categories_1.CategoryController();
 // Route: POST /items (Create item)
 router.post('', sign_req_data_1.default, [
     // Validation rules using express-validator
@@ -49,15 +16,15 @@ router.post('', sign_req_data_1.default, [
     (0, express_validator_1.check)('category').notEmpty().withMessage('category is required'),
     (0, express_validator_1.check)('priceId').notEmpty().withMessage('price is required'),
     (0, express_validator_1.check)('type').notEmpty().withMessage('type is required'),
-], (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+], async (req, res) => {
     // Check for validation errors
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
     // Call controller method to create item
-    yield CategoriesController.createItem(req, res);
-}));
+    await categoryController.createItem(req, res);
+});
 // Route: PUT /items/:id (Update item)
 router.put('/:id', [
     // Validation rules using express-validator
@@ -66,35 +33,31 @@ router.put('/:id', [
         .optional()
         .notEmpty()
         .withMessage('address is required')
-], (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+], async (req, res) => {
     // Check for validation errors
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
     // Call controller method to update item
-    yield CategoriesController.updateItem(req, res);
-}));
-// Route: PUT /items/:id (Update item)
-router.put('/updateCategoryStopAllCategoresReletedToBill/:id', 
-// [
-//   // Validation rules using express-validator
-//   check('branche').optional().notEmpty().withMessage('branche is required'),
-//   check('address')
-//     .optional()
-//     .notEmpty()
-//     .withMessage('address is required')
-// ],
-(req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    await categoryController.updateItem(req, res);
+});
+// Route: PUT /updateCategoryStopAllCategoresReletedToBill/:id (Stop all related categories)
+router.put('/updateCategoryStopAllCategoresReletedToBill/:id', async (req, res) => {
     // Check for validation errors
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
     // Call controller method to update item
-    yield CategoriesController.updateCategoryStopAllCategoresReletedToBill(req, res);
-}));
-// Other routes for GET (Read) and DELETE operations...
-router.get("", CategoriesController.getAllItems);
-router.delete('/:id', CategoriesController.deleteItem);
+    await categoryController.updateCategoryStopAllCategoresReletedToBill(req, res);
+});
+// Route: GET /items (Get all items)
+router.get('', categoryController.getAllItems);
+// Route: GET /items/pagination (Get all items with pagination)
+router.get('/pagination', categoryController.getAllItemsPagination);
+// Route: GET /items/:id (Get item by ID)
+router.get('/:id', categoryController.getItemById);
+// Route: DELETE /items/:id (Delete item)
+router.delete('/:id', categoryController.deleteItem);
 exports.default = router;

@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -28,16 +19,16 @@ const generateToken = (userId, email, username, userRoles, permeation) => {
     return token;
 };
 exports.generateToken = generateToken;
-const generateBcryptHash = (password, salt) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield bcryptjs_1.default.hash(password, salt);
-});
+const generateBcryptHash = async (password, salt) => {
+    return await bcryptjs_1.default.hash(password, salt);
+};
 exports.generateBcryptHash = generateBcryptHash;
-const compareBcryptHash = (password, savedPassword) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield bcryptjs_1.default.compare(password, savedPassword);
-});
+const compareBcryptHash = async (password, savedPassword) => {
+    return await bcryptjs_1.default.compare(password, savedPassword);
+};
 exports.compareBcryptHash = compareBcryptHash;
 const verifyToken = (roles) => {
-    return (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    return async (req, res, next) => {
         try {
             const { token } = req.headers;
             console.log("token : " + token);
@@ -67,7 +58,7 @@ const verifyToken = (roles) => {
         catch (error) {
             next(error);
         }
-    });
+    };
 };
 exports.verifyToken = verifyToken;
 const hasRole = (routeRoles, userRoles) => {

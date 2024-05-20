@@ -270,218 +270,221 @@ async function deletedListSession(data: any) {
 
 }
 
-// Read - GET request handler (Get all items)
-export const getAllItems = async (req: Request, res: Response) => {
-
-  // let filter: any = JSON.parse(req.query.Filter);
-  let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
-
-  let { ownerId, brancheId } = filter;
-
-  // const pageSize: number = req.query.PageSize && +req.query.PageSize > 0 ? req.query.PageSize : 15;
-  // const pageNo: number = req.query.PageNo && +req.query.PageNo > 0 ? req.query.PageNo : 1;
-
-  try {
-    // Fetch all items from database
-    const items = await InvoiceModel.find({ brancheId }).sort({ activeState: -1, createdAt: -1 });
-    res.status(201)
-      .json({
+export class InvoiceController{
+  
+  // Read - GET request handler (Get all items)
+  getAllItems = async (req: Request, res: Response) => {
+  
+    // let filter: any = JSON.parse(req.query.Filter);
+    let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
+  
+    let { ownerId, brancheId } = filter;
+  
+    // const pageSize: number = req.query.PageSize && +req.query.PageSize > 0 ? req.query.PageSize : 15;
+    // const pageNo: number = req.query.PageNo && +req.query.PageNo > 0 ? req.query.PageNo : 1;
+  
+    try {
+      // Fetch all items from database
+      const items = await InvoiceModel.find({ brancheId }).sort({ activeState: -1, createdAt: -1 });
+      res.status(201)
+        .json({
+          success: true,
+          errors: [],
+          status: 200,
+          message: '',
+          data: items
+        });
+    } catch (err: any) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
+    }
+  };
+  
+  // Read - GET request handler (Get all items with pagination and filtering)
+  getAllItemsPagination = async (req: Request, res: Response) => {
+    try {
+      let { page = 1, limit = 10, filterBy, filterValue } = req.query;
+      // page = +page;
+      // limit = +limit;
+  
+      // Build filter object based on query parameters
+      let filter: any = {};
+      // if (filterBy && filterValue) {
+      //   filter[filterBy] = { $regex: new RegExp(filterValue, 'i') }; // Case-insensitive regex search
+      // }
+  
+      // Fetch items from database with pagination and filtering
+      const items = await InvoiceModel.find(filter)
+        .skip((+page - 1) * +limit)
+        .limit(+limit);
+  
+      // Count total number of items (for pagination)
+      const totalCount = await InvoiceModel.countDocuments(filter);
+  
+      res.status(200).json({
         success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: items
-      });
-  } catch (err: any) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-};
-
-// Read - GET request handler (Get all items with pagination and filtering)
-export const getAllItemsPagination = async (req: Request, res: Response) => {
-  try {
-    let { page = 1, limit = 10, filterBy, filterValue } = req.query;
-    // page = +page;
-    // limit = +limit;
-
-    // Build filter object based on query parameters
-    let filter: any = {};
-    // if (filterBy && filterValue) {
-    //   filter[filterBy] = { $regex: new RegExp(filterValue, 'i') }; // Case-insensitive regex search
-    // }
-
-    // Fetch items from database with pagination and filtering
-    const items = await InvoiceModel.find(filter)
-      .skip((+page - 1) * +limit)
-      .limit(+limit);
-
-    // Count total number of items (for pagination)
-    const totalCount = await InvoiceModel.countDocuments(filter);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        items,
-        pagination: {
-          currentPage: page,
-          totalPages: Math.ceil(totalCount / +limit),
-          totalItems: totalCount,
-          itemsPerPage: limit,
+        data: {
+          items,
+          pagination: {
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / +limit),
+            totalItems: totalCount,
+            itemsPerPage: limit,
+          },
         },
-      },
-    });
-  } catch (err: any) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-};
-
-// Read - GET request handler (Get item by ID)
-export const getItemById = async (req: Request, res: Response) => {
-  try {
-    // Fetch item by ID from database
-    const item = await InvoiceModel.findById(req.params.id);
-    if (!item) {
-      return res.status(404).json({ msg: 'Item not found' });
-    }
-    res.status(201)
-      .json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: {}
       });
-  } catch (err: any) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-};
-
-// Update - PUT request handler
-export const updateLockBill = async (req: CreateRequest, res: Response) => {
-
-  // menuItems
-  let _id = req.params.id
-  try {
-    // Update item by ID in database
-    req.body['closedBy'] = new Types.ObjectId(req.authData.id);
-    const updatedItem = await InvoiceModel.findByIdAndUpdate(
-      _id,
-      req.body,
-      { new: true }
-    );
-    if (!updatedItem) {
-      return res.status(404).json({ msg: 'Item not found' });
+    } catch (err: any) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
     }
-    await updatedItem.calculateCategoriesTotal();
-
-    res.status(201)
-      .json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: [updatedItem]
-      });
-  } catch (err: any) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-};
-
-// Update - PUT request handler
-export const updateItemMenuItems = async (req: Request, res: Response) => {
-
-  // menuItems
-  let _id = req.params.id
-  try {
-
-    const updateQuery = {
-      $push: {
-        menuItems: {
-          itemID: req.body.itemID,
-          itemName: req.body.itemName,
-          quantity: req.body.quantity,
-          price: req.body.price
-        }
+  };
+  
+  // Read - GET request handler (Get item by ID)
+  getItemById = async (req: Request, res: Response) => {
+    try {
+      // Fetch item by ID from database
+      const item = await InvoiceModel.findById(req.params.id);
+      if (!item) {
+        return res.status(404).json({ msg: 'Item not found' });
       }
-    };
-
-    // Update item by ID in database
-    const updatedItem = await InvoiceModel.findByIdAndUpdate(
-      _id,
-      updateQuery,
-      { new: true }
-    );
-    if (!updatedItem) {
-      return res.status(404).json({ msg: 'Item not found' });
+      res.status(201)
+        .json({
+          success: true,
+          errors: [],
+          status: 200,
+          message: '',
+          data: {}
+        });
+    } catch (err: any) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
     }
-    await updatedItem.calculateMenuItemsTotal();
-    // await updatedItem.calculateCategoriesTotal();
-    res.status(201)
-      .json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: [updatedItem]
-      });
-  } catch (err: any) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-};
-
-
-// Update - PUT request handler
-export const updateItem = async (req: Request, res: Response) => {
-
-  // menuItems
-  let _id = req.params.id
-  try {
-    // Update item by ID in database
-    const updatedItem = await InvoiceModel.findByIdAndUpdate(
-      _id,
-      req.body,
-      { new: true }
-    );
-    if (!updatedItem) {
-      return res.status(404).json({ msg: 'Item not found' });
+  };
+  
+  // Update - PUT request handler
+  updateLockBill = async (req: CreateRequest, res: Response) => {
+  
+    // menuItems
+    let _id = req.params.id
+    try {
+      // Update item by ID in database
+      req.body['closedBy'] = new Types.ObjectId(req.authData.id);
+      const updatedItem = await InvoiceModel.findByIdAndUpdate(
+        _id,
+        req.body,
+        { new: true }
+      );
+      if (!updatedItem) {
+        return res.status(404).json({ msg: 'Item not found' });
+      }
+      await updatedItem.calculateCategoriesTotal();
+  
+      res.status(201)
+        .json({
+          success: true,
+          errors: [],
+          status: 200,
+          message: '',
+          data: [updatedItem]
+        });
+    } catch (err: any) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
     }
-    res.status(201)
-      .json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: [updatedItem]
-      });
-  } catch (err: any) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-};
-
-// Delete - DELETE request handler
-export const deleteItem = async (req: Request, res: Response) => {
-  try {
-    // Delete item by ID from database
-    const deletedItem = await InvoiceModel.findByIdAndDelete(req.params.id);
-    if (!deletedItem) {
-      return res.status(404).json({ msg: 'Item not found' });
+  };
+  
+  // Update - PUT request handler
+  updateItemMenuItems = async (req: Request, res: Response) => {
+  
+    // menuItems
+    let _id = req.params.id
+    try {
+  
+      const updateQuery = {
+        $push: {
+          menuItems: {
+            itemID: req.body.itemID,
+            itemName: req.body.itemName,
+            quantity: req.body.quantity,
+            price: req.body.price
+          }
+        }
+      };
+  
+      // Update item by ID in database
+      const updatedItem = await InvoiceModel.findByIdAndUpdate(
+        _id,
+        updateQuery,
+        { new: true }
+      );
+      if (!updatedItem) {
+        return res.status(404).json({ msg: 'Item not found' });
+      }
+      await updatedItem.calculateMenuItemsTotal();
+      // await updatedItem.calculateCategoriesTotal();
+      res.status(201)
+        .json({
+          success: true,
+          errors: [],
+          status: 200,
+          message: '',
+          data: [updatedItem]
+        });
+    } catch (err: any) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
     }
-    res.status(201)
-      .json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: {}
-      });
-  } catch (err: any) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-};
+  };
+  
+  
+  // Update - PUT request handler
+  updateItem = async (req: Request, res: Response) => {
+  
+    // menuItems
+    let _id = req.params.id
+    try {
+      // Update item by ID in database
+      const updatedItem = await InvoiceModel.findByIdAndUpdate(
+        _id,
+        req.body,
+        { new: true }
+      );
+      if (!updatedItem) {
+        return res.status(404).json({ msg: 'Item not found' });
+      }
+      res.status(201)
+        .json({
+          success: true,
+          errors: [],
+          status: 200,
+          message: '',
+          data: [updatedItem]
+        });
+    } catch (err: any) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
+    }
+  };
+  
+  // Delete - DELETE request handler
+  deleteItem = async (req: Request, res: Response) => {
+    try {
+      // Delete item by ID from database
+      const deletedItem = await InvoiceModel.findByIdAndDelete(req.params.id);
+      if (!deletedItem) {
+        return res.status(404).json({ msg: 'Item not found' });
+      }
+      res.status(201)
+        .json({
+          success: true,
+          errors: [],
+          status: 200,
+          message: '',
+          data: {}
+        });
+    } catch (err: any) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
+    }
+  };
+}

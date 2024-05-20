@@ -1,11 +1,12 @@
 import express, { Router, Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
-import * as ClientController from '../../controllers/api/client';
+import {ClientController} from '../../controllers/api/client';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
 import { IClient } from '../../models/client';
 
 const router: Router = express.Router();
+const clientController:ClientController = new ClientController();
 
 interface CreateItemRequest extends Request {
   body: IClient;
@@ -32,7 +33,7 @@ router.post(
     }
 
     // Call controller method to create item
-    await ClientController.createItem(req as CreateItemRequest, res);
+    await clientController.createItem(req as CreateItemRequest, res);
   }
 );
 
@@ -52,13 +53,13 @@ router.put(
     }
 
     // Call controller method to update item
-    await ClientController.updateItem(req, res);
+    await clientController.updateItem(req, res);
   }
 );
 
 // Other routes for GET (Read) and DELETE operations...
-router.get('', ClientController.getAllItems);
+router.get('', clientController.getAllItems);
 
-router.delete('/:id', ClientController.deleteItem);
+router.delete('/:id', clientController.deleteItem);
 
 export default router;

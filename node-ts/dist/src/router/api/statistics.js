@@ -6,7 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const statistics_1 = require("../../controllers/api/statistics");
 const router = express_1.default.Router();
+const statisticsController = new statistics_1.StatisticsController();
 router.get("/getGroupedInvoicesByClosedBy", (req, res) => {
-    (0, statistics_1.getGroupedInvoicesByClosedBy)(req, res);
+    statisticsController.getGroupedInvoicesByClosedBy(req, res);
 });
 exports.default = router;

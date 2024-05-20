@@ -22,15 +22,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const invoiceSchema = new mongoose_1.Schema({
@@ -67,64 +58,58 @@ const invoiceSchema = new mongoose_1.Schema({
 }, {
     timestamps: true,
 });
-invoiceSchema.methods.calculateCategoriesTotal = function () {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            let total = 0;
-            this.categories.forEach((category) => {
-                if (category.startIn && category.endIn) {
-                    // Parse the startIn and endIn strings into Date objects
-                    const startTime = new Date(category.startIn);
-                    const endTime = new Date(category.endIn);
-                    // Calculate duration in hours
-                    const durationMs = endTime.getTime() - startTime.getTime();
-                    const durationHours = durationMs / (1000 * 60 * 60); // Convert milliseconds to hours
-                    // Calculate quantity based on duration and price per hour
-                    const categoryTotal = durationHours * category.price;
-                    // Add categoryTotal to overall total
-                    total += categoryTotal;
-                }
-            });
-            // Update the total field in the document
-            this.categoriesTotal = total;
-            yield this.save();
-            return this.categoriesTotal;
-        }
-        catch (error) {
-            throw error;
-        }
-    });
-};
-invoiceSchema.methods.calculateMenuItemsTotal = function () {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const total = this.menuItems.reduce((acc, item) => acc + item.quantity * item.price, 0);
-            this.menuItemsTotal = total;
-            yield this.save();
-            return this.menuItemsTotal;
-        }
-        catch (error) {
-            console.log('calculateMenuItemsTotal ----> ', error);
-            throw error;
-        }
-    });
-};
-invoiceSchema.pre('save', function (next) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            if (this.isNew) {
-                this.total = this.menuItemsTotal + this.categoriesTotal;
+invoiceSchema.methods.calculateCategoriesTotal = async function () {
+    try {
+        let total = 0;
+        this.categories.forEach((category) => {
+            if (category.startIn && category.endIn) {
+                // Parse the startIn and endIn strings into Date objects
+                const startTime = new Date(category.startIn);
+                const endTime = new Date(category.endIn);
+                // Calculate duration in hours
+                const durationMs = endTime.getTime() - startTime.getTime();
+                const durationHours = durationMs / (1000 * 60 * 60); // Convert milliseconds to hours
+                // Calculate quantity based on duration and price per hour
+                const categoryTotal = durationHours * category.price;
+                // Add categoryTotal to overall total
+                total += categoryTotal;
             }
-            else {
-                this.total = this.menuItemsTotal + this.categoriesTotal;
-            }
-            next();
+        });
+        // Update the total field in the document
+        this.categoriesTotal = total;
+        await this.save();
+        return this.categoriesTotal;
+    }
+    catch (error) {
+        throw error;
+    }
+};
+invoiceSchema.methods.calculateMenuItemsTotal = async function () {
+    try {
+        const total = this.menuItems.reduce((acc, item) => acc + item.quantity * item.price, 0);
+        this.menuItemsTotal = total;
+        await this.save();
+        return this.menuItemsTotal;
+    }
+    catch (error) {
+        console.log('calculateMenuItemsTotal ----> ', error);
+        throw error;
+    }
+};
+invoiceSchema.pre('save', async function (next) {
+    try {
+        if (this.isNew) {
+            this.total = this.menuItemsTotal + this.categoriesTotal;
         }
-        catch (error) {
-            console.error('Error in pre-save middleware:', error);
-            next(error);
+        else {
+            this.total = this.menuItemsTotal + this.categoriesTotal;
         }
-    });
+        next();
+    }
+    catch (error) {
+        console.error('Error in pre-save middleware:', error);
+        next(error);
+    }
 });
 const Invoice = mongoose_1.default.model('Invoice', invoiceSchema);
 exports.default = Invoice;

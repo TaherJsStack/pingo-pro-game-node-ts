@@ -1,11 +1,12 @@
 import express, { Request, Response, Router } from 'express';
 import { check, validationResult } from 'express-validator';
-import * as InvoiceController from '../../controllers/api/invoice';
+import {InvoiceController} from '../../controllers/api/invoice';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
 import { IInvoice } from '../../models/invoice';
 
 const router: Router = express.Router();
+const invoiceController:InvoiceController = new InvoiceController();
 
 interface CreateRequest extends Request {
   authData: {
@@ -13,28 +14,6 @@ interface CreateRequest extends Request {
   };
   body: IInvoice;
 }
-
-// Route: POST /items (Create item)
-// router.post(
-//   '',
-//   signReqData,
-//   [
-//     // Validation rules using express-validator
-//     check('brancheId').notEmpty().withMessage('brancheId is required'),
-//     check('categoryId').notEmpty().withMessage('category is required'),
-//     check('clientId').notEmpty().withMessage('price is required'),
-//   ],
-//   async (req: Request, res: Response) => {
-//     // Check for validation errors
-//     const errors = validationResult(req);
-//     if (!errors.isEmpty()) {
-//       return res.status(400).json({ errors: errors.array() });
-//     }
-    
-//     // Call controller method to create item
-//     await InvoiceController.createItem(req, res);
-//   }
-// );
 
 // Route: PUT /items/:id (Update item)
 router.put(
@@ -56,7 +35,7 @@ router.put(
     }
 
     // Call controller method to update item
-    await InvoiceController.updateLockBill(req as CreateRequest, res);
+    await invoiceController.updateLockBill(req as CreateRequest, res);
   }
 );
 
@@ -79,7 +58,7 @@ router.put(
     }
 
     // Call controller method to update item
-    await InvoiceController.updateItemMenuItems(req, res);
+    await invoiceController.updateItemMenuItems(req, res);
   }
 );
 
@@ -102,11 +81,11 @@ router.put(
     }
 
     // Call controller method to update item
-    await InvoiceController.updateItem(req, res);
+    await invoiceController.updateItem(req, res);
   }
 );
 
 // Other routes for GET (Read) and DELETE operations...
-router.get("",  InvoiceController.getAllItems);
+router.get("",  invoiceController.getAllItems);
 
 export default router;
