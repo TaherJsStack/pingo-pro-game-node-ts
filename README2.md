@@ -1,0 +1,116 @@
+Step 1
+Push your angular app to a GitHub repository.
+
+Step 2
+Now, add the angular-cli-ghpages package to your project by using below command.
+
+`ng add angular-cli-ghpages`
+
+Step 3
+Run the following command by replacing with your-projectfolder name and your-repositoryname to successfully deploy your app to GitHub pages.
+
+`ng run your-projectfolder-name:deploy --base-href=/your-repositoryname/`
+
+ ng run NG-CRM:deploy --base-href=/NG-CRM/
+ ng build --prod --base-href "/NG-CRM/"
+
+ ng run practical-assessment:deploy --base-href=/PracticalAssessment/
+
+
+1- git branch gh-pages
+
+2- git checkout gh-pages
+
+3- git push -u origin gh-pages
+
+4- ng add angular-cli-ghpages
+
+5- ng deploy --base-href=https://TaherJsStack.github.io/NG-CRM-DEPLOY/
+
+
+next add -
+
+  forms
+  lists
+  charts
+  cards form main dash board
+  alerst 
+  popups
+  modules
+
+
+
+
+
+
+
+owners
+  -username
+  -fname
+  -lname
+  -phone
+  -e-mail
+  -password
+  -address
+  -create-at
+subscription
+  -ownerId
+  -state
+  -type
+branches
+  -name
+  -logo
+  -address
+prices
+  -name
+  -type
+devices
+  -name
+  -state
+  -notes
+session
+  -device-id
+  -user-id
+  -price-type
+  -bill
+  -start-time
+  -end-time
+  -notes
+menu 
+  item
+    -name 
+    -price
+users
+  -name
+  -phone
+  
+
+invoice
+   -ownerId
+   -brancheId
+   -sessionId
+   -userId
+   
+
+
+
+
+PC single             => 15
+PC multiple           => 25
+PC VIP single         => 20
+PC VIP multiple       => 35
+
+ROOM single           => 30
+ROOM multiple         => 40
+ROOM VIP single       => 35
+ROOM VIP multiple     => 45
+
+
+
+
+
+
+
+
+
+

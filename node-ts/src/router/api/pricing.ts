@@ -1,0 +1,91 @@
+import express, { Request, Response, Router } from 'express';
+import { check, validationResult } from 'express-validator';
+import * as PricingController from '../../controllers/api/pricing';
+// import checkAuth from '../../middleware/check-auth';
+import signReqData from '../../middleware/sign-req-data';
+import { IPricing } from '../../models/pricing';
+
+const router: Router = express.Router();
+
+interface CreateItemRequest extends Request {
+  body: IPricing;
+  authData: {
+    id: string;
+  };
+}
+
+// Route: POST /items (Create item)
+router.post(
+  '',
+  signReqData,
+  [
+    // Validation rules using express-validator
+    check('brancheId').notEmpty().withMessage('brancheId is required'),
+    check('title').notEmpty().withMessage('category is required'),
+    check('price').notEmpty().withMessage('price is required'),
+    check('type').notEmpty().withMessage('type is required'),
+  ],
+  async (req: Request, res: Response) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    // Call controller method to create item
+    await PricingController.createItem(req as CreateItemRequest, res);
+  }
+);
+
+// Route: PUT /items/:id (Update item)
+router.put(
+  '/:id',
+  [
+    // Validation rules using express-validator
+    check('branche').optional().notEmpty().withMessage('branche is required'),
+    check('address')
+      .optional()
+      .notEmpty()
+      .withMessage('address is required')
+  ],
+  async (req: Request, res: Response) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Call controller method to update item
+    await PricingController.updateItem(req, res);
+  }
+);
+
+// Route: PUT /items/:id (Update item)
+router.put(
+  '/updateCategoryStopAllCategoresReletedToBill/:id',
+  // [
+  //   // Validation rules using express-validator
+  //   check('branche').optional().notEmpty().withMessage('branche is required'),
+  //   check('address')
+  //     .optional()
+  //     .notEmpty()
+  //     .withMessage('address is required')
+  // ],
+  async (req: Request, res: Response) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Call controller method to update item
+    await PricingController.updateCategoryStopAllCategoresReletedToBill(req, res);
+  }
+);
+
+// Other routes for GET (Read) and DELETE operations...
+router.get("",        PricingController.getAllItems);
+
+router.delete('/:id', PricingController.deleteItem)
+
+export default router;
