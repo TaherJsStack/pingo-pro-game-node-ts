@@ -89,8 +89,8 @@ class App {
 
         // Graceful shutdown
         process.on('SIGINT', async () => {
-        await Database.close();
-        process.exit(0);
+          await Database.close();
+          process.exit(0);
         });
         
     }
