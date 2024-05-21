@@ -1,15 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
-
-export interface IBranche extends Document {
-    ownerId: mongoose.Schema.Types.ObjectId;
-    branche: string;
-    logo: string;
-    address: string;
-    description: string;
-    activeState: boolean;
-    createdAt: Date;
-}
+import { IBranche } from './interfaces/branche.interface';
 
 const brancheSchema: Schema<IBranche> = new Schema<IBranche>({
     ownerId: { type: Schema.Types.ObjectId, ref: 'Auth', required: true },

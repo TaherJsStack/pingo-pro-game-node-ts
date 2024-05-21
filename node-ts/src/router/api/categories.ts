@@ -2,7 +2,8 @@ import express, { Router, Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
 import {CategoryController} from '../../controllers/api/categories';
 import signReqData from '../../middleware/sign-req-data';
-import { ICategory } from '../../models/category';
+import { ICategory } from '../../models/interfaces/category.interface';
+// import { ICategory } from '../../models/category';
 
 const router: Router = express.Router();
 const categoryController:CategoryController = new CategoryController();

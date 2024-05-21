@@ -3,7 +3,7 @@ import { check, validationResult } from 'express-validator';
 import {BrancheController} from '../../controllers/api/branche';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
-import { IBranche } from '../../models/branche';
+import { IBranche } from '../../models/interfaces/branche.interface';
 
 const router: Router = express.Router();
 const brancheController:BrancheController = new BrancheController();

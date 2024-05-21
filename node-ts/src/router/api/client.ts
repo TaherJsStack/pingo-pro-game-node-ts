@@ -3,7 +3,7 @@ import { check, validationResult } from 'express-validator';
 import {ClientController} from '../../controllers/api/client';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
-import { IClient } from '../../models/client';
+import { IClient } from '../../models/interfaces/client.interface';
 
 const router: Router = express.Router();
 const clientController:ClientController = new ClientController();

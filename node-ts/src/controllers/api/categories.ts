@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
-import CategoryModel, { ICategory } from '../../models/category';
+import CategoryModel from '../../models/category';
+import { ICategory } from '../../models/interfaces/category.interface';
 const { ObjectId } = require('mongoose').Types;
 
 interface CreateItemRequest extends Request {

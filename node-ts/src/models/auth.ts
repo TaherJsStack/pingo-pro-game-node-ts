@@ -1,25 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
-// import 'mongoose-type-email';
+import { IAuth } from './interfaces/auth.interface';
 
-// Define the interface for the Auth document
-export interface IAuth extends Document {
-    _id:      mongoose.Schema.Types.ObjectId;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    image: string;
-    activeState: boolean;
-    role: number;
-    permeation: number[];
-    createdAt: Date;
-    description: string;
-    authType: string;
-    brancheId: mongoose.Schema.Types.ObjectId;
-}
-
-const authSchema: Schema = new Schema({
+const authSchema: Schema<IAuth> = new Schema<IAuth>({
     firstName: { type: String, default: 'Default' },
     lastName: { type: String, default: 'Default' },
     email: { type: Schema.Types.String, required: true, unique: true, match: /.+\@.+\..+/ },

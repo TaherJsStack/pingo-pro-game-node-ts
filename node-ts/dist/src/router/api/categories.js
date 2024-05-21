@@ -7,6 +7,7 @@ const express_1 = __importDefault(require("express"));
 const express_validator_1 = require("express-validator");
 const categories_1 = require("../../controllers/api/categories");
 const sign_req_data_1 = __importDefault(require("../../middleware/sign-req-data"));
+// import { ICategory } from '../../models/category';
 const router = express_1.default.Router();
 const categoryController = new categories_1.CategoryController();
 // Route: POST /items (Create item)

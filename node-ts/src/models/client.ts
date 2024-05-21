@@ -1,14 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-
-export interface IClient extends Document {
-  ownerId: mongoose.Types.ObjectId;
-  brancheId: mongoose.Types.ObjectId;
-  name: string;
-  phone: string;
-  activeState: boolean;
-  createdAt: Date;
-  description: string;
-}
+import { IClient } from './interfaces/client.interface';
 
 const clientSchema: Schema<IClient> = new Schema<IClient>({
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },

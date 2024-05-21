@@ -1,19 +1,6 @@
-import mongoose, { Document, Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
-
-export interface ICategory extends Document {
-  ownerId: mongoose.Schema.Types.ObjectId;
-  brancheId: mongoose.Schema.Types.ObjectId;
-  category: string;
-  priceId: mongoose.Schema.Types.ObjectId;
-  price: number;
-  type: string;
-  logo: string;
-  description: string;
-  activeState: boolean;
-  bookState: boolean;
-  createdAt: Date;
-}
+import { ICategory } from './interfaces/category.interface';
 
 const CategorySchema: Schema<ICategory> = new Schema<ICategory>({
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },

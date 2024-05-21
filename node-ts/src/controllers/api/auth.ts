@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import  Auth, { IAuth }  from '../../models/auth';
+import  Auth from '../../models/auth';
 import Password, { IPassword } from '../../models/password';
 import { generateBcryptHash, compareBcryptHash, generateToken } from '../../util/jwtUtil';
+import { IAuth } from '../../models/interfaces/auth.interface';
 
 export class AuthController{
     
