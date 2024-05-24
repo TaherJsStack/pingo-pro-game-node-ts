@@ -3,7 +3,7 @@ import { check, validationResult } from 'express-validator';
 import {PricingController} from '../../controllers/api/pricing';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
-import { IPricing } from '../../models/pricing';
+import { IPricing } from '../../models/interfaces/pricing.interface';
 
 const router: Router = express.Router();
 const pricingController: PricingController = new PricingController()

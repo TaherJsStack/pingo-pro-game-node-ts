@@ -1,16 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
-
-export interface IPricing extends Document {
-    brancheId: mongoose.Schema.Types.ObjectId;
-    ownerId: mongoose.Schema.Types.ObjectId;
-    title: string;
-    price: number;
-    type: string;
-    activeState: boolean;
-    createdAt: Date;
-    description: string;
-}
+import { IPricing } from './interfaces/pricing.interface';
 
 const pricingSchema: Schema<IPricing> = new Schema({
     brancheId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },

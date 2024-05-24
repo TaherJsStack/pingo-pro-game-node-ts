@@ -1,38 +1,6 @@
 import mongoose, { Document, Schema, Model } from 'mongoose';
-
-interface ICategories extends Document {
-  category: mongoose.Types.ObjectId;
-  sessionId: mongoose.Types.ObjectId;
-  type: string;
-  price: number;
-  startIn: string;
-  endIn?: string;
-}
-interface IMenuItems extends Document {
-    itemID: mongoose.Types.ObjectId;
-    itemName: string;
-    quantity: number;
-    price: number;
-}
-
-export interface IInvoice extends Document {
-  createdBy: mongoose.Types.ObjectId;
-  closedBy?: mongoose.Types.ObjectId;
-  brancheId: mongoose.Types.ObjectId;
-  categoryId: mongoose.Types.ObjectId;
-  clientId: mongoose.Types.ObjectId;
-  sessionId: mongoose.Types.ObjectId;
-  activeState: boolean;
-  createdAt: Date;
-  description: string;
-  total: number;
-  categoriesTotal: number;
-  menuItemsTotal: number;
-  categories: ICategories[];
-  menuItems: IMenuItems[];
-  calculateCategoriesTotal(): Promise<number>;
-  calculateMenuItemsTotal(): Promise<number>;
-}
+import { ICategories } from './interfaces/categories.interface';
+import { IInvoice, IMenuItems } from './interfaces/invoice.interface';
 
 const invoiceSchema: Schema<IInvoice> = new Schema<IInvoice>(
   {

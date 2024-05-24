@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import InvoiceMenuModel, { IInvoiceMenu } from '../../models/invoice-menu';
+import InvoiceMenuModel from '../../models/invoice-menu';
+import { IInvoiceMenu } from '../../models/interfaces/invoice-menu.interface';
 const { ObjectId } = require('mongoose').Types;
 
 interface CreateItemRequest extends Request {
@@ -21,10 +22,10 @@ export class InvoiceMenuController{
       const savedItem = await newItem.save();
       newItem.updateTotal()
         .then(total => {
-          console.log('Updated total:', total);
+          // console.log('Updated total:', total);
         })
         .catch(error => {
-          console.error('Error updating total:', error);
+          // console.error('Error updating total:', error);
         });
       res.status(201)
           .json({
@@ -178,7 +179,7 @@ export class InvoiceMenuController{
       if (updatedItem) {
         updatedItem.updateTotal()
         .then(total => {
-          console.log('Updated total:', total);
+          // console.log('Updated total:', total);
         })
         .catch(error => {
           console.error('Error updating total:', error);
@@ -213,7 +214,7 @@ export class InvoiceMenuController{
       if (updatedItem) {      
         updatedItem.updateTotal()
           .then(total => {
-            console.log('Updated total:', total);
+            // console.log('Updated total:', total);
           })
           .catch(error => {
             console.error('Error updating total:', error);

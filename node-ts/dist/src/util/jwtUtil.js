@@ -31,14 +31,14 @@ const verifyToken = (roles) => {
     return async (req, res, next) => {
         try {
             const { token } = req.headers;
-            console.log("token : " + token);
+            // console.log("token : " + token);
             if (!token) {
-                console.log("No token exist");
+                // console.log("No token exist");
                 return res.status(500).send({ error: 'Token is not exist' });
             }
             // should validate if loggedIn user has the same role
             const decode = jsonwebtoken_1.default.verify(token, process.env.SECRET);
-            console.log("decode:" + JSON.stringify(decode));
+            // console.log("decode:" + JSON.stringify(decode));
             req.user = {
                 userId: decode.userId,
                 username: decode.username,
@@ -47,12 +47,12 @@ const verifyToken = (roles) => {
                 roles: decode.roles,
                 userType: roles
             };
-            console.log("roles : " + roles);
+            // console.log("roles : " + roles);
             if (!hasRole(roles, decode.roles)) {
-                console.log("Error : not have the same role");
+                // console.log("Error : not have the same role");
                 return res.status(401).send({ error: 'Authentication failed' });
             }
-            console.log("valid token");
+            // console.log("valid token");
             next();
         }
         catch (error) {
@@ -62,7 +62,7 @@ const verifyToken = (roles) => {
 };
 exports.verifyToken = verifyToken;
 const hasRole = (routeRoles, userRoles) => {
-    console.log("routeRoles : " + routeRoles);
+    // console.log("routeRoles : " + routeRoles);
     let result = false;
     userRoles.forEach(role => {
         if (routeRoles.map(r => r.userType).includes(role)) {
@@ -70,6 +70,6 @@ const hasRole = (routeRoles, userRoles) => {
             return;
         }
     });
-    console.log("result : " + result);
+    // console.log("result : " + result);
     return result;
 };

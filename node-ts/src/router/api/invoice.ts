@@ -3,7 +3,7 @@ import { check, validationResult } from 'express-validator';
 import {InvoiceController} from '../../controllers/api/invoice';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
-import { IInvoice } from '../../models/invoice';
+import { IInvoice } from '../../models/interfaces/invoice.interface';
 
 const router: Router = express.Router();
 const invoiceController:InvoiceController = new InvoiceController();

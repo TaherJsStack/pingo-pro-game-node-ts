@@ -107,8 +107,8 @@ class EmployeesController {
             const pageSize = req.query.PageSize && +req.query.PageSize > 0 ? req.query.PageSize : 15;
             const pageNo = req.query.PageNo && +req.query.PageNo > 0 ? req.query.PageNo : 1;
             try {
-                console.log('filter', filter);
-                console.log('brancheId', brancheId);
+                // console.log('filter', filter);
+                // console.log('brancheId', brancheId);
                 // Fetch all items from database
                 //   const items = await Auth.find({ brancheId, authType: "employee"}).sort({ createdAt: -1, activeState: 1 });
                 const items = brancheId ? await auth_1.default.find({ brancheId }).sort({ createdAt: -1, activeState: 1 }) : [];

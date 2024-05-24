@@ -12,7 +12,7 @@ class StatisticsController {
             // let filter: Filter = JSON.parse(req.query.Filter);
             let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
             let { ownerId, brancheId, startDate, endDate, activeState } = filter;
-            console.log('filter', filter);
+            // console.log('getGroupedInvoicesByClosedBy filter', filter);
             try {
                 const invoices = await invoice_1.default.aggregate([
                     {

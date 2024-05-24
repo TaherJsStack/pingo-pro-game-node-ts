@@ -188,7 +188,7 @@ class SessionController {
         };
         this.deleteAllReletedToBill = async (req, res) => {
             try {
-                console.log('deleteAllReletedToBill req.params', req.params);
+                // console.log('deleteAllReletedToBill req.params', req.params);
                 let ids = req.params.id.split(',');
                 let idsToDelete = ids.map((id) => new mongoose_1.Types.ObjectId(id));
                 let deletedList = await session_1.default.deleteMany({ _id: { $in: idsToDelete } });

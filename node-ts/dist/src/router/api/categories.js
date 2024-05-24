@@ -56,7 +56,7 @@ router.put('/updateCategoryStopAllCategoresReletedToBill/:id', async (req, res) 
 // Route: GET /items (Get all items)
 router.get('', categoryController.getAllItems);
 // Route: GET /items/pagination (Get all items with pagination)
-router.get('/pagination', categoryController.getAllItemsPagination);
+// router.get('/pagination', categoryController.getAllItemsPagination);
 // Route: GET /items/:id (Get item by ID)
 router.get('/:id', categoryController.getItemById);
 // Route: DELETE /items/:id (Delete item)

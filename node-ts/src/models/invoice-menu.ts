@@ -1,25 +1,6 @@
 import mongoose, { Document, Schema, Model } from 'mongoose';
-
-export interface IInvoiceMenuItem {
-  itemId: mongoose.Schema.Types.ObjectId;
-  itemName: string;
-  quantity: number;
-  price: number;
-}
-
-export interface IInvoiceMenu extends Document {
-  _id: mongoose.Schema.Types.ObjectId;
-  createdBy: mongoose.Schema.Types.ObjectId;
-  closedBy?: mongoose.Schema.Types.ObjectId;
-  brancheId: mongoose.Schema.Types.ObjectId;
-  client: string;
-  total: number;
-  activeState: boolean;
-  createdAt: Date;
-  description: string;
-  menuItems: IInvoiceMenuItem[];
-  updateTotal: () => Promise<number>;
-}
+import { IInvoiceMenuItem } from './interfaces/invoice-menu-item.interface';
+import { IInvoiceMenu } from './interfaces/invoice-menu.interface';
 
 const invoiceMenuSchema: Schema<IInvoiceMenu> = new Schema<IInvoiceMenu>({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },

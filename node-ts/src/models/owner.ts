@@ -1,30 +1,9 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
+import { IOwner } from './interfaces/owner.interface';
 // import { Email } from 'mongoose-type-email';
 
-interface IOwner extends Document {
-    name: string;
-    email: string;
-    role: number;
-    permeation: number[];
-    imageUrl: string;
-    activeState: boolean;
-    createdAt: Date;
-    description: string;
-    governorate: string;
-    city: string;
-    area: string;
-    mobile: string;
-    floorNo: string;
-    streetNo: string;
-    buildingNo: string;
-    apartmentNo: string;
-    title: string;
-    imgPath: string;
-    showInWebSite: boolean;
-}
-
-const ownerSchema: Schema = new Schema<IOwner>({
+const ownerSchema: Schema<IOwner> = new Schema<IOwner>({
     name: { type: String },
     email: { type: String, required: true, unique: true, validate: /^\S+@\S+\.\S+$/ },
     role: { type: Number, required: true, default: 3 },

@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
-import SessionClientModel, { ISession } from '../../models/session';
+import SessionClientModel from '../../models/session';
 import InvoiceService from '../../services/invoice.service';
+import { ISession } from '../../models/interfaces/session.interface';
 
 const { ObjectId } = require('mongoose').Types;
 
@@ -204,7 +205,7 @@ export class SessionController{
   
   deleteAllReletedToBill = async (req: Request, res: Response) => {
     try {
-      console.log('deleteAllReletedToBill req.params', req.params);
+      // console.log('deleteAllReletedToBill req.params', req.params);
   
       let ids = req.params.id.split(',');
       let idsToDelete = ids.map((id) => new Types.ObjectId(id));

@@ -1,19 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { ISession } from './interfaces/session.interface';
 
-export interface ISession extends Document {
-  createdBy: mongoose.Schema.Types.ObjectId;
-  brancheId?: mongoose.Schema.Types.ObjectId;
-  categoryId: mongoose.Schema.Types.ObjectId;
-  clientId: mongoose.Schema.Types.ObjectId;
-  times: number;
-  startTime: string;
-  endTime?: string;
-  activeState: boolean;
-  createdAt: Date;
-  description: string;
-}
-
-const sessionSchema: Schema<ISession> = new Schema({
+const sessionSchema: Schema<ISession> = new Schema<ISession>({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
   brancheId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branche' },
   categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },

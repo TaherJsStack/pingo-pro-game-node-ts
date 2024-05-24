@@ -113,11 +113,11 @@ async function updateSession(data) {
         // Perform the update operation
         const updatedInvoice = await invoice_1.default.findByIdAndUpdate(existingInvoice._id, updateQuery, options);
         if (updatedInvoice) {
-            console.log('Invoice updated with new category data:', updatedInvoice);
+            // console.log('Invoice updated with new category data:', updatedInvoice);
             updatedInvoice.calculateCategoriesTotal();
         }
         else {
-            console.error('Failed to update invoice. Updated document is null.');
+            // console.error('Failed to update invoice. Updated document is null.');
         }
         if (subscription) {
             // subscription.unsubscribe();
@@ -125,7 +125,7 @@ async function updateSession(data) {
         return;
     }
     else {
-        console.log('Invoice not found. Cannot update category data.');
+        // console.log('Invoice not found. Cannot update category data.');
         if (subscription) {
             // subscription.unsubscribe();
         }
@@ -133,7 +133,7 @@ async function updateSession(data) {
     }
 }
 async function deletedSession(data) {
-    console.log('deletedSession', data);
+    // console.log('deletedSession', data);
     let _id = data.deletedItem.categoryId;
     let clientId = data.deletedItem.clientId;
     let brancheId = data.deletedItem.brancheId;
@@ -155,11 +155,11 @@ async function deletedSession(data) {
         // Perform the update operation
         const updatedInvoice = await invoice_1.default.findByIdAndUpdate(existingInvoice._id, updateQuery, options);
         if (updatedInvoice) {
-            console.log('Invoice updated with new category data:', updatedInvoice);
+            // console.log('Invoice updated with new category data:', updatedInvoice);
             updatedInvoice.calculateCategoriesTotal();
         }
         else {
-            console.error('Failed to update invoice. Updated document is null.');
+            // console.error('Failed to update invoice. Updated document is null.');
         }
         if (subscription) {
             // subscription.unsubscribe();
@@ -167,7 +167,7 @@ async function deletedSession(data) {
         return;
     }
     else {
-        console.log('Invoice not found. Cannot update category data.');
+        // console.log('Invoice not found. Cannot update category data.');
         if (subscription) {
             // subscription.unsubscribe();
         }
@@ -175,8 +175,8 @@ async function deletedSession(data) {
     }
 }
 async function deletedListSession(data) {
-    console.log('deletedListSession data', data);
-    console.log('deletedListSession idsToDelete', data.idsToDelete);
+    // console.log('deletedListSession data', data);
+    // console.log('deletedListSession idsToDelete', data.idsToDelete);
     // let _id             = data.deletedItem.categoryId;
     // let clientId        = data.deletedItem.clientId;
     // let brancheId       = data.deletedItem.brancheId;
@@ -185,7 +185,7 @@ async function deletedListSession(data) {
     for (let index = 0; index < data.idsToDelete.length; index++) {
         const sessionIdToDelete = data.idsToDelete[index];
         let existingInvoice = await invoice_1.default.findOne({ sessionId: data.idsToDelete[0] });
-        console.log('deletedListSession', existingInvoice.categories[index].endIn);
+        // console.log('deletedListSession', existingInvoice.categories[index].endIn);
         if (existingInvoice) {
             if (existingInvoice.categories[index].endIn == undefined) {
                 const updateQuery = {
@@ -201,7 +201,7 @@ async function deletedListSession(data) {
                     // Perform the update operation
                     const updatedInvoice = await invoice_1.default.findByIdAndUpdate(existingInvoice._id, updateQuery, options);
                     if (updatedInvoice) {
-                        console.log('Invoice updated with new category data:', updatedInvoice);
+                        // console.log('Invoice updated with new category data:', updatedInvoice);
                         updatedInvoice.calculateCategoriesTotal();
                     }
                     else {
@@ -215,7 +215,7 @@ async function deletedListSession(data) {
             }
         }
         else {
-            console.log('Invoice not found for sessionId:', sessionIdToDelete);
+            // console.log('Invoice not found for sessionId:', sessionIdToDelete);
             throw new Error('Invoice not found. Cannot update category data.');
         }
     }

@@ -215,14 +215,14 @@ exports.AuthController = AuthController;
 async function compareLoginPassword(req, userId, userPassword) {
     try {
         let userData = await password_1.default.findOne({ userId });
-        console.log('user --> ', userData.password);
+        // console.log('user --> ', userData.password);
         if (!userData) {
             throw new Error('no password to compare');
         }
         return await (0, jwtUtil_1.compareBcryptHash)(userPassword, userData.password);
     }
     catch (error) {
-        console.log(error);
+        // console.log('compareLoginPassword -->', error);
     }
 }
 async function saveNewPassword(req, id, password) {

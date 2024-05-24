@@ -18,10 +18,10 @@ class InvoiceMenuController {
                 const savedItem = await newItem.save();
                 newItem.updateTotal()
                     .then(total => {
-                    console.log('Updated total:', total);
+                    // console.log('Updated total:', total);
                 })
                     .catch(error => {
-                    console.error('Error updating total:', error);
+                    // console.error('Error updating total:', error);
                 });
                 res.status(201)
                     .json({
@@ -159,7 +159,7 @@ class InvoiceMenuController {
                 if (updatedItem) {
                     updatedItem.updateTotal()
                         .then(total => {
-                        console.log('Updated total:', total);
+                        // console.log('Updated total:', total);
                     })
                         .catch(error => {
                         console.error('Error updating total:', error);
@@ -190,7 +190,7 @@ class InvoiceMenuController {
                 if (updatedItem) {
                     updatedItem.updateTotal()
                         .then(total => {
-                        console.log('Updated total:', total);
+                        // console.log('Updated total:', total);
                     })
                         .catch(error => {
                         console.error('Error updating total:', error);

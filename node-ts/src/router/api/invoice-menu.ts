@@ -3,7 +3,7 @@ import { check, validationResult } from 'express-validator';
 import  {InvoiceMenuController} from '../../controllers/api/invoice-menu';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
-import { IInvoiceMenu } from '../../models/invoice-menu';
+import { IInvoiceMenu } from '../../models/interfaces/invoice-menu.interface';
 
 const router: Router = express.Router();
 const invoiceMenuController:InvoiceMenuController = new InvoiceMenuController();

@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import  Auth from '../../models/auth';
-import Password, { IPassword } from '../../models/password';
+import Password from '../../models/password';
 import { generateBcryptHash, compareBcryptHash, generateToken } from '../../util/jwtUtil';
 import { IAuth } from '../../models/interfaces/auth.interface';
+import { IPassword } from '../../models/interfaces/password.interface';
 
 export class AuthController{
     
@@ -250,14 +251,14 @@ export class AuthController{
 async function compareLoginPassword(req: Request, userId: string, userPassword: string) {
     try {
         let userData: IPassword = await Password.findOne<IPassword>({userId}) as IPassword;
-            console.log('user --> ', userData.password);
+            // console.log('user --> ', userData.password);
             if (!userData) {
                 throw new Error('no password to compare');
             }
             return await compareBcryptHash(userPassword, userData.password);
         
     } catch (error) {
-        console.log(error);
+        // console.log('compareLoginPassword -->', error);
     }
 }
 

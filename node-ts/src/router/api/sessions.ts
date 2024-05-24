@@ -2,8 +2,8 @@ import express, { Router, Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
-import { ISession } from '../../models/session';
 import { SessionController } from '../../controllers/api/session';
+import { ISession } from '../../models/interfaces/session.interface';
 
 const router: Router = express.Router();
 

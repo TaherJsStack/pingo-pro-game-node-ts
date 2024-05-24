@@ -1,9 +1,10 @@
 import { Types } from 'mongoose';
 import { Request, Response } from 'express';
-import InvoiceModel, { IInvoice } from '../../models/invoice';
+import InvoiceModel from '../../models/invoice';
 import InvoiceService from '../../services/invoice.service';
 import CategoryModel from '../../models/category';
 import PricingModel from '../../models/pricing';
+import { IInvoice } from '../../models/interfaces/invoice.interface';
 
 interface CreateRequest extends Request {
   authData: {
@@ -135,18 +136,18 @@ async function updateSession(data: any) {
     );
 
     if (updatedInvoice) {
-      console.log('Invoice updated with new category data:', updatedInvoice);
+      // console.log('Invoice updated with new category data:', updatedInvoice);
       updatedInvoice.calculateCategoriesTotal()
 
     } else {
-      console.error('Failed to update invoice. Updated document is null.');
+      // console.error('Failed to update invoice. Updated document is null.');
     }
     if (subscription) {
       // subscription.unsubscribe();
     }
     return
   } else {
-    console.log('Invoice not found. Cannot update category data.');
+    // console.log('Invoice not found. Cannot update category data.');
     if (subscription) {
       // subscription.unsubscribe();
     }
@@ -157,7 +158,7 @@ async function updateSession(data: any) {
 }
 
 async function deletedSession(data: any) {
-  console.log('deletedSession', data);
+  // console.log('deletedSession', data);
   let _id: string = data.deletedItem.categoryId;
   let clientId: string = data.deletedItem.clientId;
   let brancheId: string = data.deletedItem.brancheId;
@@ -188,18 +189,18 @@ async function deletedSession(data: any) {
     );
 
     if (updatedInvoice) {
-      console.log('Invoice updated with new category data:', updatedInvoice);
+      // console.log('Invoice updated with new category data:', updatedInvoice);
       updatedInvoice.calculateCategoriesTotal();
 
     } else {
-      console.error('Failed to update invoice. Updated document is null.');
+      // console.error('Failed to update invoice. Updated document is null.');
     }
     if (subscription) {
       // subscription.unsubscribe();
     }
     return
   } else {
-    console.log('Invoice not found. Cannot update category data.');
+    // console.log('Invoice not found. Cannot update category data.');
     if (subscription) {
       // subscription.unsubscribe();
     }
@@ -210,8 +211,8 @@ async function deletedSession(data: any) {
 }
 
 async function deletedListSession(data: any) {
-  console.log('deletedListSession data', data);
-  console.log('deletedListSession idsToDelete', data.idsToDelete);
+  // console.log('deletedListSession data', data);
+  // console.log('deletedListSession idsToDelete', data.idsToDelete);
 
   // let _id             = data.deletedItem.categoryId;
   // let clientId        = data.deletedItem.clientId;
@@ -224,7 +225,7 @@ async function deletedListSession(data: any) {
     const sessionIdToDelete = data.idsToDelete[index];
     let existingInvoice: any = await InvoiceModel.findOne({ sessionId: data.idsToDelete[0] });
 
-    console.log('deletedListSession', existingInvoice.categories[index].endIn);
+    // console.log('deletedListSession', existingInvoice.categories[index].endIn);
 
     if (existingInvoice) {
 
@@ -248,7 +249,7 @@ async function deletedListSession(data: any) {
           );
 
           if (updatedInvoice) {
-            console.log('Invoice updated with new category data:', updatedInvoice);
+            // console.log('Invoice updated with new category data:', updatedInvoice);
             updatedInvoice.calculateCategoriesTotal();
           } else {
             console.error('Failed to update invoice. Updated document is null.');
@@ -261,7 +262,7 @@ async function deletedListSession(data: any) {
       }
 
     } else {
-      console.log('Invoice not found for sessionId:', sessionIdToDelete);
+      // console.log('Invoice not found for sessionId:', sessionIdToDelete);
       throw new Error('Invoice not found. Cannot update category data.');
     }
 

@@ -26,14 +26,14 @@ export const verifyToken = (roles: { userType: string }[]) => {
     return async (req: any, res: any, next: any) => {
         try {
             const { token } = req.headers;
-            console.log("token : " + token);
+            // console.log("token : " + token);
             if (!token) {
-                console.log("No token exist");
+                // console.log("No token exist");
                 return res.status(500).send({ error: 'Token is not exist' });
             }
             // should validate if loggedIn user has the same role
             const decode: any = jwt.verify(token, process.env.SECRET!);
-            console.log("decode:" + JSON.stringify(decode));
+            // console.log("decode:" + JSON.stringify(decode));
             req.user = {
                 userId: decode.userId,
                 username: decode.username,
@@ -42,13 +42,13 @@ export const verifyToken = (roles: { userType: string }[]) => {
                 roles: decode.roles,
                 userType: roles
             };
-            console.log("roles : " + roles);
+            // console.log("roles : " + roles);
 
             if (!hasRole(roles, decode.roles)) {
-                console.log("Error : not have the same role");
+                // console.log("Error : not have the same role");
                 return res.status(401).send({ error: 'Authentication failed' });
             }
-            console.log("valid token");
+            // console.log("valid token");
             next();
         } catch (error) {
             next(error);
@@ -58,7 +58,7 @@ export const verifyToken = (roles: { userType: string }[]) => {
 }
 
 const hasRole = (routeRoles: { userType: string }[], userRoles: string[]): boolean => {
-    console.log("routeRoles : " + routeRoles);
+    // console.log("routeRoles : " + routeRoles);
     let result = false;
     userRoles.forEach(role => {
         if (routeRoles.map(r => r.userType).includes(role)) {
@@ -66,6 +66,6 @@ const hasRole = (routeRoles: { userType: string }[], userRoles: string[]): boole
             return;
         }
     });
-    console.log("result : " + result);
+    // console.log("result : " + result);
     return result;
 }

@@ -1,17 +1,6 @@
 import mongoose, { Document, Schema, Model } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
-
-export interface IMenu extends Document {
-  ownerId: mongoose.Types.ObjectId;
-  brancheId: mongoose.Types.ObjectId;
-  name: string;
-  price: number;
-  type: string;
-  logo: string;
-  description: string;
-  activeState: boolean;
-  createdAt: Date;
-}
+import { IMenu } from './interfaces/menu.interface';
 
 const MenuSchema: Schema<IMenu> = new Schema<IMenu>({
   ownerId: { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
