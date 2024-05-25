@@ -6,13 +6,15 @@ import { CreateOperation } from '../interfaces/CreateOperation';
 import { ReadOperation } from '../interfaces/ReadOperation';
 import { DeleteOperation } from '../interfaces/DeleteOperation';
 import { UpdateOperation } from '../interfaces/UpdateOperation';
+import { SendResponse } from './sendResponse';
 
-export abstract class CRUDController<T extends Document> 
+export abstract class CRUDController<T extends Document> extends SendResponse
   implements CreateOperation<T>, ReadOperation<T>, UpdateOperation<T>, DeleteOperation<T> {
   
   protected model: Model<T>;
 
   constructor(model: Model<T>) {
+    super();
     this.model = model;
   }
 
@@ -33,10 +35,11 @@ export abstract class CRUDController<T extends Document>
     try {
       const filter = this.parseFilter(req.query.Filter);
       // console.log('filter -->', filter);
+      // console.log('filter -->', this.model);
       for (const property in filter) {
         // console.log(`${property}: ${filter[property]}`);
         if (!(property in this.model.schema.obj)) {
-          delete filter.ownerId;
+          delete filter[property];
         }
       }
       // console.log('filter -->', filter);
@@ -84,26 +87,26 @@ export abstract class CRUDController<T extends Document>
     }
   };
 
-  protected sendResponse(res: Response, statusCode: number, data: any) {
-    res.status(statusCode).json({
-      success: true,
-      errors: [],
-      status: statusCode,
-      message: '',
-      data: data,
-    });
-  }
+  // protected sendResponse(res: Response, statusCode: number, data: any) {
+  //   res.status(statusCode).json({
+  //     success: true,
+  //     errors: [],
+  //     status: statusCode,
+  //     message: '',
+  //     data: data,
+  //   });
+  // }
 
-  protected sendErrorResponse(res: Response, err: any) {
-    console.error('Error:', err.message);
-    res.status(500).json({
-      success: false,
-      errors: [err.message],
-      status: 500,
-      message: '',
-      data: {},
-    });
-  }
+  // protected sendErrorResponse(res: Response, err: any) {
+  //   console.error('Error:', err.message);
+  //   res.status(500).json({
+  //     success: false,
+  //     errors: [err.message],
+  //     status: 500,
+  //     message: '',
+  //     data: {},
+  //   });
+  // }
 
   protected parseFilter(filter: any) {
     try {

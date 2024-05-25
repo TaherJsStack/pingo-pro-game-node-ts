@@ -3,6 +3,7 @@ import mongoose, {  Document } from 'mongoose';
 // Define the interface for the Auth document
 export interface IAuth extends Document {
     _id:      mongoose.Schema.Types.ObjectId;
+    username: string,
     firstName: string;
     lastName: string;
     email: string;

@@ -29,6 +29,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const mongoose_unique_validator_1 = __importDefault(require("mongoose-unique-validator"));
 const authSchema = new mongoose_1.Schema({
+    username: { type: String, default: 'Default' },
     firstName: { type: String, default: 'Default' },
     lastName: { type: String, default: 'Default' },
     email: { type: mongoose_1.Schema.Types.String, required: true, unique: true, match: /.+\@.+\..+/ },

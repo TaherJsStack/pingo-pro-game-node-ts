@@ -2,8 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CRUDController = void 0;
 const { ObjectId } = require('mongoose').Types;
-class CRUDController {
+const sendResponse_1 = require("./sendResponse");
+class CRUDController extends sendResponse_1.SendResponse {
     constructor(model) {
+        super();
         this.createItem = async (req, res) => {
             try {
                 const newItem = new this.model(req.body);
@@ -21,10 +23,11 @@ class CRUDController {
             try {
                 const filter = this.parseFilter(req.query.Filter);
                 // console.log('filter -->', filter);
+                // console.log('filter -->', this.model);
                 for (const property in filter) {
                     // console.log(`${property}: ${filter[property]}`);
                     if (!(property in this.model.schema.obj)) {
-                        delete filter.ownerId;
+                        delete filter[property];
                     }
                 }
                 // console.log('filter -->', filter);
@@ -73,25 +76,25 @@ class CRUDController {
         };
         this.model = model;
     }
-    sendResponse(res, statusCode, data) {
-        res.status(statusCode).json({
-            success: true,
-            errors: [],
-            status: statusCode,
-            message: '',
-            data: data,
-        });
-    }
-    sendErrorResponse(res, err) {
-        console.error('Error:', err.message);
-        res.status(500).json({
-            success: false,
-            errors: [err.message],
-            status: 500,
-            message: '',
-            data: {},
-        });
-    }
+    // protected sendResponse(res: Response, statusCode: number, data: any) {
+    //   res.status(statusCode).json({
+    //     success: true,
+    //     errors: [],
+    //     status: statusCode,
+    //     message: '',
+    //     data: data,
+    //   });
+    // }
+    // protected sendErrorResponse(res: Response, err: any) {
+    //   console.error('Error:', err.message);
+    //   res.status(500).json({
+    //     success: false,
+    //     errors: [err.message],
+    //     status: 500,
+    //     message: '',
+    //     data: {},
+    //   });
+    // }
     parseFilter(filter) {
         try {
             return typeof filter === 'string' ? JSON.parse(filter) : {};

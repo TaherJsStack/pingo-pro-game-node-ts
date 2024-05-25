@@ -7,8 +7,10 @@ exports.AuthController = void 0;
 const auth_1 = __importDefault(require("../../models/auth"));
 const password_1 = __importDefault(require("../../models/password"));
 const jwtUtil_1 = require("../../util/jwtUtil");
-class AuthController {
+const sendResponse_1 = require("./base/sendResponse");
+class AuthController extends sendResponse_1.SendResponse {
     constructor() {
+        super(...arguments);
         this.checkEmail = (req, res, next) => {
             auth_1.default.findOne({ email: req.params.email })
                 .then((user) => {
@@ -91,21 +93,18 @@ class AuthController {
                 });
             });
         };
-        this.updateOne = (req, res, next) => {
-            auth_1.default.updateOne({ _id: req.params.id }, req.body)
-                .then((saved) => {
-                res.status(200).json({
-                    message: "updated successfully",
-                    Auth: saved,
-                    status: 200
-                });
-            })
-                .catch((err) => {
-                res.status(500).json({
-                    message: err + ' auth ',
-                    status: 500
-                });
-            });
+        this.updateOne = async (req, res, next) => {
+            console.log('Auth updateOne', req.body);
+            try {
+                const updatedItem = await auth_1.default.findByIdAndUpdate(req.params.id, req.body, { new: true });
+                if (!updatedItem) {
+                    res.status(404).json({ msg: 'Item not found' });
+                }
+                this.sendResponse(res, 200, [updatedItem]);
+            }
+            catch (err) {
+                this.sendErrorResponse(res, err);
+            }
         };
         this.login = async (req, res, next) => {
             let fetchedData;

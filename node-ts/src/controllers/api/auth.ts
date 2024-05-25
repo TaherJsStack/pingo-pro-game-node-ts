@@ -4,8 +4,9 @@ import Password from '../../models/password';
 import { generateBcryptHash, compareBcryptHash, generateToken } from '../../util/jwtUtil';
 import { IAuth } from '../../models/interfaces/auth.interface';
 import { IPassword } from '../../models/interfaces/password.interface';
+import { SendResponse } from './base/sendResponse';
 
-export class AuthController{
+export class AuthController extends SendResponse{
     
     checkEmail = (req: Request, res: Response, next: NextFunction) => {
         Auth.findOne({ email: req.params.email })
@@ -106,23 +107,17 @@ export class AuthController{
             });
     };
     
-    updateOne = (req: Request, res: Response, next: NextFunction) => {
-        Auth.updateOne({ _id: req.params.id }, req.body)
-            .then((saved: IAuth | any) => {
-              
-                res.status(200).json({
-                    message: "updated successfully",
-                    Auth: saved,
-                    status: 200
-                });
-            })
-            .catch((err: Error) => {
-              
-                res.status(500).json({
-                    message: err + ' auth ',
-                    status: 500
-                });
-            });
+    updateOne = async (req: Request, res: Response, next: NextFunction) => {
+        console.log('Auth updateOne', req.body);
+        try {
+            const updatedItem = await Auth.findByIdAndUpdate(req.params.id, req.body, { new: true });
+            if (!updatedItem) {
+             res.status(404).json({ msg: 'Item not found' });
+            }
+            this.sendResponse(res, 200, [updatedItem]);
+          } catch (err: any) {
+            this.sendErrorResponse(res, err);
+          }
     };
     
     login = async (req: Request, res: Response, next: NextFunction) => {

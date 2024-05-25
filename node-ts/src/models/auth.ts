@@ -3,6 +3,7 @@ import uniqueValidator from 'mongoose-unique-validator';
 import { IAuth } from './interfaces/auth.interface';
 
 const authSchema: Schema<IAuth> = new Schema<IAuth>({
+    username: { type: String, default: 'Default' },
     firstName: { type: String, default: 'Default' },
     lastName: { type: String, default: 'Default' },
     email: { type: Schema.Types.String, required: true, unique: true, match: /.+\@.+\..+/ },
