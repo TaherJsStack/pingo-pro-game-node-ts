@@ -11,6 +11,18 @@ const sendResponse_1 = require("./base/sendResponse");
 class AuthController extends sendResponse_1.SendResponse {
     constructor() {
         super(...arguments);
+        this.checkPhone = async (req, res, next) => {
+            console.log('checkPhone req.params ---> ', req.params);
+            try {
+                let user = await auth_1.default.findOne({ phone: req.params.phone });
+                console.log('checkPhone user ---> ', user);
+                this.sendResponse(res, 201, [user]);
+            }
+            catch (err) {
+                console.log('catch checkPhone user ---> ', err);
+                this.sendErrorResponse(res, err);
+            }
+        };
         this.checkEmail = (req, res, next) => {
             auth_1.default.findOne({ email: req.params.email })
                 .then((user) => {

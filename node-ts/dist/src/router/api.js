@@ -15,6 +15,7 @@ const menu_1 = __importDefault(require("./api/menu"));
 const pricing_1 = __importDefault(require("./api/pricing"));
 const invoice_menu_1 = __importDefault(require("./api/invoice-menu"));
 const statistics_1 = __importDefault(require("./api/statistics"));
+const address_1 = __importDefault(require("./api/address"));
 // Import middleware if needed
 // import signReqData from '../middleware/sign-req-data';
 const routerAPI = (0, express_1.default)();
@@ -32,5 +33,6 @@ routerAPI.use("/menu", menu_1.default);
 routerAPI.use("/pricing", pricing_1.default);
 routerAPI.use("/invoice-menu", invoice_menu_1.default);
 routerAPI.use("/statistics", statistics_1.default);
+routerAPI.use("/address", address_1.default);
 // Export the router
 exports.default = routerAPI;
