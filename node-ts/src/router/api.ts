@@ -11,6 +11,7 @@ import menuAPI from './api/menu';
 import pricingAPI from './api/pricing';
 import invoiceMenugAPI from './api/invoice-menu';
 import statisticsgAPI from './api/statistics';
+import addressAPI from './api/address';
 
 // Import middleware if needed
 // import signReqData from '../middleware/sign-req-data';
@@ -32,6 +33,7 @@ routerAPI.use("/menu", menuAPI);
 routerAPI.use("/pricing", pricingAPI);
 routerAPI.use("/invoice-menu", invoiceMenugAPI);
 routerAPI.use("/statistics", statisticsgAPI);
+routerAPI.use("/address", addressAPI);
 
 // Export the router
 export default routerAPI;

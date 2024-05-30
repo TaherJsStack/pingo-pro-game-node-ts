@@ -8,6 +8,21 @@ import { SendResponse } from './base/sendResponse';
 
 export class AuthController extends SendResponse{
     
+    checkPhone = async (req: Request, res: Response, next: NextFunction) => {
+        console.log('checkPhone req.params ---> ', req.params)
+        try {
+            let user: (IAuth | any )= await Auth.findOne({ phone: req.params.phone })
+            console.log('checkPhone user ---> ', user)
+            this.sendResponse(res, 201, [user]);
+          } catch (err: any) {
+            console.log('catch checkPhone user ---> ', err)
+
+            this.sendErrorResponse(res, err);
+          }
+
+    };
+    
+
     checkEmail = (req: Request, res: Response, next: NextFunction) => {
         Auth.findOne({ email: req.params.email })
             .then((user: IAuth | any) => {
