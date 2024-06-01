@@ -13,13 +13,22 @@ export abstract class SendResponse{
     }
 
     protected sendErrorResponse(res: Response, err: any) {
-    console.error('Error:', err.message);
-    res.status(500).json({
-        success: false,
-        errors: [err.message],
-        status: 500,
-        message: '',
-        data: {},
-    });
+        let errorMessage: string;
+
+        if (typeof err === 'object' && err !== null && 'message' in err) {
+            errorMessage = err.message;
+        } else if (typeof err === 'string') {
+            errorMessage = err;
+        } else {
+            errorMessage = 'An unknown error occurred';
+        }
+        console.error('Error:', err.message);
+        res.status(500).json({
+            success: false,
+            errors: [errorMessage],
+            status: 500,
+            message: '',
+            data: {},
+        });
     }
 }
