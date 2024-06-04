@@ -12,8 +12,14 @@ export class AuthController extends SendResponse{
         console.log('checkPhone req.params ---> ', req.params)
         try {
             let user: (IAuth | any )= await Auth.findOne({ phone: req.params.phone })
-            console.log('checkPhone user ---> ', user)
-            this.sendResponse(res, 201, [user]);
+            if (user && user['activeState']) {                
+                console.log('checkPhone user ---> ', user)
+                this.sendResponse(res, 201, [user]);
+            } 
+            else {
+                this.sendResponse(res, 201, []);
+                // throw new Error('this phone doesn\'t exist or this account has been blocked');
+            }
           } catch (err: any) {
             console.log('catch checkPhone user ---> ', err)
 
