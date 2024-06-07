@@ -23,18 +23,18 @@ const routerAPI = express();
 // routerAPI.use(signReqData);
 
 // Define routes
-routerAPI.use("/auth", authRouterAPI);
-routerAPI.use("/employees", employeesAPI);
-routerAPI.use("/branches", brancheAPI);
-routerAPI.use("/categories", categoriesAPI);
-routerAPI.use("/clients", clientsAPI);
-routerAPI.use("/sessions", sessionsAPI);
-routerAPI.use("/invoice", invoiceAPI);
-routerAPI.use("/menu", menuAPI);
-routerAPI.use("/pricing", pricingAPI);
-routerAPI.use("/invoice-menu", invoiceMenugAPI);
-routerAPI.use("/statistics", statisticsgAPI);
-routerAPI.use("/address", addressAPI);
+routerAPI.use("/auth",                  authRouterAPI);
+routerAPI.use("/employees",             employeesAPI);
+routerAPI.use("/branches",              brancheAPI);
+routerAPI.use("/categories",            categoriesAPI);
+routerAPI.use("/clients",               clientsAPI);
+routerAPI.use("/sessions",              sessionsAPI);
+routerAPI.use("/invoice",               invoiceAPI);
+routerAPI.use("/menu",                  menuAPI);
+routerAPI.use("/pricing",               pricingAPI);
+routerAPI.use("/invoice-menu",          invoiceMenugAPI);
+routerAPI.use("/statistics",            statisticsgAPI);
+routerAPI.use("/address",               addressAPI);
 routerAPI.use("/complaints-suggestion", complaintsSuggestionAPI);
 
 // Export the router

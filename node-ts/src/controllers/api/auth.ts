@@ -5,6 +5,10 @@ import { generateBcryptHash, compareBcryptHash, generateToken } from '../../util
 import { IAuth } from '../../models/interfaces/auth.interface';
 import { IPassword } from '../../models/interfaces/password.interface';
 import { SendResponse } from './base/sendResponse';
+import { AddressController } from './address';
+
+
+const createAddress: AddressController = new AddressController()
 
 export class AuthController extends SendResponse{
     
@@ -28,7 +32,6 @@ export class AuthController extends SendResponse{
 
     };
     
-
     checkEmail = (req: Request, res: Response, next: NextFunction) => {
         Auth.findOne({ email: req.params.email })
             .then((user: IAuth | any) => {
@@ -58,7 +61,6 @@ export class AuthController extends SendResponse{
         let { id, password } = req.params;
         let confirmedPassword = await compareLoginPassword(req, id, password);
         if (!confirmedPassword) {
-    
             return res.status(200).json({
                 val: confirmedPassword
             });
@@ -70,21 +72,24 @@ export class AuthController extends SendResponse{
     };
     
     updatePassword = async (req: Request, res: Response, next: NextFunction) => {
-        let bcryptHash = await generateBcryptHash(req.body.password, 10);
-    
-        Password.updateOne({ userId: req.body.id }, { password: bcryptHash })
-            .then((saved: IAuth | any) => {
-                res.status(200).json({
-                    message: "updated password successfully",
-                    status: 200
-                });
-            })
-            .catch((err: Error) => {
-                res.status(500).json({
-                    message: err + ' update password ',
-                    status: 500
-                });
-            });
+        
+        // let { id, password } = req.params;
+        let { id, password, oldPassword, confirmPassword } = req.body;
+        let confirmedPassword = await compareLoginPassword(req, id, oldPassword);
+        console.log('confirmedPassword --->', confirmedPassword)
+        if (!confirmedPassword) {  
+            this.sendErrorResponse(res, 'password not matched');
+            return 
+        }
+
+        try {
+            let bcryptHash = await generateBcryptHash(password, 10);
+            let saved = await Password.updateOne({ userId: id }, { password: bcryptHash })
+            this.sendResponse(res, 200, saved);
+        } catch (error) {
+            this.sendErrorResponse(res, error);
+        }
+
     };
     
     saveAuth = async (req: Request, res: Response, next: NextFunction) => {
@@ -101,6 +106,8 @@ export class AuthController extends SendResponse{
                     throw new Error('new user not added !!!');
                 }
     
+                await createAddress.createItemAuthAddress( res, saved as IAuth)
+
                 let token = await generateToken(
                     saved._id.toString(),
                     saved.email,
@@ -266,15 +273,15 @@ export class AuthController extends SendResponse{
 
 async function compareLoginPassword(req: Request, userId: string, userPassword: string) {
     try {
-        let userData: IPassword = await Password.findOne<IPassword>({userId}) as IPassword;
+        let savedUserPassword: IPassword = await Password.findOne<IPassword>({userId}) as IPassword;
             // console.log('user --> ', userData.password);
-            if (!userData) {
+            if (!savedUserPassword) {
                 throw new Error('no password to compare');
             }
-            return await compareBcryptHash(userPassword, userData.password);
+            return await compareBcryptHash(userPassword, savedUserPassword.password);
         
     } catch (error) {
-        // console.log('compareLoginPassword -->', error);
+        console.log('compareLoginPassword -->', error);
     }
 }
 

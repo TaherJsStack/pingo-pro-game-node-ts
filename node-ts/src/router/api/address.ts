@@ -22,8 +22,9 @@ router.post( '', signReqData,
 
 // Route: PUT /items/:id (Update item)
 router.put(
-  '/:id',
+  '/member/:id',
   async (req: Request, res: Response) => {
+    
     await addressController.updateItem(req, res);
   }
 );

@@ -64,6 +64,7 @@ export abstract class CRUDController<T extends Document> extends SendResponse
   };
 
   public updateItem = async (req: Request, res: Response): Promise<void> => {
+    console.log('updateItem -->', req.params.id)
     try {
       const updatedItem = await this.model.findByIdAndUpdate(req.params.id, req.body, { new: true });
       if (!updatedItem) {
