@@ -9,7 +9,9 @@ const password_1 = __importDefault(require("../../models/password"));
 const jwtUtil_1 = require("../../util/jwtUtil");
 const sendResponse_1 = require("./base/sendResponse");
 const address_1 = require("./address");
+const inbox_1 = require("./inbox");
 const createAddress = new address_1.AddressController();
+const inbox = new inbox_1.InboxController();
 class AuthController extends sendResponse_1.SendResponse {
     constructor() {
         super(...arguments);
@@ -98,6 +100,7 @@ class AuthController extends sendResponse_1.SendResponse {
                 }
                 await createAddress.createItemAuthAddress(res, saved);
                 let token = await (0, jwtUtil_1.generateToken)(saved._id.toString(), saved.email, saved.lastName + ' ' + saved.firstName, saved.role, saved.permeation);
+                inbox.sendWelcomMessage(saved._id.toString());
                 res.status(200).json({
                     success: true,
                     errors: [],

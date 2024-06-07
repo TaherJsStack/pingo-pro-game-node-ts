@@ -25,12 +25,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const inboxSchema = new mongoose_1.Schema({
-    brancheId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Branche', required: true },
+    // brancheId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },
     ownerId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Auth', required: true },
     title: { type: String, required: true },
     type: { type: String, required: true },
     context: { type: String, required: true },
-    state: { type: String, required: true },
+    isSeen: { type: Boolean, default: false },
     activeState: { type: Boolean, default: true },
     createdAt: { type: Date, default: new Date() },
     description: { type: String, default: '' },
