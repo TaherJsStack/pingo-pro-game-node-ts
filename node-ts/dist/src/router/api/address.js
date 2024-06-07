@@ -13,7 +13,7 @@ router.post('', sign_req_data_1.default, async (req, res) => {
     await addressController.createItem(req, res);
 });
 // Route: PUT /items/:id (Update item)
-router.put('/:id', async (req, res) => {
+router.put('/member/:id', async (req, res) => {
     await addressController.updateItem(req, res);
 });
 router.get("", addressController.getAllItems);

@@ -8,6 +8,8 @@ const auth_1 = __importDefault(require("../../models/auth"));
 const password_1 = __importDefault(require("../../models/password"));
 const jwtUtil_1 = require("../../util/jwtUtil");
 const sendResponse_1 = require("./base/sendResponse");
+const address_1 = require("./address");
+const createAddress = new address_1.AddressController();
 class AuthController extends sendResponse_1.SendResponse {
     constructor() {
         super(...arguments);
@@ -15,8 +17,14 @@ class AuthController extends sendResponse_1.SendResponse {
             console.log('checkPhone req.params ---> ', req.params);
             try {
                 let user = await auth_1.default.findOne({ phone: req.params.phone });
-                console.log('checkPhone user ---> ', user);
-                this.sendResponse(res, 201, [user]);
+                if (user && user['activeState']) {
+                    console.log('checkPhone user ---> ', user);
+                    this.sendResponse(res, 201, [user]);
+                }
+                else {
+                    this.sendResponse(res, 201, []);
+                    // throw new Error('this phone doesn\'t exist or this account has been blocked');
+                }
             }
             catch (err) {
                 console.log('catch checkPhone user ---> ', err);
@@ -60,20 +68,22 @@ class AuthController extends sendResponse_1.SendResponse {
             }
         };
         this.updatePassword = async (req, res, next) => {
-            let bcryptHash = await (0, jwtUtil_1.generateBcryptHash)(req.body.password, 10);
-            password_1.default.updateOne({ userId: req.body.id }, { password: bcryptHash })
-                .then((saved) => {
-                res.status(200).json({
-                    message: "updated password successfully",
-                    status: 200
-                });
-            })
-                .catch((err) => {
-                res.status(500).json({
-                    message: err + ' update password ',
-                    status: 500
-                });
-            });
+            // let { id, password } = req.params;
+            let { id, password, oldPassword, confirmPassword } = req.body;
+            let confirmedPassword = await compareLoginPassword(req, id, oldPassword);
+            console.log('confirmedPassword --->', confirmedPassword);
+            if (!confirmedPassword) {
+                this.sendErrorResponse(res, 'password not matched');
+                return;
+            }
+            try {
+                let bcryptHash = await (0, jwtUtil_1.generateBcryptHash)(password, 10);
+                let saved = await password_1.default.updateOne({ userId: id }, { password: bcryptHash });
+                this.sendResponse(res, 200, saved);
+            }
+            catch (error) {
+                this.sendErrorResponse(res, error);
+            }
         };
         this.saveAuth = async (req, res, next) => {
             let bcryptHash = await (0, jwtUtil_1.generateBcryptHash)(req.body.password, 10);
@@ -86,6 +96,7 @@ class AuthController extends sendResponse_1.SendResponse {
                     await auth_1.default.deleteOne({ _id: saved._id });
                     throw new Error('new user not added !!!');
                 }
+                await createAddress.createItemAuthAddress(res, saved);
                 let token = await (0, jwtUtil_1.generateToken)(saved._id.toString(), saved.email, saved.lastName + ' ' + saved.firstName, saved.role, saved.permeation);
                 res.status(200).json({
                     success: true,
@@ -225,15 +236,15 @@ class AuthController extends sendResponse_1.SendResponse {
 exports.AuthController = AuthController;
 async function compareLoginPassword(req, userId, userPassword) {
     try {
-        let userData = await password_1.default.findOne({ userId });
+        let savedUserPassword = await password_1.default.findOne({ userId });
         // console.log('user --> ', userData.password);
-        if (!userData) {
+        if (!savedUserPassword) {
             throw new Error('no password to compare');
         }
-        return await (0, jwtUtil_1.compareBcryptHash)(userPassword, userData.password);
+        return await (0, jwtUtil_1.compareBcryptHash)(userPassword, savedUserPassword.password);
     }
     catch (error) {
-        // console.log('compareLoginPassword -->', error);
+        console.log('compareLoginPassword -->', error);
     }
 }
 async function saveNewPassword(req, id, password) {

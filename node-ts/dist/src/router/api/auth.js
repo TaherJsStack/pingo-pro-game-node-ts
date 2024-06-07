@@ -7,7 +7,7 @@ const authController = new auth_1.AuthController();
 router.get('/check-phone/:phone', authController.checkPhone);
 router.get('/check-email/:email', authController.checkEmail.bind(authController));
 router.get('/check-password/:id/:password', authController.checkPassword.bind(authController));
-router.post('/update-password', authController.updatePassword.bind(authController));
+router.put('/update-password/:id', authController.updatePassword.bind(authController));
 router.post('', authController.saveAuth);
 router.put('/:id', authController.updateOne);
 router.post('/login', authController.login.bind(authController));
