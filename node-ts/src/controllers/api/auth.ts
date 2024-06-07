@@ -6,9 +6,11 @@ import { IAuth } from '../../models/interfaces/auth.interface';
 import { IPassword } from '../../models/interfaces/password.interface';
 import { SendResponse } from './base/sendResponse';
 import { AddressController } from './address';
+import { InboxController } from './inbox';
 
 
 const createAddress: AddressController = new AddressController()
+const inbox: InboxController = new InboxController()
 
 export class AuthController extends SendResponse{
     
@@ -115,6 +117,7 @@ export class AuthController extends SendResponse{
                     saved.role,
                     saved.permeation
                 );
+                inbox.sendWelcomMessage(saved._id.toString())
     
                 res.status(200).json({
                     success: true,
@@ -174,7 +177,7 @@ export class AuthController extends SendResponse{
                     fetchedData.role,
                     fetchedData.permeation
                 );
-    
+
                 res.status(200).json({
                     status: 200,
                     message: token,

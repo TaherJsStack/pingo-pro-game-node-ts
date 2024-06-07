@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MenuController = void 0;
 const menu_1 = __importDefault(require("../../models/menu"));
 const CRUDController_1 = require("./base/CRUDController");
-const { ObjectId } = require('mongoose').Types;
 class MenuController extends CRUDController_1.CRUDController {
     constructor() {
         super(menu_1.default);
