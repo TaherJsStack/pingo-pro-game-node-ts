@@ -52,6 +52,9 @@ class App {
     this.app.set('views', 'views');
     this.app.use('/assets', express.static(path.join(__dirname, '../../assets')));
     this.app.use('**/public', express.static(path.join(__dirname, '../../public')));
+    this.app.get('/', function (req, res) {
+      res.send('Hello World!');
+    });
   }
 
   private initializeRoutes(): void {
@@ -88,10 +91,10 @@ class App {
         });
 
         // Graceful shutdown
-        process.on('SIGINT', async () => {
-          await Database.close();
-          process.exit(0);
-        });
+        // process.on('SIGINT', async () => {
+        //   await Database.close();
+        //   process.exit(0);
+        // });
         
     }
 }

@@ -42,6 +42,9 @@ class App {
         this.app.set('views', 'views');
         this.app.use('/assets', express_1.default.static(path_1.default.join(__dirname, '../../assets')));
         this.app.use('**/public', express_1.default.static(path_1.default.join(__dirname, '../../public')));
+        this.app.get('/', function (req, res) {
+            res.send('Hello World!');
+        });
     }
     initializeRoutes() {
         this.app.use("/api/v1", api_1.default);
@@ -71,10 +74,10 @@ class App {
             console.log(`Server running on port ${this.port}`);
         });
         // Graceful shutdown
-        process.on('SIGINT', async () => {
-            await mongoDBConfig_1.default.close();
-            process.exit(0);
-        });
+        // process.on('SIGINT', async () => {
+        //   await Database.close();
+        //   process.exit(0);
+        // });
     }
 }
 exports.default = App;

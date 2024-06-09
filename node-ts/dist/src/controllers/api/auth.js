@@ -56,17 +56,14 @@ class AuthController extends sendResponse_1.SendResponse {
             });
         };
         this.checkPassword = async (req, res, next) => {
-            let { id, password } = req.params;
+            let { id } = req.params;
+            let { password } = req.body;
             let confirmedPassword = await compareLoginPassword(req, id, password);
             if (!confirmedPassword) {
-                return res.status(200).json({
-                    val: confirmedPassword
-                });
+                this.sendErrorResponse(res, 'password not matched');
             }
             else {
-                return res.status(200).json({
-                    val: confirmedPassword
-                });
+                this.sendResponse(res, 200, confirmedPassword);
             }
         };
         this.updatePassword = async (req, res, next) => {

@@ -28,17 +28,21 @@ Run the following command by replacing with your-projectfolder name and your-rep
 5- ng deploy --base-href=https://TaherJsStack.github.io/NG-CRM-DEPLOY/
 
 
-next add -
+curl http://localhost:4001
+cd var/www/pingo-pro-game/nodejs/
 
-  forms
-  lists
-  charts
-  cards form main dash board
-  alerst 
-  popups
-  modules
+sudo systemctl restart nginx
+sudo nginx -t
+ cd /etc/nginx/sites-available
 
 
+pm2 start app.js
+pm2 start dist/server/server.mjs
 
-to build app to dist folder => PS D:\pro\pingo-pro-game-node-ts\node-ts> npx tsc
-to run app                  => npm run dev
+
+
+
+mongorestore --db PINGO --dir /var/www/pingo-pro-game/PINGO
+mongosh
+show collections
+db.addresses.find().pretty()
