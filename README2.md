@@ -29,20 +29,48 @@ Run the following command by replacing with your-projectfolder name and your-rep
 
 
 curl http://localhost:4001
+curl -v https://pingo-pro-game.com
 cd var/www/pingo-pro-game/nodejs/
 
 sudo systemctl restart nginx
 sudo nginx -t
- cd /etc/nginx/sites-available
+cd /etc/nginx/sites-available
+
+Create a symbolic link to the sites-enabled directory:
+sudo ln -s /etc/nginx/sites-available/pingo-pro-game.com /etc/nginx/sites-enabled/
+
+Test Nginx Configuration:
+sudo nginx -t
+
+If the test is successful, reload Nginx:
+sudo systemctl reload nginx
 
 
 pm2 start app.js
 pm2 start dist/server/server.mjs
 
 
-
-
 mongorestore --db PINGO --dir /var/www/pingo-pro-game/PINGO
 mongosh
 show collections
 db.addresses.find().pretty()
+
+
+
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
+sudo certbot --nginx -d pingo-pro-game.com -d www.pingo-pro-game.com
+
+
+http://pingo-pro-game.com/
+
+http://2.58.80.7/8000
+
+\
+
+
+الاحد + اربع الساعة 8:10 pm
+start in 30-6-2024
+call : 01203599998
+
+
+

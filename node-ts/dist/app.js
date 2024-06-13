@@ -28,7 +28,7 @@ class App {
         this.app.use(body_parser_1.default.urlencoded({ extended: false }));
         this.app.use((req, res, next) => {
             res.setHeader("Access-Control-Allow-Origin", "*");
-            res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, AppLanguage, Allowencrypt, cartId, favoriteId");
+            res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, AppLanguage, Allowencrypt, cartId, favoriteId, http://2.58.80.7:4001, 2.58.80.7:4001, 2.58.80.7");
             res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
             next();
         });
