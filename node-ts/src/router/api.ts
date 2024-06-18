@@ -1,19 +1,21 @@
 import express from 'express';
 
-import authRouterAPI from './api/auth';
-import employeesAPI from './api/employees';
-import brancheAPI from './api/branche';
-import categoriesAPI from './api/categories';
-import clientsAPI from './api/client';
-import sessionsAPI from './api/sessions';
-import invoiceAPI from './api/invoice';
-import menuAPI from './api/menu';
-import pricingAPI from './api/pricing';
-import invoiceMenugAPI from './api/invoice-menu';
-import statisticsgAPI from './api/statistics';
-import addressAPI from './api/address';
-import inboxAPI from './api/inbox';
-import complaintsSuggestionAPI from './api/complaints-suggestion';
+import authRouterAPI            from './api/auth';
+import employeesAPI             from './api/employees';
+import brancheAPI               from './api/branche';
+import categoriesAPI            from './api/categories';
+import clientsAPI               from './api/client';
+import sessionsAPI              from './api/sessions';
+import invoiceAPI               from './api/invoice';
+import menuAPI                  from './api/menu';
+import pricingAPI               from './api/pricing';
+import invoiceMenugAPI          from './api/invoice-menu';
+import statisticsgAPI           from './api/statistics';
+import addressAPI               from './api/address';
+import inboxAPI                 from './api/inbox';
+import complaintsSuggestionAPI  from './api/complaints-suggestion';
+import subscriptionAPI          from './api/subscription';
+import planAPI                  from './api/plan';
 
 // Import middleware if needed
 // import signReqData from '../middleware/sign-req-data';
@@ -38,6 +40,8 @@ routerAPI.use("/statistics",            statisticsgAPI);
 routerAPI.use("/address",               addressAPI);
 routerAPI.use("/inbox",                 inboxAPI);
 routerAPI.use("/complaints-suggestion", complaintsSuggestionAPI);
+routerAPI.use("/subscription",          subscriptionAPI);
+routerAPI.use("/plan",                  planAPI);
 
 // Export the router
 export default routerAPI;

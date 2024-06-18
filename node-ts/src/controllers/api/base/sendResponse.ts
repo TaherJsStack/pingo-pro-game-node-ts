@@ -1,5 +1,4 @@
-import { Request, Response } from 'express';
-import { Document, Model } from 'mongoose';
+import { Response } from 'express';
 
 export abstract class SendResponse{
     public sendResponse(res: Response, statusCode: number, data: any) {

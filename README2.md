@@ -73,4 +73,5 @@ start in 30-6-2024
 call : 01203599998
 
 
+ssl_dhparam /etc/nginx/dhparam.pem;
 
