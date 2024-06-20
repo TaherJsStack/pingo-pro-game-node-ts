@@ -192,12 +192,17 @@ class SessionController {
                 let ids = req.params.id.split(',');
                 let idsToDelete = ids.map((id) => new mongoose_1.Types.ObjectId(id));
                 let deletedList = await session_1.default.deleteMany({ _id: { $in: idsToDelete } });
-                invoice_service_1.default.setData({
-                    message: 'Hello from Controller 1',
-                    setDataTyep: 'endList',
-                    idsToDelete,
-                    endIn: req.params.endIn,
-                });
+                // InvoiceService.setData({
+                //   message: 'Hello from Controller 1',
+                //   setDataTyep: 'endList',
+                //   idsToDelete,
+                //   endIn: req.params.endIn,
+                // });
+                // let invoiceSetEndTimeToSessionsList = new InvoiceController();
+                // await invoiceSetEndTimeToSessionsList.setEndTimeToSessionsList({
+                //   idsToDelete: idsToDelete as [],
+                //   endIn: req.params.endIn,
+                // });
                 res.status(201).json({
                     success: true,
                     errors: [],

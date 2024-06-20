@@ -39,6 +39,11 @@ yarn-error.log
 testem.log
 /typings
 
+/node-ts/dist
+# /node-ts/dist/
+# /node-ts/dist/*
+# /node-ts/dist-2*/
+# /node-ts/dist-2/*
 # System files
 .DS_Store
 Thumbs.db

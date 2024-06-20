@@ -5,12 +5,19 @@ import InvoiceService from '../../services/invoice.service';
 import CategoryModel from '../../models/category';
 import PricingModel from '../../models/pricing';
 import { IInvoice } from '../../models/interfaces/invoice.interface';
+import { SendResponse } from './base/sendResponse';
+const { ObjectId } = require('mongoose').Types;
 
 interface CreateRequest extends Request {
   authData: {
     id: string;
   };
   body: IInvoice;
+}
+
+interface SessionsIdsList {
+  idsToDelete: string[];
+  endIn?: string;
 }
 
 let subscription: any = null;
@@ -29,7 +36,7 @@ let subscription: any = null;
         deletedSession(data);
         break;
       case 'endList':
-        deletedListSession(data);
+        // deletedListSession(data);
         break;
       default:
         throw new Error('Invalid setDataTyep');
@@ -210,68 +217,68 @@ async function deletedSession(data: any) {
 
 }
 
-async function deletedListSession(data: any) {
-  // console.log('deletedListSession data', data);
-  // console.log('deletedListSession idsToDelete', data.idsToDelete);
+// async function deletedListSession(data: any) {
+//   // console.log('deletedListSession data', data);
+//   // console.log('deletedListSession idsToDelete', data.idsToDelete);
 
-  // let _id             = data.deletedItem.categoryId;
-  // let clientId        = data.deletedItem.clientId;
-  // let brancheId       = data.deletedItem.brancheId;
-  // let category        = await CategoryModel.findOne({ _id });
-  // let priceValue      = await PricingModel.findOne({ _id: new ObjectId(category.priceId) });
-
-
-  for (let index = 0; index < data.idsToDelete.length; index++) {
-    const sessionIdToDelete = data.idsToDelete[index];
-    let existingInvoice: any = await InvoiceModel.findOne({ sessionId: data.idsToDelete[0] });
-
-    // console.log('deletedListSession', existingInvoice.categories[index].endIn);
-
-    if (existingInvoice) {
-
-      if (existingInvoice.categories[index].endIn == undefined) {
-        const updateQuery = {
-          $set: {
-            'categories.$[elem].endIn': data.endIn ? data.endIn : '',
-          }
-        };
-        const options = {
-          new: true, // To return the updated document
-          arrayFilters: [{ 'elem.sessionId': sessionIdToDelete }]
-        };
-
-        try {
-          // Perform the update operation
-          const updatedInvoice: any = await InvoiceModel.findByIdAndUpdate(
-            existingInvoice._id,
-            updateQuery,
-            options
-          );
-
-          if (updatedInvoice) {
-            // console.log('Invoice updated with new category data:', updatedInvoice);
-            updatedInvoice.calculateCategoriesTotal();
-          } else {
-            console.error('Failed to update invoice. Updated document is null.');
-          }
-        } catch (error) {
-          console.error('Error updating invoice:', error);
-          throw new Error('Error updating invoice.');
-        }
-
-      }
-
-    } else {
-      // console.log('Invoice not found for sessionId:', sessionIdToDelete);
-      throw new Error('Invoice not found. Cannot update category data.');
-    }
-
-  }
+//   // let _id             = data.deletedItem.categoryId;
+//   // let clientId        = data.deletedItem.clientId;
+//   // let brancheId       = data.deletedItem.brancheId;
+//   // let category        = await CategoryModel.findOne({ _id });
+//   // let priceValue      = await PricingModel.findOne({ _id: new ObjectId(category.priceId) });
 
 
-}
+//   for (let index = 0; index < data.idsToDelete.length; index++) {
+//     const sessionIdToDelete = data.idsToDelete[index];
+//     let existingInvoice: any = await InvoiceModel.findOne({ sessionId: data.idsToDelete[0] });
 
-export class InvoiceController{
+//     // console.log('deletedListSession', existingInvoice.categories[index].endIn);
+
+//     if (existingInvoice) {
+
+//       if (existingInvoice.categories[index].endIn == undefined) {
+//         const updateQuery = {
+//           $set: {
+//             'categories.$[elem].endIn': data.endIn ? data.endIn : '',
+//           }
+//         };
+//         const options = {
+//           new: true, // To return the updated document
+//           arrayFilters: [{ 'elem.sessionId': sessionIdToDelete }]
+//         };
+
+//         try {
+//           // Perform the update operation
+//           const updatedInvoice: any = await InvoiceModel.findByIdAndUpdate(
+//             existingInvoice._id,
+//             updateQuery,
+//             options
+//           );
+
+//           if (updatedInvoice) {
+//             // console.log('Invoice updated with new category data:', updatedInvoice);
+//             updatedInvoice.calculateCategoriesTotal();
+//           } else {
+//             console.error('Failed to update invoice. Updated document is null.');
+//           }
+//         } catch (error) {
+//           console.error('Error updating invoice:', error);
+//           throw new Error('Error updating invoice.');
+//         }
+
+//       }
+
+//     } else {
+//       // console.log('Invoice not found for sessionId:', sessionIdToDelete);
+//       throw new Error('Invoice not found. Cannot update category data.');
+//     }
+
+//   }
+
+
+// }
+
+export class InvoiceController extends SendResponse{
   
   // Read - GET request handler (Get all items)
   getAllItems = async (req: Request, res: Response) => {
@@ -390,7 +397,8 @@ export class InvoiceController{
         });
     } catch (err: any) {
       console.error(err.message);
-      res.status(500).send('Server Error');
+      // res.status(500).send('Server Error');
+      this.sendErrorResponse(res, err);
     }
   };
   
@@ -488,4 +496,113 @@ export class InvoiceController{
       res.status(500).send('Server Error');
     }
   };
+
+  updateEndTimeToSessionsList2 = async (req: Request, res: Response) => {
+
+    // console.log('1- idsList ----->', req.params.id);
+
+    try {
+      const existingInvoice = await InvoiceModel.findById(req.params.id);
+      if (!existingInvoice) {
+        return this.sendErrorResponse(res, 'Invoice not found');
+        // return res.status(404).json({ msg: 'invoice not found' });
+      }
+      // console.log('2- existingInvoice ----->', existingInvoice);
+      for (const category of existingInvoice.categories) {
+        // console.log('4- category ----->', category);
+
+        if (category.endIn === undefined) {
+          // console.log('5- category.endIn ----->', category.endIn);
+
+          const updateQuery = {
+            $set: {
+              'categories.$[elem].endIn': new Date().toISOString(),
+            }
+          };
+          const options = {
+            new: true,
+            arrayFilters: [{ 'elem.sessionId': new ObjectId(category.sessionId) }]
+          };
+
+          const updatedInvoice = await InvoiceModel.findByIdAndUpdate(
+            new ObjectId(existingInvoice._id),
+            updateQuery,
+            options
+          );
+
+          if (updatedInvoice) {
+            // console.log('6- updatedInvoice ----->', updatedInvoice);
+
+            updatedInvoice.calculateCategoriesTotal();
+            this.sendResponse(res, 200, updatedInvoice);
+          } else {
+            console.error('Failed to update invoice. Updated document is null.');
+            // throw new Error('Failed to update invoice. Updated document is null.');
+            this.sendErrorResponse(res, 'Failed to update invoice. Updated document is null.');
+          }
+        }
+      }
+    } catch (error) {
+      
+    }
+
+
+  }
+  // --------------------------------------------------------------------------------------------------
+  // --------------------------------------------------------------------------------------------------
+  // --------------------------------------------------------------------------------------------------
+  
+  // async setEndTimeToSessionsList(idsList: SessionsIdsList) {
+  //   console.log('1- idsList ----->', idsList);
+  //   for (const sessionId of idsList.idsToDelete) {
+  //     try {
+  //       const existingInvoice = await InvoiceModel.findOne({ sessionId });
+  //       console.log('2- existingInvoice ----->', existingInvoice);
+  
+  //       if (existingInvoice) {
+  //       console.log('3- existingInvoice ----->', existingInvoice);
+
+  //         for (const category of existingInvoice.categories) {
+  //           console.log('4- category ----->', category);
+
+  //           if (category.endIn === undefined) {
+  //             console.log('5- category.endIn ----->', category.endIn);
+
+  //             const updateQuery = {
+  //               $set: {
+  //                 'categories.$[elem].endIn': idsList.endIn ?? '',
+  //               }
+  //             };
+  //             const options = {
+  //               new: true,
+  //               arrayFilters: [{ 'elem.sessionId': sessionId }]
+  //             };
+  
+  //             const updatedInvoice = await InvoiceModel.findByIdAndUpdate(
+  //               existingInvoice._id,
+  //               updateQuery,
+  //               options
+  //             );
+  
+  //             if (updatedInvoice) {
+  //               console.log('6- updatedInvoice ----->', updatedInvoice);
+
+  //               updatedInvoice.calculateCategoriesTotal();
+  //             } else {
+  //               console.error('Failed to update invoice. Updated document is null.');
+  //               throw new Error('Failed to update invoice. Updated document is null.');
+  //             }
+  //           }
+  //         }
+  //       } else {
+  //         throw new Error('Invoice not found. Cannot update category data.');
+  //       }
+  //     } catch (error) {
+  //       console.error('Error updating invoice:', error);
+  //       throw new Error('Error updating invoice.');
+  //     }
+  //   }
+  // }
+  
+
 }

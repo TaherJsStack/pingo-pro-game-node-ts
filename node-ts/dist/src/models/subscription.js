@@ -22,12 +22,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const mongoose_unique_validator_1 = __importDefault(require("mongoose-unique-validator"));
 const subscriptionSchema = new mongoose_1.Schema({
     ownerId: { type: String, required: true },
     state: { type: String, required: true },
@@ -35,8 +31,14 @@ const subscriptionSchema = new mongoose_1.Schema({
     activeState: { type: Boolean, default: true },
     createdAt: { type: Date, default: new Date() },
     description: { type: String, default: '' },
+    userId: { type: String, required: true },
+    plan: { type: String, required: true },
+    status: { type: String, enum: ['active', 'inactive', 'canceled'], default: 'inactive' },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date, required: true },
+    trial: { type: Boolean, default: false },
 }, {
     timestamps: true
 });
-subscriptionSchema.plugin(mongoose_unique_validator_1.default);
+// subscriptionSchema.plugin(uniqueValidator);
 exports.default = mongoose_1.default.model('Subscription', subscriptionSchema);

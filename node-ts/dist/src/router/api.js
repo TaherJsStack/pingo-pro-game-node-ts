@@ -18,6 +18,8 @@ const statistics_1 = __importDefault(require("./api/statistics"));
 const address_1 = __importDefault(require("./api/address"));
 const inbox_1 = __importDefault(require("./api/inbox"));
 const complaints_suggestion_1 = __importDefault(require("./api/complaints-suggestion"));
+const subscription_1 = __importDefault(require("./api/subscription"));
+const plan_1 = __importDefault(require("./api/plan"));
 // Import middleware if needed
 // import signReqData from '../middleware/sign-req-data';
 const routerAPI = (0, express_1.default)();
@@ -38,5 +40,7 @@ routerAPI.use("/statistics", statistics_1.default);
 routerAPI.use("/address", address_1.default);
 routerAPI.use("/inbox", inbox_1.default);
 routerAPI.use("/complaints-suggestion", complaints_suggestion_1.default);
+routerAPI.use("/subscription", subscription_1.default);
+routerAPI.use("/plan", plan_1.default);
 // Export the router
 exports.default = routerAPI;

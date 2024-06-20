@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import SessionClientModel from '../../models/session';
 import InvoiceService from '../../services/invoice.service';
 import { ISession } from '../../models/interfaces/session.interface';
+import { InvoiceController } from './invoice';
 
 const { ObjectId } = require('mongoose').Types;
 
@@ -189,7 +190,7 @@ export class SessionController{
         deletedItem,
         endIn: req.params.endIn,
       });
-  
+
       res.status(201).json({
         success: true,
         errors: [],
@@ -212,12 +213,18 @@ export class SessionController{
   
       let deletedList = await SessionClientModel.deleteMany({ _id: { $in: idsToDelete } });
   
-      InvoiceService.setData({
-        message: 'Hello from Controller 1',
-        setDataTyep: 'endList',
-        idsToDelete,
-        endIn: req.params.endIn,
-      });
+      // InvoiceService.setData({
+      //   message: 'Hello from Controller 1',
+      //   setDataTyep: 'endList',
+      //   idsToDelete,
+      //   endIn: req.params.endIn,
+      // });
+
+      // let invoiceSetEndTimeToSessionsList = new InvoiceController();
+      // await invoiceSetEndTimeToSessionsList.setEndTimeToSessionsList({
+      //   idsToDelete: idsToDelete as [],
+      //   endIn: req.params.endIn,
+      // });
   
       res.status(201).json({
         success: true,

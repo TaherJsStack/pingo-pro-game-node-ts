@@ -61,6 +61,11 @@ router.put('/:id', [
     // Call controller method to update item
     await invoiceController.updateItem(req, res);
 });
+// Route: PUT /items/:id (Update item)
+router.put('/updateEndTimeToSessionsList/:id', async (req, res) => {
+    // Call controller method to update item
+    await invoiceController.updateEndTimeToSessionsList2(req, res);
+});
 // Other routes for GET (Read) and DELETE operations...
 router.get("", invoiceController.getAllItems);
 exports.default = router;
