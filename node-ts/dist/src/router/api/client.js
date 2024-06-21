@@ -41,5 +41,6 @@ router.put('/:id', [
 });
 // Other routes for GET (Read) and DELETE operations...
 router.get('', clientController.getAllItems);
+router.get('/check-phone/:phone', clientController.checkPhone);
 router.delete('/:id', clientController.deleteItem);
 exports.default = router;

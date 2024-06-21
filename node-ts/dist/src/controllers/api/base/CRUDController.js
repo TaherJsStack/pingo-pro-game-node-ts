@@ -22,7 +22,7 @@ class CRUDController extends sendResponse_1.SendResponse {
         this.getAllItems = async (req, res) => {
             try {
                 const filter = this.parseFilter(req.query.Filter);
-                // console.log('filter -->', filter);
+                // console.log('Clients getAllItems filter -->', filter);
                 // console.log('filter -->', this.model);
                 for (const property in filter) {
                     // console.log(`${property}: ${filter[property]}`);
@@ -32,7 +32,14 @@ class CRUDController extends sendResponse_1.SendResponse {
                 }
                 // console.log('filter -->', filter);
                 const items = await this.model.find(filter).sort({ createdAt: -1, activeState: 1 });
-                this.sendResponse(res, 200, items);
+                // this.sendResponse(res, 200, items);
+                res.status(200).json({
+                    success: true,
+                    errors: [],
+                    status: 200,
+                    message: 'Categories updated successfully',
+                    data: items
+                });
             }
             catch (err) {
                 this.sendErrorResponse(res, err);
