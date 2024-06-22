@@ -4,8 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AddressController = void 0;
-const CRUDController_1 = require("./base/CRUDController");
 const address_1 = __importDefault(require("../../models/address"));
+const CRUDController_1 = require("../base/CRUDController");
 const { ObjectId } = require('mongoose').Types;
 // interface CreateItemRequest extends Request {
 //   body: IAddress;

@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import { Types } from 'mongoose';
 import CategoryModel from '../../models/category';
 import { ICategory } from '../../models/interfaces/category.interface';
-import { CRUDController } from './base/CRUDController';
+import { CRUDController } from '../base/CRUDController';
+// import { CRUDController } from './base/CRUDController';
 // const { ObjectId } = require('mongoose').Types;
 
 // interface CreateItemRequest extends Request {

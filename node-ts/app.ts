@@ -5,6 +5,7 @@ import cors from 'cors';
 import { config } from 'dotenv';
 import Database from './src/DB/mongoDBConfig';
 import routerAPI from './src/router/api';
+import rootAPI from './src/router/api-admin';
 import { init } from './socket';
 
 config();
@@ -59,6 +60,7 @@ class App {
   }
 
   private initializeRoutes(): void {
+    this.app.use("/api/root/v1", rootAPI);
     this.app.use("/api/v1", routerAPI);
     this.app.use("/", express.static(path.join(__dirname, "../../views/browser/")));
   }

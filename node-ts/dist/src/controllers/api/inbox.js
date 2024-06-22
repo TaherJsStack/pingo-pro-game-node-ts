@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InboxController = void 0;
 const inbox_1 = __importDefault(require("../../models/inbox"));
-const CRUDController_1 = require("./base/CRUDController");
+const CRUDController_1 = require("../base/CRUDController");
 const { ObjectId } = require('mongoose').Types;
 class InboxController extends CRUDController_1.CRUDController {
     constructor() {

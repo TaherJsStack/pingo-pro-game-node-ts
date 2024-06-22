@@ -4,9 +4,10 @@ import Password from '../../models/password';
 import { generateBcryptHash, compareBcryptHash, generateToken } from '../../util/jwtUtil';
 import { IAuth } from '../../models/interfaces/auth.interface';
 import { IPassword } from '../../models/interfaces/password.interface';
-import { SendResponse } from './base/sendResponse';
+// import { SendResponse } from './base/sendResponse';
 import { AddressController } from './address';
 import { InboxController } from './inbox';
+import { SendResponse } from '../base/sendResponse';
 
 
 const createAddress: AddressController = new AddressController()
@@ -20,16 +21,16 @@ export class AuthController extends SendResponse{
             let user: (IAuth | any )= await Auth.findOne({ phone: req.params.phone })
             if (user && user['activeState']) {                
                 console.log('checkPhone user ---> ', user)
-                this.sendResponse(res, 201, [user]);
+                this.sendResponse(req, res, 201, [user]);
             } 
             else {
-                this.sendResponse(res, 201, []);
+                this.sendResponse(req,res, 201, []);
                 // throw new Error('this phone doesn\'t exist or this account has been blocked');
             }
           } catch (err: any) {
             console.log('catch checkPhone user ---> ', err)
 
-            this.sendErrorResponse(res, err);
+            this.sendErrorResponse(req, res, err);
           }
 
     };
@@ -64,9 +65,9 @@ export class AuthController extends SendResponse{
         let { password } = req.body;
         let confirmedPassword = await compareLoginPassword(req, id, password);
         if (!confirmedPassword) {
-            this.sendErrorResponse(res, 'password not matched');
+            this.sendErrorResponse(req, res, 'password not matched');
         } else {
-            this.sendResponse(res, 200, confirmedPassword);
+            this.sendResponse(req,res, 200, confirmedPassword);
         }
     };
     
@@ -77,16 +78,16 @@ export class AuthController extends SendResponse{
         let confirmedPassword = await compareLoginPassword(req, id, oldPassword);
         console.log('confirmedPassword --->', confirmedPassword)
         if (!confirmedPassword) {  
-            this.sendErrorResponse(res, 'password not matched');
+            this.sendErrorResponse(req, res, 'password not matched');
             return 
         }
 
         try {
             let bcryptHash = await generateBcryptHash(password, 10);
             let saved = await Password.updateOne({ userId: id }, { password: bcryptHash })
-            this.sendResponse(res, 200, saved);
+            this.sendResponse(req,res, 200, saved);
         } catch (error) {
-            this.sendErrorResponse(res, error);
+            this.sendErrorResponse(req, res, error);
         }
 
     };
@@ -142,9 +143,9 @@ export class AuthController extends SendResponse{
             if (!updatedItem) {
              res.status(404).json({ msg: 'Item not found' });
             }
-            this.sendResponse(res, 200, [updatedItem]);
+            this.sendResponse(req,res, 200, [updatedItem]);
           } catch (err: any) {
-            this.sendErrorResponse(res, err);
+            this.sendErrorResponse(req, res, err);
           }
     };
     

@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import ClientModel from '../../models/client';
-import { CRUDController } from './base/CRUDController';
+// import { CRUDController } from './base/CRUDController';
 import { IClient } from '../../models/interfaces/client.interface';
-
+import { CRUDController } from '../base/CRUDController';
 
 export class ClientController extends CRUDController<IClient> {
   constructor() {

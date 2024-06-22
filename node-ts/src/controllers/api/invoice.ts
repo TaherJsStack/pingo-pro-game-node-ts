@@ -5,7 +5,7 @@ import InvoiceService from '../../services/invoice.service';
 import CategoryModel from '../../models/category';
 import PricingModel from '../../models/pricing';
 import { IInvoice } from '../../models/interfaces/invoice.interface';
-import { SendResponse } from './base/sendResponse';
+import { SendResponse } from '../base/sendResponse';
 const { ObjectId } = require('mongoose').Types;
 
 interface CreateRequest extends Request {
@@ -398,7 +398,7 @@ export class InvoiceController extends SendResponse{
     } catch (err: any) {
       console.error(err.message);
       // res.status(500).send('Server Error');
-      this.sendErrorResponse(res, err);
+      this.sendErrorResponse(req, res, err);
     }
   };
   
@@ -504,7 +504,7 @@ export class InvoiceController extends SendResponse{
     try {
       const existingInvoice = await InvoiceModel.findById(req.params.id);
       if (!existingInvoice) {
-        return this.sendErrorResponse(res, 'Invoice not found');
+        return this.sendErrorResponse(req, res, 'Invoice not found');
         // return res.status(404).json({ msg: 'invoice not found' });
       }
       // console.log('2- existingInvoice ----->', existingInvoice);
@@ -534,11 +534,11 @@ export class InvoiceController extends SendResponse{
             // console.log('6- updatedInvoice ----->', updatedInvoice);
 
             updatedInvoice.calculateCategoriesTotal();
-            this.sendResponse(res, 200, updatedInvoice);
+            this.sendResponse(req,res, 200, updatedInvoice);
           } else {
             console.error('Failed to update invoice. Updated document is null.');
             // throw new Error('Failed to update invoice. Updated document is null.');
-            this.sendErrorResponse(res, 'Failed to update invoice. Updated document is null.');
+            this.sendErrorResponse(req, res, 'Failed to update invoice. Updated document is null.');
           }
         }
       }

@@ -7,9 +7,10 @@ exports.AuthController = void 0;
 const auth_1 = __importDefault(require("../../models/auth"));
 const password_1 = __importDefault(require("../../models/password"));
 const jwtUtil_1 = require("../../util/jwtUtil");
-const sendResponse_1 = require("./base/sendResponse");
+// import { SendResponse } from './base/sendResponse';
 const address_1 = require("./address");
 const inbox_1 = require("./inbox");
+const sendResponse_1 = require("../base/sendResponse");
 const createAddress = new address_1.AddressController();
 const inbox = new inbox_1.InboxController();
 class AuthController extends sendResponse_1.SendResponse {
@@ -21,16 +22,16 @@ class AuthController extends sendResponse_1.SendResponse {
                 let user = await auth_1.default.findOne({ phone: req.params.phone });
                 if (user && user['activeState']) {
                     console.log('checkPhone user ---> ', user);
-                    this.sendResponse(res, 201, [user]);
+                    this.sendResponse(req, res, 201, [user]);
                 }
                 else {
-                    this.sendResponse(res, 201, []);
+                    this.sendResponse(req, res, 201, []);
                     // throw new Error('this phone doesn\'t exist or this account has been blocked');
                 }
             }
             catch (err) {
                 console.log('catch checkPhone user ---> ', err);
-                this.sendErrorResponse(res, err);
+                this.sendErrorResponse(req, res, err);
             }
         };
         this.checkEmail = (req, res, next) => {
@@ -60,10 +61,10 @@ class AuthController extends sendResponse_1.SendResponse {
             let { password } = req.body;
             let confirmedPassword = await compareLoginPassword(req, id, password);
             if (!confirmedPassword) {
-                this.sendErrorResponse(res, 'password not matched');
+                this.sendErrorResponse(req, res, 'password not matched');
             }
             else {
-                this.sendResponse(res, 200, confirmedPassword);
+                this.sendResponse(req, res, 200, confirmedPassword);
             }
         };
         this.updatePassword = async (req, res, next) => {
@@ -72,16 +73,16 @@ class AuthController extends sendResponse_1.SendResponse {
             let confirmedPassword = await compareLoginPassword(req, id, oldPassword);
             console.log('confirmedPassword --->', confirmedPassword);
             if (!confirmedPassword) {
-                this.sendErrorResponse(res, 'password not matched');
+                this.sendErrorResponse(req, res, 'password not matched');
                 return;
             }
             try {
                 let bcryptHash = await (0, jwtUtil_1.generateBcryptHash)(password, 10);
                 let saved = await password_1.default.updateOne({ userId: id }, { password: bcryptHash });
-                this.sendResponse(res, 200, saved);
+                this.sendResponse(req, res, 200, saved);
             }
             catch (error) {
-                this.sendErrorResponse(res, error);
+                this.sendErrorResponse(req, res, error);
             }
         };
         this.saveAuth = async (req, res, next) => {
@@ -123,10 +124,10 @@ class AuthController extends sendResponse_1.SendResponse {
                 if (!updatedItem) {
                     res.status(404).json({ msg: 'Item not found' });
                 }
-                this.sendResponse(res, 200, [updatedItem]);
+                this.sendResponse(req, res, 200, [updatedItem]);
             }
             catch (err) {
-                this.sendErrorResponse(res, err);
+                this.sendErrorResponse(req, res, err);
             }
         };
         this.login = async (req, res, next) => {

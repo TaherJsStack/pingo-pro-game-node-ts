@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
 import PricingModel from '../../models/pricing';
-import { CRUDController } from './base/CRUDController';
+// import { CRUDController } from './base/CRUDController';
 import { IPricing } from '../../models/interfaces/pricing.interface';
+import { CRUDController } from '../base/CRUDController';
 
 
 export class PricingController extends CRUDController<IPricing> {

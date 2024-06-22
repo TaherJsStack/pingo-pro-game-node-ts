@@ -1,4 +1,5 @@
-import express from 'express';
+// import express from 'express';
+import express, { Request, Response, NextFunction, Application } from 'express';
 
 import authRouterAPI            from './api/auth';
 import employeesAPI             from './api/employees';
@@ -42,6 +43,8 @@ routerAPI.use("/inbox",                 inboxAPI);
 routerAPI.use("/complaints-suggestion", complaintsSuggestionAPI);
 routerAPI.use("/subscription",          subscriptionAPI);
 routerAPI.use("/plan",                  planAPI);
+
+
 
 // Export the router
 export default routerAPI;

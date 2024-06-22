@@ -25,9 +25,9 @@ export abstract class CRUDController<T extends Document> extends SendResponse
         newItem.$set('ownerId', new ObjectId(req.authData.id));
       }
       const savedItem = await newItem.save();
-      this.sendResponse(res, 201, [savedItem]);
+      this.sendResponse(req, res, 201, [savedItem]);
     } catch (err: any) {
-      this.sendErrorResponse(res, err);
+      this.sendErrorResponse(req, res, err);
     }
   };
 
@@ -50,11 +50,11 @@ export abstract class CRUDController<T extends Document> extends SendResponse
         success: true,
         errors: [],
         status: 200,
-        message: 'Categories updated successfully',
+        message: 'get all items successfully',
         data: items 
       });
     } catch (err: any) {
-      this.sendErrorResponse(res, err);
+      this.sendErrorResponse(req, res, err);
     }
   };
 
@@ -64,9 +64,9 @@ export abstract class CRUDController<T extends Document> extends SendResponse
       if (!item) {
         res.status(404).json({ msg: 'Item not found' });
       }
-      this.sendResponse(res, 200, item);
+      this.sendResponse(req, res, 200, item);
     } catch (err: any) {
-      this.sendErrorResponse(res, err);
+      this.sendErrorResponse(req, res, err);
     }
   };
 
@@ -77,9 +77,9 @@ export abstract class CRUDController<T extends Document> extends SendResponse
       if (!updatedItem) {
        res.status(404).json({ msg: 'Item not found' });
       }
-      this.sendResponse(res, 200, [updatedItem]);
+      this.sendResponse(req, res, 200, [updatedItem]);
     } catch (err: any) {
-      this.sendErrorResponse(res, err);
+      this.sendErrorResponse(req, res, err);
     }
   };
 
@@ -89,9 +89,9 @@ export abstract class CRUDController<T extends Document> extends SendResponse
       if (!deletedItem) {
        res.status(404).json({ msg: 'Item not found' });
       }
-      this.sendResponse(res, 200, [deletedItem]);
+      this.sendResponse(req, res, 200, [deletedItem]);
     } catch (err: any) {
-      this.sendErrorResponse(res, err);
+      this.sendErrorResponse(req, res, err);
     }
   };
 

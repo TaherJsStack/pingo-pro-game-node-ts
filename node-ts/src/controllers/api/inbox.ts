@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import InboxModel from '../../models/inbox';
-import { CRUDController } from './base/CRUDController';
+// import { CRUDController } from './base/CRUDController';
 import { IInbox } from '../../models/interfaces/inbox.interface';
+import { CRUDController } from '../base/CRUDController';
 const { ObjectId } = require('mongoose').Types;
 
 

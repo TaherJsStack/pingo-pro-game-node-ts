@@ -10,6 +10,7 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = require("dotenv");
 const mongoDBConfig_1 = __importDefault(require("./src/DB/mongoDBConfig"));
 const api_1 = __importDefault(require("./src/router/api"));
+const api_admin_1 = __importDefault(require("./src/router/api-admin"));
 const socket_1 = require("./socket");
 (0, dotenv_1.config)();
 class App {
@@ -47,6 +48,7 @@ class App {
         });
     }
     initializeRoutes() {
+        this.app.use("/api/root/v1", api_admin_1.default);
         this.app.use("/api/v1", api_1.default);
         this.app.use("/", express_1.default.static(path_1.default.join(__dirname, "../../views/browser/")));
     }

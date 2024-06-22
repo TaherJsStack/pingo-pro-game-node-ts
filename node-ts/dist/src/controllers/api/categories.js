@@ -6,7 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoryController = void 0;
 const mongoose_1 = require("mongoose");
 const category_1 = __importDefault(require("../../models/category"));
-const CRUDController_1 = require("./base/CRUDController");
+const CRUDController_1 = require("../base/CRUDController");
+// import { CRUDController } from './base/CRUDController';
 // const { ObjectId } = require('mongoose').Types;
 // interface CreateItemRequest extends Request {
 //   authData: {

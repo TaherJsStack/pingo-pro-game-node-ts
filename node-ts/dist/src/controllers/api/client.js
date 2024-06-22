@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClientController = void 0;
 const client_1 = __importDefault(require("../../models/client"));
-const CRUDController_1 = require("./base/CRUDController");
+const CRUDController_1 = require("../base/CRUDController");
 class ClientController extends CRUDController_1.CRUDController {
     constructor() {
         super(client_1.default);

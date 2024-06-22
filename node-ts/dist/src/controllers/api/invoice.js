@@ -9,7 +9,7 @@ const invoice_1 = __importDefault(require("../../models/invoice"));
 const invoice_service_1 = __importDefault(require("../../services/invoice.service"));
 const category_1 = __importDefault(require("../../models/category"));
 const pricing_1 = __importDefault(require("../../models/pricing"));
-const sendResponse_1 = require("./base/sendResponse");
+const sendResponse_1 = require("../base/sendResponse");
 const { ObjectId } = require('mongoose').Types;
 let subscription = null;
 (async () => {
@@ -331,7 +331,7 @@ class InvoiceController extends sendResponse_1.SendResponse {
             catch (err) {
                 console.error(err.message);
                 // res.status(500).send('Server Error');
-                this.sendErrorResponse(res, err);
+                this.sendErrorResponse(req, res, err);
             }
         };
         // Update - PUT request handler
@@ -421,7 +421,7 @@ class InvoiceController extends sendResponse_1.SendResponse {
             try {
                 const existingInvoice = await invoice_1.default.findById(req.params.id);
                 if (!existingInvoice) {
-                    return this.sendErrorResponse(res, 'Invoice not found');
+                    return this.sendErrorResponse(req, res, 'Invoice not found');
                     // return res.status(404).json({ msg: 'invoice not found' });
                 }
                 // console.log('2- existingInvoice ----->', existingInvoice);
@@ -442,12 +442,12 @@ class InvoiceController extends sendResponse_1.SendResponse {
                         if (updatedInvoice) {
                             // console.log('6- updatedInvoice ----->', updatedInvoice);
                             updatedInvoice.calculateCategoriesTotal();
-                            this.sendResponse(res, 200, updatedInvoice);
+                            this.sendResponse(req, res, 200, updatedInvoice);
                         }
                         else {
                             console.error('Failed to update invoice. Updated document is null.');
                             // throw new Error('Failed to update invoice. Updated document is null.');
-                            this.sendErrorResponse(res, 'Failed to update invoice. Updated document is null.');
+                            this.sendErrorResponse(req, res, 'Failed to update invoice. Updated document is null.');
                         }
                     }
                 }
