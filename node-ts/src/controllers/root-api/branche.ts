@@ -1,13 +1,13 @@
-
-import ComplaintsSuggestionModel from '../../models/complaints-suggestion';
-// import { CRUDController } from './base/CRUDController';
-import { IComplaintsSuggestion } from '../../models/interfaces/complaints-suggestion.interface';
-import { CRUDController } from '../base/CRUDController';
 import { Request, Response } from 'express';
+import BrancheModel from '../../models/branche';
+// import { CRUDController } from './base/CRUDController';
+import { IBranche } from '../../models/interfaces/branche.interface';
+import { CRUDController } from '../base/CRUDController';
 
-export class ComplaintsSuggestionController extends CRUDController<IComplaintsSuggestion> {
+
+export class BrancheController extends CRUDController<IBranche> {
   constructor() {
-    super(ComplaintsSuggestionModel);
+    super(BrancheModel);
   }
 
   override getAllItems = async (req: Request, res: Response): Promise<void> => {
@@ -23,14 +23,11 @@ export class ComplaintsSuggestionController extends CRUDController<IComplaintsSu
       }
       // console.log('filter -->', filter);
 
-      // const items = await this.model.find(filter).sort({ createdAt: -1, activeState: 1 });
       const items = await this.model.find().sort({ createdAt: -1, activeState: 1 });
       this.sendResponse(req, res, 200, items);
-     } catch (err: any) {
+    } catch (err: any) {
       this.sendErrorResponse(req, res, err);
     }
   };
-
-
   
 }

@@ -3,6 +3,11 @@ import express from 'express';
 import statisticsRouterAPI           from './api-admin/statistics';
 import authsRouterAPI                from './api-admin/auths';
 import complaintsSuggestionRouterAPI from './api-admin/complaints-suggestion';
+import brancheRouterAPI from './api-admin/branche';
+import categoriesRouterAPI from './api-admin/categories';
+import clientRouterAPI from './api-admin/client';
+import inboxRouterAPI from './api-admin/inbox';
+import auditRouterAPI from './api-admin/audit';
 
 
 // Import middleware if needed
@@ -17,6 +22,11 @@ const routerAPI = express();
 routerAPI.use("/statistics",            statisticsRouterAPI);
 routerAPI.use("/auths",                 authsRouterAPI);
 routerAPI.use("/complaints-suggestion", complaintsSuggestionRouterAPI);
+routerAPI.use("/branches",              brancheRouterAPI);
+routerAPI.use("/categories",            categoriesRouterAPI);
+routerAPI.use("/clients",               clientRouterAPI);
+routerAPI.use("/inbox",                 inboxRouterAPI);
+routerAPI.use("/audit",                 auditRouterAPI);
 
 // Export the router
 export default routerAPI;

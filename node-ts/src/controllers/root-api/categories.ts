@@ -1,15 +1,23 @@
-
-import ComplaintsSuggestionModel from '../../models/complaints-suggestion';
-// import { CRUDController } from './base/CRUDController';
-import { IComplaintsSuggestion } from '../../models/interfaces/complaints-suggestion.interface';
-import { CRUDController } from '../base/CRUDController';
 import { Request, Response } from 'express';
+import { Types } from 'mongoose';
+import CategoryModel from '../../models/category';
+import { ICategory } from '../../models/interfaces/category.interface';
+import { CRUDController } from '../base/CRUDController';
+// import { CRUDController } from './base/CRUDController';
+// const { ObjectId } = require('mongoose').Types;
 
-export class ComplaintsSuggestionController extends CRUDController<IComplaintsSuggestion> {
+// interface CreateItemRequest extends Request {
+//   authData: {
+//     id: string;
+//   };
+//   body: ICategory;
+// }
+
+export class CategoryController extends CRUDController<ICategory> {
   constructor() {
-    super(ComplaintsSuggestionModel);
+    super(CategoryModel);
   }
-
+ 
   override getAllItems = async (req: Request, res: Response): Promise<void> => {
     try {
       const filter = this.parseFilter(req.query.Filter);
@@ -23,14 +31,12 @@ export class ComplaintsSuggestionController extends CRUDController<IComplaintsSu
       }
       // console.log('filter -->', filter);
 
-      // const items = await this.model.find(filter).sort({ createdAt: -1, activeState: 1 });
       const items = await this.model.find().sort({ createdAt: -1, activeState: 1 });
       this.sendResponse(req, res, 200, items);
-     } catch (err: any) {
+    } catch (err: any) {
       this.sendErrorResponse(req, res, err);
     }
   };
-
-
+  
   
 }

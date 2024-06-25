@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import AuditModel from '../../models/audit';
 // import { CRUDController } from './base/CRUDController';
-import { IBranche } from '../../models/interfaces/branche.interface';
 import { CRUDController } from '../base/CRUDController';
 import { IAudit } from '../../models/interfaces/audit.interface';
 
