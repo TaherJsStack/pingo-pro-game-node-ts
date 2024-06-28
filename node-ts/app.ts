@@ -8,11 +8,16 @@ import routerAPI from './src/router/api';
 import rootAPI from './src/router/api-admin';
 import { init } from './socket';
 
+import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
+import swaggerOptions from './swagger';
+
 config();
 
 class App {
   public app: Application;
   private port: string | number;
+  private swaggerDocs = swaggerJsdoc(swaggerOptions);
 
   constructor() {
     this.app = express();
@@ -54,9 +59,11 @@ class App {
     this.app.set('views', 'views');
     this.app.use('/assets', express.static(path.join(__dirname, '../../assets')));
     this.app.use('**/public', express.static(path.join(__dirname, '../../public')));
-    this.app.get('/', function (req, res) {
-      res.send('Hello World!');
-    });
+    this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(this.swaggerDocs));
+
+    // this.app.get('/', function (req, res) {
+    //   res.send('Hello World!');
+    // });
   }
 
   private initializeRoutes(): void {

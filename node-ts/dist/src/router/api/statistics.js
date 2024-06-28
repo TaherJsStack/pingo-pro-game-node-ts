@@ -10,4 +10,7 @@ const statisticsController = new statistics_1.StatisticsController();
 router.get("/getGroupedInvoicesByClosedBy", (req, res) => {
     statisticsController.getGroupedInvoicesByClosedBy(req, res);
 });
+router.get("/member/:id", (req, res) => {
+    statisticsController.getGroupedInvoicesByClosedByMemberId(req, res);
+});
 exports.default = router;

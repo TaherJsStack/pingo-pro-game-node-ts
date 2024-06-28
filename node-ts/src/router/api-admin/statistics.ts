@@ -6,6 +6,7 @@ const router = express.Router();
 const controller = new StatisticsController();
 
 // Route to get a statistics
+router.get("/aggregate", controller.getAggregate);
 router.get("", controller.getCollectionStatistics);
 
 export default router;

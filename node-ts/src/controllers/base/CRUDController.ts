@@ -64,7 +64,7 @@ export abstract class CRUDController<T extends Document> extends SendResponse
       if (!item) {
         res.status(404).json({ msg: 'Item not found' });
       }
-      this.sendResponse(req, res, 200, item);
+      this.sendResponse(req, res, 200, [item]);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
     }

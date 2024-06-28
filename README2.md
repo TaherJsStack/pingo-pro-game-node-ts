@@ -75,3 +75,19 @@ call : 01203599998
 
 ssl_dhparam /etc/nginx/dhparam.pem;
 
+
+
+
+db.clients.deleteMany({
+  name: {
+    $regex: /^Ahmed Mohamed 10[0-9]{2,2}[3-9]$|^Ahmed Mohamed 1[1-9][0-9]{2}$|^Ahmed Mohamed [2-4][0-9]{3}$|^Ahmed Mohamed 5000$/
+  }
+})
+
+db.complaintssuggestions.deleteOne({ _id: ObjectId("666aa24d7c6937e0f5d3ba0f") });
+
+
+
+
+owner => barnches list[]
+employyee = barnch[]

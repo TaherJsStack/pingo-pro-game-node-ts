@@ -12,9 +12,13 @@ const mongoDBConfig_1 = __importDefault(require("./src/DB/mongoDBConfig"));
 const api_1 = __importDefault(require("./src/router/api"));
 const api_admin_1 = __importDefault(require("./src/router/api-admin"));
 const socket_1 = require("./socket");
+const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
+const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
+const swagger_1 = __importDefault(require("./swagger"));
 (0, dotenv_1.config)();
 class App {
     constructor() {
+        this.swaggerDocs = (0, swagger_jsdoc_1.default)(swagger_1.default);
         this.app = (0, express_1.default)();
         this.port = process.env.PORT || 4001;
         this.initializeMiddlewares();
@@ -43,9 +47,10 @@ class App {
         this.app.set('views', 'views');
         this.app.use('/assets', express_1.default.static(path_1.default.join(__dirname, '../../assets')));
         this.app.use('**/public', express_1.default.static(path_1.default.join(__dirname, '../../public')));
-        this.app.get('/', function (req, res) {
-            res.send('Hello World!');
-        });
+        this.app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(this.swaggerDocs));
+        // this.app.get('/', function (req, res) {
+        //   res.send('Hello World!');
+        // });
     }
     initializeRoutes() {
         this.app.use("/api/root/v1", api_admin_1.default);

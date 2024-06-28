@@ -14,7 +14,7 @@ export class AuditController {
     try {
       const newItem: IAudit = new AuditModel(data);
       await newItem.save();
-      console.log('Audit item created successfully:', newItem);
+      // console.log('Audit item created successfully:', newItem);
     } catch (error) {
       console.error('Error creating audit item:', error);
     }
