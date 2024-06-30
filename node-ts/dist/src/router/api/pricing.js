@@ -8,6 +8,7 @@ const express_validator_1 = require("express-validator");
 const pricing_1 = require("../../controllers/api/pricing");
 // import checkAuth from '../../middleware/check-auth';
 const sign_req_data_1 = __importDefault(require("../../middleware/sign-req-data"));
+const pricing_2 = __importDefault(require("../../models/pricing"));
 const router = express_1.default.Router();
 const pricingController = new pricing_1.PricingController();
 // Route: POST /items (Create item)
@@ -22,6 +23,11 @@ router.post('', sign_req_data_1.default, [
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
+    }
+    const { title } = req.body;
+    const isTitle = await pricing_2.default.findOne({ title });
+    if (isTitle) {
+        return res.status(400).json({ errors: [{ path: 'title', msg: 'title is already exists' }] });
     }
     // Call controller method to create item
     await pricingController.createItem(req, res);

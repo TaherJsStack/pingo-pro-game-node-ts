@@ -4,6 +4,7 @@ import {MenuController} from '../../controllers/api/menu';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
 import { IMenu } from '../../models/interfaces/menu.interface';
+import MenuModel from '../../models/menu';
 
 const router: Router = express.Router();
 const menuController: MenuController = new MenuController();
@@ -32,6 +33,13 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
     
+    const { name } = req.body;
+    const isName = await MenuModel.findOne({ name });
+
+    if (isName) {
+      return res.status(400).json({ errors: [{ path: 'name', msg: 'Name is already exists' }] });
+    }
+
     // Call controller method to create item
     await menuController.createItem(req as CreateItemRequest, res);
   }

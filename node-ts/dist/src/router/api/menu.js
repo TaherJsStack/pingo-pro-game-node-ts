@@ -8,6 +8,7 @@ const express_validator_1 = require("express-validator");
 const menu_1 = require("../../controllers/api/menu");
 // import checkAuth from '../../middleware/check-auth';
 const sign_req_data_1 = __importDefault(require("../../middleware/sign-req-data"));
+const menu_2 = __importDefault(require("../../models/menu"));
 const router = express_1.default.Router();
 const menuController = new menu_1.MenuController();
 // Route: POST /items (Create item)
@@ -21,6 +22,11 @@ router.post('', sign_req_data_1.default, [
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
+    }
+    const { name } = req.body;
+    const isName = await menu_2.default.findOne({ name });
+    if (isName) {
+        return res.status(400).json({ errors: [{ path: 'name', msg: 'Name is already exists' }] });
     }
     // Call controller method to create item
     await menuController.createItem(req, res);

@@ -44,6 +44,7 @@ class SessionController {
         this.getAllItems = async (req, res) => {
             // let filter = JSON.parse(req.query.Filter);
             let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
+            // console.log('sessions filter --->', filter);
             let { ownerId, brancheId } = filter;
             const pageSize = req.query.PageSize && +req.query.PageSize > 0 ? req.query.PageSize : 15;
             const pageNo = req.query.PageNo && +req.query.PageNo > 0 ? req.query.PageNo : 1;

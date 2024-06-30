@@ -7,6 +7,7 @@ const express_1 = __importDefault(require("express"));
 const express_validator_1 = require("express-validator");
 const categories_1 = require("../../controllers/api/categories");
 const sign_req_data_1 = __importDefault(require("../../middleware/sign-req-data"));
+const category_1 = __importDefault(require("../../models/category"));
 // import { ICategory } from '../../models/category';
 const router = express_1.default.Router();
 const categoryController = new categories_1.CategoryController();
@@ -22,6 +23,11 @@ router.post('', sign_req_data_1.default, [
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
+    }
+    const { category } = req.body;
+    const isCategory = await category_1.default.findOne({ category });
+    if (isCategory) {
+        return res.status(400).json({ errors: [{ path: 'category', msg: 'category is already exists' }] });
     }
     // Call controller method to create item
     await categoryController.createItem(req, res);
