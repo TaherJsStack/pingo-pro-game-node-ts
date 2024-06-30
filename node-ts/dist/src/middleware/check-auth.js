@@ -11,8 +11,8 @@ const authMiddleware = (req, res, next) => {
             const token = authorizationHeader.split(" ")[1];
             const decodedToken = jsonwebtoken_1.default.verify(token, 'secret_this_should_be_longer');
             req.authData = {
-                email: decodedToken.email,
                 id: decodedToken.userId,
+                email: decodedToken.email,
                 role: decodedToken.role,
                 permeation: decodedToken.permeation
             };

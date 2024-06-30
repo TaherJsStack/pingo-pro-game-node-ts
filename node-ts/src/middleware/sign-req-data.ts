@@ -3,10 +3,10 @@ import jwt from 'jsonwebtoken';
 
 interface CustomRequest extends Request {
     authData?: {
-      email: string;
-      id: string;
-      role: string;
-      permeation: string;
+        id:           string;
+        role:         string;
+        email:        string;
+        permeation:   string;
     };
   }
 

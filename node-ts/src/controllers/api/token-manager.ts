@@ -1,14 +1,13 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import BlacklistedToken from '../../models/black-listed-token';
+import dotenv from 'dotenv';
+dotenv.config();
 
-class TokenManager {
-  private secretKey: string;
-  private expiresIn: string | number;
+export class TokenManager {
+  private secretKey: string = process.env.SECRET!;
+  private expiresIn: string | number = '3d';
 
-  constructor(secretKey: string, expiresIn: string | number) {
-    this.secretKey = secretKey;
-    this.expiresIn = expiresIn;
-  }
+  constructor() {}
 
   // Generate a new token
   generateToken(payload: object): string {
@@ -71,32 +70,34 @@ class TokenManager {
   }
 }
 
+// ------------------------------------------------------------------------------
+// --------------------------------> Usage example <-----------------------------
+// ------------------------------------------------------------------------------
+
 // Usage example:
-const secretKey = 'your-secret-key';
-const expiresIn = '1h';
-const tokenManager = new TokenManager(secretKey, expiresIn);
+const tokenManager = new TokenManager();
 
-(async () => {
-  // Generate a token
-  const payload = { userId: 1 };
-  const token = tokenManager.generateToken(payload);
-  console.log('Generated Token:', token);
+// (async () => {
+//   // Generate a token
+//   const payload = { userId: 1 };
+//   const token = tokenManager.generateToken(payload);
+//   console.log('Generated Token:', token);
 
-  // Verify the token
-  const verifiedPayload = await tokenManager.verifyToken(token);
-  console.log('Verified Payload:', verifiedPayload);
+//   // Verify the token
+//   const verifiedPayload = await tokenManager.verifyToken(token);
+//   console.log('Verified Payload:', verifiedPayload);
 
-  // Refresh the token
-  const refreshedToken = await tokenManager.refreshToken(token);
-  console.log('Refreshed Token:', refreshedToken);
+//   // Refresh the token
+//   const refreshedToken = await tokenManager.refreshToken(token);
+//   console.log('Refreshed Token:', refreshedToken);
 
-  // Revoke the token
-  await tokenManager.revokeToken(token);
+//   // Revoke the token
+//   await tokenManager.revokeToken(token);
 
-  // Try verifying the revoked token
-  const revokedTokenPayload = await tokenManager.verifyToken(token);
-  console.log('Revoked Token Payload:', revokedTokenPayload); // Should be null
-})();
+//   // Try verifying the revoked token
+//   const revokedTokenPayload = await tokenManager.verifyToken(token);
+//   console.log('Revoked Token Payload:', revokedTokenPayload); // Should be null
+// })();
 
 
 

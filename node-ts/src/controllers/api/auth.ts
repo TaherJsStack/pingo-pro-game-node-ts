@@ -1,3 +1,4 @@
+import { TokenManager } from './token-manager';
 import { Request, Response, NextFunction } from 'express';
 import  Auth from '../../models/auth';
 import Password from '../../models/password';
@@ -10,8 +11,10 @@ import { InboxController } from './inbox';
 import { SendResponse } from '../base/sendResponse';
 
 
-const createAddress: AddressController = new AddressController()
-const inbox: InboxController = new InboxController()
+const createAddress: AddressController  = new AddressController();
+const inbox:         InboxController    = new InboxController();
+const tokenManager:  TokenManager       = new TokenManager();
+
 
 export class AuthController extends SendResponse{
     
@@ -108,14 +111,23 @@ export class AuthController extends SendResponse{
     
                 await createAddress.createItemAuthAddress( res, saved as IAuth)
 
-                let token = await generateToken(
-                    saved._id.toString(),
-                    saved.email,
-                    saved.lastName + ' ' + saved.firstName,
-                    saved.role,
-                    saved.permeation
-                );
-                inbox.sendWelcomMessage(saved._id.toString())
+                // let token = await generateToken(
+                //     saved._id.toString(),
+                //     saved.email,
+                //     saved.lastName + ' ' + saved.firstName,
+                //     saved.role,
+                //     saved.permeation
+                // );
+
+                let token = await tokenManager.generateToken({ 
+                    _id:        saved._id.toString(), 
+                    email:      saved.email,
+                    name:       saved.lastName + ' ' + saved.firstName,
+                    role:       saved.role, 
+                    permeation: saved.permeation
+                });
+
+                await inbox.sendWelcomMessage(saved._id.toString())
     
                 res.status(200).json({
                     success: true,
@@ -149,6 +161,12 @@ export class AuthController extends SendResponse{
           }
     };
     
+    refreshToken = async (req: Request, res: Response, next: NextFunction) => {
+        let { refreshToken } = req.body;
+        let token = await tokenManager.refreshToken(refreshToken);
+        this.sendResponse(req,res, 200, [token]);
+    }
+
     login = async (req: Request, res: Response, next: NextFunction) => {
         let fetchedData: IAuth;
         Auth.findOne({ email: req.body.email })
@@ -168,13 +186,20 @@ export class AuthController extends SendResponse{
                 if (!result) {
                     throw new Error('this password doesn\'t compare');
                 }
-                let token = await generateToken(
-                    fetchedData._id.toString(),
-                    fetchedData.email,
-                    fetchedData.firstName + ' ' + fetchedData.lastName,
-                    fetchedData.role,
-                    fetchedData.permeation
-                );
+                // let token = await generateToken(
+                //     fetchedData._id.toString(),
+                //     fetchedData.email,
+                //     fetchedData.firstName + ' ' + fetchedData.lastName,
+                //     fetchedData.role,
+                //     fetchedData.permeation
+                // );
+                let token = await tokenManager.generateToken({ 
+                    _id:        fetchedData._id.toString(), 
+                    email:      fetchedData.email,
+                    name:       fetchedData.lastName + ' ' + fetchedData.firstName,
+                    role:       fetchedData.role, 
+                    permeation: fetchedData.permeation
+                });
 
                 res.status(200).json({
                     status: 200,
@@ -279,6 +304,7 @@ async function compareLoginPassword(req: Request, userId: string, userPassword: 
             if (!savedUserPassword) {
                 throw new Error('no password to compare');
             }
+            // let confirmedPassword = await tokenManager.verifyToken(token);
             return await compareBcryptHash(userPassword, savedUserPassword.password);
         
     } catch (error) {

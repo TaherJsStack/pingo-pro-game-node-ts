@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
+const token_manager_1 = require("./token-manager");
 const auth_1 = __importDefault(require("../../models/auth"));
 const password_1 = __importDefault(require("../../models/password"));
 const jwtUtil_1 = require("../../util/jwtUtil");
@@ -13,6 +14,7 @@ const inbox_1 = require("./inbox");
 const sendResponse_1 = require("../base/sendResponse");
 const createAddress = new address_1.AddressController();
 const inbox = new inbox_1.InboxController();
+const tokenManager = new token_manager_1.TokenManager();
 class AuthController extends sendResponse_1.SendResponse {
     constructor() {
         super(...arguments);
@@ -97,8 +99,21 @@ class AuthController extends sendResponse_1.SendResponse {
                     throw new Error('new user not added !!!');
                 }
                 await createAddress.createItemAuthAddress(res, saved);
-                let token = await (0, jwtUtil_1.generateToken)(saved._id.toString(), saved.email, saved.lastName + ' ' + saved.firstName, saved.role, saved.permeation);
-                inbox.sendWelcomMessage(saved._id.toString());
+                // let token = await generateToken(
+                //     saved._id.toString(),
+                //     saved.email,
+                //     saved.lastName + ' ' + saved.firstName,
+                //     saved.role,
+                //     saved.permeation
+                // );
+                let token = await tokenManager.generateToken({
+                    _id: saved._id.toString(),
+                    email: saved.email,
+                    name: saved.lastName + ' ' + saved.firstName,
+                    role: saved.role,
+                    permeation: saved.permeation
+                });
+                await inbox.sendWelcomMessage(saved._id.toString());
                 res.status(200).json({
                     success: true,
                     errors: [],
@@ -130,6 +145,11 @@ class AuthController extends sendResponse_1.SendResponse {
                 this.sendErrorResponse(req, res, err);
             }
         };
+        this.refreshToken = async (req, res, next) => {
+            let { refreshToken } = req.body;
+            let token = await tokenManager.refreshToken(refreshToken);
+            this.sendResponse(req, res, 200, [token]);
+        };
         this.login = async (req, res, next) => {
             let fetchedData;
             auth_1.default.findOne({ email: req.body.email })
@@ -148,7 +168,20 @@ class AuthController extends sendResponse_1.SendResponse {
                 if (!result) {
                     throw new Error('this password doesn\'t compare');
                 }
-                let token = await (0, jwtUtil_1.generateToken)(fetchedData._id.toString(), fetchedData.email, fetchedData.firstName + ' ' + fetchedData.lastName, fetchedData.role, fetchedData.permeation);
+                // let token = await generateToken(
+                //     fetchedData._id.toString(),
+                //     fetchedData.email,
+                //     fetchedData.firstName + ' ' + fetchedData.lastName,
+                //     fetchedData.role,
+                //     fetchedData.permeation
+                // );
+                let token = await tokenManager.generateToken({
+                    _id: fetchedData._id.toString(),
+                    email: fetchedData.email,
+                    name: fetchedData.lastName + ' ' + fetchedData.firstName,
+                    role: fetchedData.role,
+                    permeation: fetchedData.permeation
+                });
                 res.status(200).json({
                     status: 200,
                     message: token,
@@ -242,6 +275,7 @@ async function compareLoginPassword(req, userId, userPassword) {
         if (!savedUserPassword) {
             throw new Error('no password to compare');
         }
+        // let confirmedPassword = await tokenManager.verifyToken(token);
         return await (0, jwtUtil_1.compareBcryptHash)(userPassword, savedUserPassword.password);
     }
     catch (error) {
