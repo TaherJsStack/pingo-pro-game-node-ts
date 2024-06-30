@@ -25,7 +25,8 @@ export abstract class CRUDController<T extends Document> extends SendResponse
         newItem.$set('ownerId', new ObjectId(req.authData.id));
       }
       const savedItem = await newItem.save();
-      this.sendResponse(req, res, 201, [savedItem]);
+      const totalData = await this.model.find().countDocuments();
+      this.sendResponse(req, res, 201, [savedItem], totalData);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
     }
@@ -33,8 +34,14 @@ export abstract class CRUDController<T extends Document> extends SendResponse
 
   public getAllItems = async (req: Request, res: Response): Promise<void> => {
     try {
+ 
       const filter = this.parseFilter(req.query.Filter);
-      // console.log('Clients getAllItems filter -->', filter);
+
+      const page     = filter['pageNo']   || 1;
+      const pageSize = filter['pageSize'] || 10;
+      const skip     = (page - 1 ) * pageSize;
+
+      // console.log(' getAllItems filter -->', filter);
       // console.log('filter -->', this.model);
       for (const property in filter) {
         // console.log(`${property}: ${filter[property]}`);
@@ -42,17 +49,20 @@ export abstract class CRUDController<T extends Document> extends SendResponse
           delete filter[property];
         }
       }
-      // console.log('filter -->', filter);
+      // console.log('filter -->', this.model.schema.obj, filter);
 
-      const items = await this.model.find(filter).sort({ createdAt: -1, activeState: 1 });
-      // this.sendResponse(res, 200, items);
-      res.status(200).json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: 'get all items successfully',
-        data: items 
-      });
+    // Extract pagination parameters from query
+ 
+      // console.log(' page -->', page, ' pageSize -->',pageSize, ' skip -->',skip);
+
+      const totalData = await this.model.find(filter).countDocuments();
+
+      const items = await this.model.find(filter)
+                                    .sort({ createdAt: -1, activeState: 1 })
+                                    .skip(skip)
+                                    .limit(pageSize);
+
+      this.sendResponse(req, res, 200, items, totalData);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
     }
@@ -89,7 +99,8 @@ export abstract class CRUDController<T extends Document> extends SendResponse
       if (!deletedItem) {
        res.status(404).json({ msg: 'Item not found' });
       }
-      this.sendResponse(req, res, 200, [deletedItem]);
+      const totalData = await this.model.find().countDocuments();
+      this.sendResponse(req, res, 200, [deletedItem], totalData);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
     }

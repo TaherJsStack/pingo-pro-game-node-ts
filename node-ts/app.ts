@@ -59,7 +59,7 @@ class App {
     this.app.set('views', 'views');
     this.app.use('/assets', express.static(path.join(__dirname, '../../assets')));
     this.app.use('**/public', express.static(path.join(__dirname, '../../public')));
-    this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(this.swaggerDocs));
+    this.app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(this.swaggerDocs));
 
     // this.app.get('/', function (req, res) {
     //   res.send('Hello World!');

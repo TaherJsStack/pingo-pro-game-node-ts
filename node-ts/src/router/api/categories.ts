@@ -3,6 +3,7 @@ import { check, validationResult } from 'express-validator';
 import {CategoryController} from '../../controllers/api/categories';
 import signReqData from '../../middleware/sign-req-data';
 import { ICategory } from '../../models/interfaces/category.interface';
+import CategoryModel from '../../models/category';
 // import { ICategory } from '../../models/category';
 
 const router: Router = express.Router();
@@ -31,6 +32,13 @@ router.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { category } = req.body;
+    const isCategory = await CategoryModel.findOne({ category });
+
+    if (isCategory) {
+      return res.status(400).json({ errors: [{ path: 'category', msg: 'category is already exists' }] });
     }
     
     // Call controller method to create item

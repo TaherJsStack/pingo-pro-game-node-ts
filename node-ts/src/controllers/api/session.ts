@@ -53,7 +53,7 @@ export class SessionController{
   getAllItems = async (req: Request, res: Response) => {
     // let filter = JSON.parse(req.query.Filter);
     let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
-  
+  // console.log('sessions filter --->', filter);
     let { ownerId, brancheId } = filter;
   
     const pageSize = req.query.PageSize && +req.query.PageSize > 0 ? req.query.PageSize : 15;

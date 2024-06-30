@@ -6,7 +6,7 @@ import { IAudit } from '../../models/interfaces/audit.interface';
 const auditController: AuditController = new AuditController();
 
 export abstract class SendResponse{
-    public sendResponse(req: Request, res: Response, statusCode: number, data: any) {
+    public sendResponse(req: Request, res: Response, statusCode: number, data: any, totalData?: number) {
 
         const auditData: Partial<IAudit> = {
 
@@ -37,6 +37,7 @@ export abstract class SendResponse{
           status: statusCode,
           message: '',
           data: data,
+          totalData
         });
     }
 

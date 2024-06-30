@@ -1,9 +1,14 @@
+import { IAuth } from './../../models/interfaces/auth.interface';
 import { Request, Response, NextFunction } from 'express';
 import Auth from '../../models/auth';
 import Password from '../../models/password';
 import { generateBcryptHash } from '../../util/jwtUtil';
+import { CRUDController } from '../base/CRUDController';
 
-export class EmployeesController{
+export class EmployeesController extends CRUDController<IAuth>{
+    constructor() {
+        super(Auth);
+      }
     
     checkEmail = (req: Request, res: Response, next: NextFunction): void => {
         Auth.findOne({ email: req.params.email })
@@ -109,42 +114,47 @@ export class EmployeesController{
         }
     }
     
-    getAllItems = async (req: Request, res: Response): Promise<void> => {
+    // getAllItems = async (req: Request, res: Response): Promise<void> => {
         
-        let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
+    //     let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
     
-        let {ownerId, brancheId} = filter;
+    //     let {ownerId, brancheId} = filter;
+
+    //     console.log('filter---> ', filter);
     
-        const pageSize = req.query.PageSize && +req.query.PageSize > 0 ? req.query.PageSize : 15;
-        const pageNo   = req.query.PageNo && +req.query.PageNo > 0 ? req.query.PageNo : 1 ;
+    //     const pageSize = req.query.PageSize && +req.query.PageSize > 0 ? req.query.PageSize : 15;
+    //     const pageNo   = req.query.PageNo && +req.query.PageNo > 0 ? req.query.PageNo : 1 ;
     
-        try {
-            // console.log('filter', filter);
-            // console.log('brancheId', brancheId);
+    //     try {
+    //         // console.log('filter', filter);
+    //         // console.log('brancheId', brancheId);
     
-            // Fetch all items from database
-        //   const items = await Auth.find({ brancheId, authType: "employee"}).sort({ createdAt: -1, activeState: 1 });
-            const items = brancheId ? await Auth.find({ brancheId}).sort({ createdAt: -1, activeState: 1 }) : [];
-            res.status(201)
-            .json({
-                success: true,
-                errors: [],
-                status: 200,
-                message:  '',
-                data: items
-            });
-        } catch (err: any) {
-            console.error(err.message);
-            res.status(500)
-            .json({
-                success: false,
-                errors: [err.message],
-                status: 500,
-                message:  '',
-                data: []
-            });
-        }
-    };
+    //         // Fetch all items from database
+    //     //   const items = await Auth.find({ brancheId, authType: "employee"}).sort({ createdAt: -1, activeState: 1 });
+    //         const items = brancheId ? await Auth.find({ brancheId}).sort({ createdAt: -1, activeState: 1 }) : [];
+    //         const totalData = await Auth.find({ brancheId}).countDocuments();
+
+    //         res.status(201)
+    //         .json({
+    //             success: true,
+    //             errors: [],
+    //             status: 200,
+    //             message:  '',
+    //             data: items,
+    //             totalData
+    //         });
+    //     } catch (err: any) {
+    //         console.error(err.message);
+    //         res.status(500)
+    //         .json({
+    //             success: false,
+    //             errors: [err.message],
+    //             status: 500,
+    //             message:  '',
+    //             data: []
+    //         });
+    //     }
+    // };
     
     getById = (req: Request, res: Response, next: NextFunction): void => {
         Auth.findOne({ _id: req.params.authId })

@@ -4,6 +4,7 @@ import {PricingController} from '../../controllers/api/pricing';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
 import { IPricing } from '../../models/interfaces/pricing.interface';
+import Pricing from '../../models/pricing';
 
 const router: Router = express.Router();
 const pricingController: PricingController = new PricingController()
@@ -31,6 +32,13 @@ router.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { title } = req.body;
+    const isTitle = await Pricing.findOne({ title });
+
+    if (isTitle) {
+      return res.status(400).json({ errors: [{ path: 'title', msg: 'title is already exists' }] });
     }
     
     // Call controller method to create item
