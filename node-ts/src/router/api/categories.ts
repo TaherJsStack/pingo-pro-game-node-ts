@@ -34,8 +34,8 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { category } = req.body;
-    const isCategory = await CategoryModel.findOne({ category });
+    const { category, brancheId } = req.body;
+    const isCategory = await CategoryModel.findOne({ category, brancheId });
 
     if (isCategory) {
       return res.status(400).json({ errors: [{ path: 'category', msg: 'category is already exists' }] });

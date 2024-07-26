@@ -34,8 +34,8 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { title } = req.body;
-    const isTitle = await Pricing.findOne({ title });
+    const { title, brancheId } = req.body;
+    const isTitle = await Pricing.findOne({ title , brancheId});
 
     if (isTitle) {
       return res.status(400).json({ errors: [{ path: 'title', msg: 'title is already exists' }] });

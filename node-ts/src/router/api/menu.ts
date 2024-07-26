@@ -33,8 +33,8 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
     
-    const { name } = req.body;
-    const isName = await MenuModel.findOne({ name });
+    const { name, brancheId } = req.body;
+    const isName = await MenuModel.findOne({ name, brancheId });
 
     if (isName) {
       return res.status(400).json({ errors: [{ path: 'name', msg: 'Name is already exists' }] });
