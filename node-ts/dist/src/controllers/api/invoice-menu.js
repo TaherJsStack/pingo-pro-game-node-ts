@@ -124,27 +124,30 @@ class InvoiceMenuController extends CRUDController_1.CRUDController {
         //   }
         // };
         // Update - PUT request handler
-        this.updateItem = async (req, res) => {
-            try {
-                // Update item by ID in database
-                const updatedItem = await invoice_menu_1.default.findByIdAndUpdate(req.params.id, req.body, { new: true });
-                if (!updatedItem) {
-                    res.status(404).json({ msg: 'Item not found' });
-                }
-                res.status(201)
-                    .json({
-                    success: true,
-                    errors: [],
-                    status: 200,
-                    message: '',
-                    data: [updatedItem]
-                });
-            }
-            catch (err) {
-                console.error(err.message);
-                res.status(500).send('Server Error');
-            }
-        };
+        // updateItem = async (req: Request, res: Response): Promise<void> => {
+        //   try {
+        //     // Update item by ID in database
+        //     const updatedItem = await InvoiceMenuModel.findByIdAndUpdate(
+        //       req.params.id,
+        //       req.body,
+        //       { new: true }
+        //     );
+        //     if (!updatedItem) {
+        //       res.status(404).json({ msg: 'Item not found' });
+        //     }
+        //     res.status(201)
+        //     .json({
+        //       success: true,
+        //       errors: [],
+        //       status: 200,
+        //       message:  '',
+        //       data: [updatedItem]
+        //   });
+        //   } catch (err: any) {
+        //     console.error(err.message);
+        //     res.status(500).send('Server Error');
+        //   }
+        // };
         // Update - PUT request handler
         this.updateMenuItemsLockOrders = async (req, res) => {
             try {
