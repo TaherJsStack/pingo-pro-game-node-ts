@@ -2,10 +2,10 @@ import express, { Request, Response, NextFunction, Application } from 'express';
 import bodyParser from 'body-parser';
 import path from 'path';
 import cors from 'cors';
-import { config } from 'dotenv';
 import Database from './src/DB/mongoDBConfig';
 import routerAPI from './src/router/api';
 import rootAPI from './src/router/api-admin';
+import { config } from 'dotenv';
 import { init } from './socket';
 
 import swaggerJsdoc from 'swagger-jsdoc';

@@ -35,25 +35,46 @@ export abstract class CRUDController<T extends Document> extends SendResponse
   public getAllItems = async (req: Request, res: Response): Promise<void> => {
     try {
  
-      const filter = this.parseFilter(req.query.Filter);
+      const filter    = this.parseFilter(req.query.Filter);
+      const startDate = this.parseFilter(req.query.Filter).startDate ? new Date(this.parseFilter(req.query.Filter as string).startDate) : null;
+      const endDate   = this.parseFilter(req.query.Filter).endDate   ? new Date(this.parseFilter(req.query.Filter as string).endDate)   : null;
+      
+      const searchKeyword = filter['searchKeyword'] ? filter['searchKeyword'] : '';
 
       const page     = filter['pageNo']   || 1;
       const pageSize = filter['pageSize'] || 10;
       const skip     = (page - 1 ) * pageSize;
 
-      // console.log(' getAllItems filter -->', filter);
-      // console.log('filter -->', this.model);
       for (const property in filter) {
-        // console.log(`${property}: ${filter[property]}`);
         if (!(property in this.model.schema.obj)) {
           delete filter[property];
         }
       }
-      // console.log('filter -->', this.model.schema.obj, filter);
 
-    // Extract pagination parameters from query
- 
-      // console.log(' page -->', page, ' pageSize -->',pageSize, ' skip -->',skip);
+      // Add date range filter
+      if (startDate || endDate) {
+        filter['createdAt'] = {};
+        if (startDate) {
+          filter['createdAt']["$lte"] = new Date(startDate);
+        }
+        if (endDate) {
+          filter['createdAt']["$gte"] = new Date(endDate);
+        }
+      }
+      
+      if (typeof filter['activeState'] === undefined || filter['activeState'] === null || filter['activeState'] === '') {
+        delete filter['activeState'];
+      }else if (filter['activeState'] !== undefined && typeof filter['activeState'] === 'string') {
+        filter['activeState'] = filter['activeState'] === 'true' ? true : false;
+      }
+
+      // search keyword
+      if (typeof searchKeyword !== 'undefined' && searchKeyword !== null && searchKeyword !== '') {
+        filter['$text'] = { $search: searchKeyword };
+      }
+
+      // console.log('searchKeyword -->', searchKeyword);
+      // console.log('filter -->', filter);
 
       const totalData = await this.model.find(filter).countDocuments();
 
@@ -105,27 +126,6 @@ export abstract class CRUDController<T extends Document> extends SendResponse
       this.sendErrorResponse(req, res, err);
     }
   };
-
-  // protected sendResponse(res: Response, statusCode: number, data: any) {
-  //   res.status(statusCode).json({
-  //     success: true,
-  //     errors: [],
-  //     status: statusCode,
-  //     message: '',
-  //     data: data,
-  //   });
-  // }
-
-  // protected sendErrorResponse(res: Response, err: any) {
-  //   console.error('Error:', err.message);
-  //   res.status(500).json({
-  //     success: false,
-  //     errors: [err.message],
-  //     status: 500,
-  //     message: '',
-  //     data: {},
-  //   });
-  // }
 
   protected parseFilter(filter: any) {
     try {
