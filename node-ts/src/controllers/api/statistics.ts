@@ -21,7 +21,7 @@ export class StatisticsController{
     let { ownerId, brancheId, filter } = filterObg;
     let { startDate, endDate, activeState } = filter;
   
-    console.log('getGroupedInvoicesByClosedBy filter', filterObg);
+    // console.log('getGroupedInvoicesByClosedBy filter', filterObg);
   
     try {
       const invoices = await Invoice.aggregate([
@@ -129,7 +129,7 @@ export class StatisticsController{
     let { ownerId, brancheId, filter, startDate, endDate, activeState } = filterObg;
     // let {  } = filter;
   
-    console.log('getGroupedInvoicesByClosedBy filter', filterObg);
+    // console.log('getGroupedInvoicesByClosedBy filter', filterObg);
   
     try {
   
@@ -225,7 +225,7 @@ export class StatisticsController{
         },
       ]);
       
-      console.log(invoices);
+      // console.log(invoices);
       
   
       // const invoices = await Invoice.aggregate([

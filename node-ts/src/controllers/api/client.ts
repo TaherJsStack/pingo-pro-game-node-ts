@@ -42,7 +42,7 @@ export class ClientController extends CRUDController<IClient> {
         });
       } 
     } catch (err: any) {
-      console.log('catch checkPhone error ---> ', err);
+      // console.log('catch checkPhone error ---> ', err);
       // this.sendErrorResponse(res, err);
       res.status(500).json({
         success: true,

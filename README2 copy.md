@@ -84,3 +84,5 @@ server {
     }
 
 }
+
+npm run dev

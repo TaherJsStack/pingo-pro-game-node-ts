@@ -8,12 +8,79 @@ import { IInvoice } from '../../models/interfaces/invoice.interface';
 const router: Router = express.Router();
 const invoiceController:InvoiceController = new InvoiceController();
 
+interface CreateItemRequest extends Request {
+  authData: {
+    id: string;
+  };
+  body: IInvoice;
+}
+
 interface CreateRequest extends Request {
   authData: {
     id: string;
   };
   body: IInvoice;
 }
+
+
+router.post( '', signReqData,
+  [
+    // Validation rules using express-validator
+    check('brancheId').notEmpty().withMessage('brancheId is required'),
+    // check('categoryId').notEmpty().withMessage('category is required'),
+    // check('clientId').notEmpty().withMessage('client Id is required'),
+  ],
+  async (req: Request, res: Response) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    // Call controller method to create item
+    await invoiceController.createNewInvoice(req as CreateItemRequest, res);
+  
+})
+
+// Route: PUT /items/:id (Update item)
+router.put(
+  '/updateBill/:id',
+  signReqData,
+  [
+    // Validation rules using express-validator
+    check('branche').optional().notEmpty().withMessage('branche is required'),
+  ],
+  async (req: Request, res: Response) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Call controller method to update item
+    await invoiceController.updateBill(req as CreateRequest, res);
+  }
+);
+
+// Route: PUT /items/:id (Update item)
+router.put(
+  '/endCategoryBookStateInInvoice/:id',
+  signReqData,
+  [
+    // Validation rules using express-validator
+    check('branche').optional().notEmpty().withMessage('branche is required'),
+  ],
+  async (req: Request, res: Response) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Call controller method to update item
+    await invoiceController.endDeviceBookStateInInvoice(req as CreateRequest, res);
+  }
+);
 
 // Route: PUT /items/:id (Update item)
 router.put(
@@ -85,14 +152,6 @@ router.put(
   }
 );
 
-// Route: PUT /items/:id (Update item)
-router.put(
-  '/updateEndTimeToSessionsList/:id',
-  async (req: Request, res: Response) => {
-    // Call controller method to update item
-    await invoiceController.updateEndTimeToSessionsList2(req, res);
-  }
-);
 
 // Other routes for GET (Read) and DELETE operations...
 router.get("",  invoiceController.getAllItems);

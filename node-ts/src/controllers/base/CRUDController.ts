@@ -35,6 +35,8 @@ export abstract class CRUDController<T extends Document> extends SendResponse
   public getAllItems = async (req: Request, res: Response): Promise<void> => {
     try {
  
+      // console.clear();
+      // console.log('CRUDController getAllItems filter -->', req.query.Filter);
       const filter    = this.parseFilter(req.query.Filter);
       const startDate = this.parseFilter(req.query.Filter).startDate ? new Date(this.parseFilter(req.query.Filter as string).startDate) : null;
       const endDate   = this.parseFilter(req.query.Filter).endDate   ? new Date(this.parseFilter(req.query.Filter as string).endDate)   : null;
@@ -74,7 +76,7 @@ export abstract class CRUDController<T extends Document> extends SendResponse
       }
 
       // console.log('searchKeyword -->', searchKeyword);
-      // console.log('filter -->', filter);
+      // console.log('CRUDController getAllItems filter -->', filter);
 
       const totalData = await this.model.find(filter).countDocuments();
 

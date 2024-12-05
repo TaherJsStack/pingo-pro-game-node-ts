@@ -56,7 +56,7 @@ export class TokenManager {
           expiresAt: expirationDate,
         });
         await blacklistedToken.save();
-        console.log('Token revoked:', token);
+        // console.log('Token revoked:', token);
       }
     } catch (error) {
       console.error('Token revocation failed:', error);

@@ -14,9 +14,9 @@ export interface IInvoice extends Document {
     createdBy: mongoose.Types.ObjectId;
     closedBy?: mongoose.Types.ObjectId;
     brancheId: mongoose.Types.ObjectId;
-    categoryId: mongoose.Types.ObjectId;
     clientId: mongoose.Types.ObjectId;
-    sessionId: mongoose.Types.ObjectId;
+    name: string;
+    phone: string;
     activeState: boolean;
     createdAt: Date;
     description: string;

@@ -25,11 +25,11 @@ export class SessionController{
   
       // Save item to database
       const savedItem = await newItem.save();
-      InvoiceService.setData({
-        message: 'Hello from Controller 1',
-        setDataTyep: 'create',
-        savedItem,
-      });
+      // InvoiceService.setData({
+      //   message: 'Invoice Service setData from create Item',
+      //   setDataTyep: 'create',
+      //   savedItem,
+      // });
   
       res.status(201).json({
         success: true,
@@ -39,7 +39,7 @@ export class SessionController{
         data: [savedItem],
       });
     } catch (err: any) {
-      console.error('err.message -->', err.message);
+      console.error('SessionController createItem err.message -->', err.message);
       res.status(500).json({
         success: false,
         errors: [err.message],
@@ -139,7 +139,7 @@ export class SessionController{
         return res.status(404).json({ msg: 'Item not found' });
       }
       InvoiceService.setData({
-        message: 'Hello from Controller 1',
+        message: 'Invoice Service setData from update Item',
         setDataTyep: 'update',
         updatedItem,
       });
@@ -185,7 +185,7 @@ export class SessionController{
       }
   
       InvoiceService.setData({
-        message: 'Hello from Controller 1',
+        message: 'Invoice Service setData from delete Session Item',
         setDataTyep: 'end',
         deletedItem,
         endIn: req.params.endIn,
@@ -214,7 +214,7 @@ export class SessionController{
       let deletedList = await SessionClientModel.deleteMany({ _id: { $in: idsToDelete } });
   
       // InvoiceService.setData({
-      //   message: 'Hello from Controller 1',
+      //   message: 'Invoice Service setData from delete All Releted To Bill',
       //   setDataTyep: 'endList',
       //   idsToDelete,
       //   endIn: req.params.endIn,

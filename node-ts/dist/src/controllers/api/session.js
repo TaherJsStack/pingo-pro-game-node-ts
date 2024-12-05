@@ -17,11 +17,11 @@ class SessionController {
                 newItem.createdBy = new ObjectId(req.authData.id);
                 // Save item to database
                 const savedItem = await newItem.save();
-                invoice_service_1.default.setData({
-                    message: 'Hello from Controller 1',
-                    setDataTyep: 'create',
-                    savedItem,
-                });
+                // InvoiceService.setData({
+                //   message: 'Invoice Service setData from create Item',
+                //   setDataTyep: 'create',
+                //   savedItem,
+                // });
                 res.status(201).json({
                     success: true,
                     errors: [],
@@ -31,7 +31,7 @@ class SessionController {
                 });
             }
             catch (err) {
-                console.error('err.message -->', err.message);
+                console.error('SessionController createItem err.message -->', err.message);
                 res.status(500).json({
                     success: false,
                     errors: [err.message],
@@ -124,7 +124,7 @@ class SessionController {
                     return res.status(404).json({ msg: 'Item not found' });
                 }
                 invoice_service_1.default.setData({
-                    message: 'Hello from Controller 1',
+                    message: 'Invoice Service setData from update Item',
                     setDataTyep: 'update',
                     updatedItem,
                 });
@@ -169,7 +169,7 @@ class SessionController {
                     return res.status(404).json({ msg: 'Item not found' });
                 }
                 invoice_service_1.default.setData({
-                    message: 'Hello from Controller 1',
+                    message: 'Invoice Service setData from delete Session Item',
                     setDataTyep: 'end',
                     deletedItem,
                     endIn: req.params.endIn,
@@ -194,7 +194,7 @@ class SessionController {
                 let idsToDelete = ids.map((id) => new mongoose_1.Types.ObjectId(id));
                 let deletedList = await session_1.default.deleteMany({ _id: { $in: idsToDelete } });
                 // InvoiceService.setData({
-                //   message: 'Hello from Controller 1',
+                //   message: 'Invoice Service setData from delete All Releted To Bill',
                 //   setDataTyep: 'endList',
                 //   idsToDelete,
                 //   endIn: req.params.endIn,

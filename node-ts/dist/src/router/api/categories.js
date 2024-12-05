@@ -24,8 +24,8 @@ router.post('', sign_req_data_1.default, [
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-    const { category } = req.body;
-    const isCategory = await category_1.default.findOne({ category });
+    const { category, brancheId } = req.body;
+    const isCategory = await category_1.default.findOne({ category, brancheId });
     if (isCategory) {
         return res.status(400).json({ errors: [{ path: 'category', msg: 'category is already exists' }] });
     }

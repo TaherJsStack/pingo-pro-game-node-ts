@@ -26,7 +26,7 @@ class BrancheController extends CRUDController_1.CRUDController {
                 // console.log('Clients getAllItems filter -->', filter);
                 // console.log('filter -->', this.model);
                 for (const property in filter) {
-                    console.log(`${property}: ${filter[property]}`);
+                    // console.log(`${property}: ${filter[property]}`);
                     if (!(property in this.model.schema.obj)) {
                         delete filter[property];
                     }
@@ -34,7 +34,7 @@ class BrancheController extends CRUDController_1.CRUDController {
                         delete filter[property];
                     }
                 }
-                console.log('branches filter -->', filter);
+                // console.log('branches filter -->', filter);
                 if (!filter['ownerId']) {
                     return this.sendResponse(req, res, 200, [], 0, 'no branche found!!');
                 }

@@ -40,7 +40,7 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
             data: [savedItem]
         });
     } catch (err: any) {
-      console.error('err.message -->',err.message);
+      console.error('createItem err.message -->',err.message);
       res.status(500)
         .json({
           success: false,

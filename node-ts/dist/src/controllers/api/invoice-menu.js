@@ -35,7 +35,7 @@ class InvoiceMenuController extends CRUDController_1.CRUDController {
                 });
             }
             catch (err) {
-                console.error('err.message -->', err.message);
+                console.error('createItem err.message -->', err.message);
                 res.status(500)
                     .json({
                     success: false,

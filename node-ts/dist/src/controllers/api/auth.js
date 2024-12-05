@@ -19,11 +19,11 @@ class AuthController extends sendResponse_1.SendResponse {
     constructor() {
         super(...arguments);
         this.checkPhone = async (req, res, next) => {
-            console.log('checkPhone req.params ---> ', req.params);
+            // console.log('checkPhone req.params ---> ', req.params)
             try {
                 let user = await auth_1.default.findOne({ phone: req.params.phone });
                 if (user && user['activeState']) {
-                    console.log('checkPhone user ---> ', user);
+                    // console.log('checkPhone user ---> ', user)
                     this.sendResponse(req, res, 201, [user]);
                 }
                 else {
@@ -32,7 +32,7 @@ class AuthController extends sendResponse_1.SendResponse {
                 }
             }
             catch (err) {
-                console.log('catch checkPhone user ---> ', err);
+                // console.log('catch checkPhone user ---> ', err)
                 this.sendErrorResponse(req, res, err);
             }
         };
@@ -73,7 +73,7 @@ class AuthController extends sendResponse_1.SendResponse {
             // let { id, password } = req.params;
             let { id, password, oldPassword, confirmPassword } = req.body;
             let confirmedPassword = await compareLoginPassword(req, id, oldPassword);
-            console.log('confirmedPassword --->', confirmedPassword);
+            //console.log('confirmedPassword --->', confirmedPassword)
             if (!confirmedPassword) {
                 this.sendErrorResponse(req, res, 'password not matched');
                 return;
@@ -133,7 +133,7 @@ class AuthController extends sendResponse_1.SendResponse {
             });
         };
         this.updateOne = async (req, res, next) => {
-            console.log('Auth updateOne', req.body);
+            // console.log('Auth updateOne', req.body);
             try {
                 const updatedItem = await auth_1.default.findByIdAndUpdate(req.params.id, req.body, { new: true });
                 if (!updatedItem) {

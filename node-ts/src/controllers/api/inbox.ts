@@ -21,7 +21,7 @@ export class InboxController extends CRUDController<IInbox> {
       const messageRes = await message.save();
       return messageRes
     } catch (error) {
-      console.log('sendWelcomMessage error ---> ', error);
+      // console.log('sendWelcomMessage error ---> ', error);
     }
   }
 

@@ -15,7 +15,7 @@ router.post('', sign_req_data_1.default, [
     // Validation rules using express-validator
     (0, express_validator_1.check)('brancheId').notEmpty().withMessage('brancheId is required'),
     (0, express_validator_1.check)('categoryId').notEmpty().withMessage('category is required'),
-    (0, express_validator_1.check)('clientId').notEmpty().withMessage('price is required'),
+    // check('clientId').notEmpty().withMessage('client Id is required'),
 ], async (req, res) => {
     // Check for validation errors
     const errors = (0, express_validator_1.validationResult)(req);

@@ -38,7 +38,7 @@ class ClientController extends CRUDController_1.CRUDController {
                 }
             }
             catch (err) {
-                console.log('catch checkPhone error ---> ', err);
+                // console.log('catch checkPhone error ---> ', err);
                 // this.sendErrorResponse(res, err);
                 res.status(500).json({
                     success: true,

@@ -8,6 +8,9 @@ export interface ISession extends Document {
   times: number;
   startTime: string;
   endTime?: string;
+  estimationTime: String;
+  estimationInHours: number;
+  estimationInMinutes: number;
   activeState: boolean;
   createdAt: Date;
   description: string;

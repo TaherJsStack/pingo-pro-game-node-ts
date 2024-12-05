@@ -23,8 +23,8 @@ router.post('', sign_req_data_1.default, [
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-    const { name } = req.body;
-    const isName = await menu_2.default.findOne({ name });
+    const { name, brancheId } = req.body;
+    const isName = await menu_2.default.findOne({ name, brancheId });
     if (isName) {
         return res.status(400).json({ errors: [{ path: 'name', msg: 'Name is already exists' }] });
     }

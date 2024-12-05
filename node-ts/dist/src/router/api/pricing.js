@@ -24,8 +24,8 @@ router.post('', sign_req_data_1.default, [
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-    const { title } = req.body;
-    const isTitle = await pricing_2.default.findOne({ title });
+    const { title, brancheId } = req.body;
+    const isTitle = await pricing_2.default.findOne({ title, brancheId });
     if (isTitle) {
         return res.status(400).json({ errors: [{ path: 'title', msg: 'title is already exists' }] });
     }

@@ -19,11 +19,11 @@ const tokenManager:  TokenManager       = new TokenManager();
 export class AuthController extends SendResponse{
     
     checkPhone = async (req: Request, res: Response, next: NextFunction) => {
-        console.log('checkPhone req.params ---> ', req.params)
+        // console.log('checkPhone req.params ---> ', req.params)
         try {
             let user: (IAuth | any )= await Auth.findOne({ phone: req.params.phone })
             if (user && user['activeState']) {                
-                console.log('checkPhone user ---> ', user)
+                // console.log('checkPhone user ---> ', user)
                 this.sendResponse(req, res, 201, [user]);
             } 
             else {
@@ -31,7 +31,7 @@ export class AuthController extends SendResponse{
                 // throw new Error('this phone doesn\'t exist or this account has been blocked');
             }
           } catch (err: any) {
-            console.log('catch checkPhone user ---> ', err)
+            // console.log('catch checkPhone user ---> ', err)
 
             this.sendErrorResponse(req, res, err);
           }
@@ -79,7 +79,7 @@ export class AuthController extends SendResponse{
         // let { id, password } = req.params;
         let { id, password, oldPassword, confirmPassword } = req.body;
         let confirmedPassword = await compareLoginPassword(req, id, oldPassword);
-        console.log('confirmedPassword --->', confirmedPassword)
+        //console.log('confirmedPassword --->', confirmedPassword)
         if (!confirmedPassword) {  
             this.sendErrorResponse(req, res, 'password not matched');
             return 
@@ -149,7 +149,7 @@ export class AuthController extends SendResponse{
     };
     
     updateOne = async (req: Request, res: Response, next: NextFunction) => {
-        console.log('Auth updateOne', req.body);
+        // console.log('Auth updateOne', req.body);
         try {
             const updatedItem = await Auth.findByIdAndUpdate(req.params.id, req.body, { new: true });
             if (!updatedItem) {

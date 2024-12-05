@@ -22,7 +22,7 @@ class InboxController extends CRUDController_1.CRUDController {
             return messageRes;
         }
         catch (error) {
-            console.log('sendWelcomMessage error ---> ', error);
+            // console.log('sendWelcomMessage error ---> ', error);
         }
     }
     getInbox(userId) {

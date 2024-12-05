@@ -28,9 +28,12 @@ const invoiceSchema = new mongoose_1.Schema({
     createdBy: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Auth', required: true },
     closedBy: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Auth' },
     brancheId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Branche', required: true },
-    categoryId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Category', required: true },
-    clientId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Client', required: true },
-    sessionId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Session', required: true },
+    // categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+    // clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: true },
+    clientId: {},
+    name: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    // sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Session', required: true },
     activeState: { type: Boolean, default: true },
     createdAt: { type: Date, default: new Date() },
     description: { type: String, default: '' },
@@ -39,12 +42,15 @@ const invoiceSchema = new mongoose_1.Schema({
     menuItemsTotal: { type: Number, default: 0 },
     categories: [
         {
-            category: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Category', required: true },
-            sessionId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Session', required: true },
+            categoryId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Category', required: true },
+            // sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Session', required: true },
             type: { type: String, default: 'open', required: true }, // open or match
             price: { type: Number, required: true },
-            startIn: { type: String, required: true },
-            endIn: { type: String },
+            startTime: { type: String, required: true },
+            endTime: { type: String },
+            estimationTime: { type: String },
+            estimationInHours: { type: Number, default: 0 },
+            estimationInMinutes: { type: Number, default: 0 },
         },
     ],
     menuItems: [
@@ -62,10 +68,10 @@ invoiceSchema.methods.calculateCategoriesTotal = async function () {
     try {
         let total = 0;
         this.categories.forEach((category) => {
-            if (category.startIn && category.endIn) {
-                // Parse the startIn and endIn strings into Date objects
-                const startTime = new Date(category.startIn);
-                const endTime = new Date(category.endIn);
+            if (category.startTime && category.endTime) {
+                // Parse the startTime and endTime strings into Date objects
+                const startTime = new Date(category.startTime);
+                const endTime = new Date(category.endTime);
                 // Calculate duration in hours
                 const durationMs = endTime.getTime() - startTime.getTime();
                 const durationHours = durationMs / (1000 * 60 * 60); // Convert milliseconds to hours
@@ -92,7 +98,7 @@ invoiceSchema.methods.calculateMenuItemsTotal = async function () {
         return this.menuItemsTotal;
     }
     catch (error) {
-        console.log('calculateMenuItemsTotal ----> ', error);
+        // console.log('calculateMenuItemsTotal ----> ', error);
         throw error;
     }
 };

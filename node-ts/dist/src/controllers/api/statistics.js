@@ -13,7 +13,7 @@ class StatisticsController {
             let filterObg = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
             let { ownerId, brancheId, filter } = filterObg;
             let { startDate, endDate, activeState } = filter;
-            console.log('getGroupedInvoicesByClosedBy filter', filterObg);
+            // console.log('getGroupedInvoicesByClosedBy filter', filterObg);
             try {
                 const invoices = await invoice_1.default.aggregate([
                     {
@@ -116,7 +116,7 @@ class StatisticsController {
             let filterObg = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : req.query.Filter;
             let { ownerId, brancheId, filter, startDate, endDate, activeState } = filterObg;
             // let {  } = filter;
-            console.log('getGroupedInvoicesByClosedBy filter', filterObg);
+            // console.log('getGroupedInvoicesByClosedBy filter', filterObg);
             try {
                 const invoices = await invoice_1.default.aggregate([
                     {
@@ -208,7 +208,7 @@ class StatisticsController {
                         },
                     },
                 ]);
-                console.log(invoices);
+                // console.log(invoices);
                 // const invoices = await Invoice.aggregate([
                 //   {
                 //     $match: {

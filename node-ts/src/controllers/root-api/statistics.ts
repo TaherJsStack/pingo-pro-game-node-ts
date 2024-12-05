@@ -11,7 +11,7 @@ export class StatisticsController extends SendResponse{
     this.getCollectionStatistics = this.getCollectionStatistics.bind(this);
   }
   async getCollectionStatistics(req: Request, res: Response) {
-    console.log('getCollectionStatistics');
+    // console.log('getCollectionStatistics');
     try {
       const collections = await mongoose.connection.db.listCollections().toArray();
       const statsPromises = collections.map(async (collection: any) => {
@@ -37,7 +37,7 @@ export class StatisticsController extends SendResponse{
 
 
   async getAggregate(req: Request, res: Response){
-    console.log('getAggregate');
+    // console.log('getAggregate');
     try {
       const invoices = await Invoice.aggregate([
         {
