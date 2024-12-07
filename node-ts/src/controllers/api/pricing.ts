@@ -12,7 +12,7 @@ export class PricingController extends CRUDController<IPricing> {
   }
   
   // Update - PUT request handler
-  updateCategoryStopAllCategoresReletedToBill = async (req: Request, res: Response): Promise<void> => {
+  updateCategoryStopCategoresReletedToBillByIdsList = async (req: Request, res: Response): Promise<void> => {
     debugger;
     try {
       // Check if IDs are provided in the request body

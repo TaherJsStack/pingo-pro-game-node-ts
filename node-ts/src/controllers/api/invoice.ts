@@ -364,7 +364,7 @@ export class InvoiceController extends SendResponse{
 
   endDeviceBookStateInInvoice = async (req: CreateRequest, res: Response) => {
     try {
-      console.log('endDeviceBookStateInInvoice ----------> ', req.body);
+      // console.log('endDeviceBookStateInInvoice ----------> ', req.body);
   
       const documentId = req.params.id;
       const { categories, activeState } = req.body;
@@ -437,24 +437,38 @@ export class InvoiceController extends SendResponse{
     try {
       // Update item by ID in database
       req.body['closedBy'] = new Types.ObjectId(req.authData.id);
-      const updatedItem = await InvoiceModel.findByIdAndUpdate(
-        _id,
-        req.body,
-        { new: true }
+      const update = await InvoiceModel.updateMany(
+        { 
+          _id: new ObjectId(req.params.id), // Replace with the specific _id
+          "categories.endTime": null }, // Match documents where endTime is null in any category
+        { 
+          $set: { 
+            "categories.$[elem].endTime": (req.body as any)['endTime'] as string, // Set the endTime to the current timestamp or a specific value
+            "activeState": req.body['activeState'],                      // Set activeState to false
+          }
+        },
+        { 
+          arrayFilters: [{ "elem.endTime": null }], // Filter to target categories with endTime as null
+          upsert: false // Ensure it doesn't insert a new document if no match is found
+
+        }
       );
+
+      let updatedItem = await InvoiceModel.findById(_id);
       if (!updatedItem) {
         return res.status(404).json({ msg: 'Item not found' });
       }
       await updatedItem.calculateCategoriesTotal();
-  
-      res.status(201)
+      await updatedItem.calculateMenuItemsTotal();
+
+      return res.status(201)
         .json({
           success: true,
           errors: [],
           status: 200,
           message: '',
-          data: [updatedItem]
-        });
+          data: [updatedItem],
+      })
     } catch (err: any) {
       console.error(err.message);
       // res.status(500).send('Server Error');
@@ -611,57 +625,55 @@ export class InvoiceController extends SendResponse{
   // --------------------------------------------------------------------------------------------------
   // --------------------------------------------------------------------------------------------------
   
-  // async setEndTimeToSessionsList(idsList: SessionsIdsList) {
-  //   console.log('1- idsList ----->', idsList);
-  //   for (const sessionId of idsList.idsToDelete) {
-  //     try {
-  //       const existingInvoice = await InvoiceModel.findOne({ sessionId });
-  //       console.log('2- existingInvoice ----->', existingInvoice);
+  async setEndTimeToSessionsList(idsList: SessionsIdsList) {
+    console.log('1- idsList ----->', idsList);
+    for (const sessionId of idsList.idsToDelete) {
+      try {
+        const existingInvoice = await InvoiceModel.findOne({ sessionId });
+        console.log('2- existingInvoice ----->', existingInvoice);
   
-  //       if (existingInvoice) {
-  //       console.log('3- existingInvoice ----->', existingInvoice);
+        if (existingInvoice) {
+        console.log('3- existingInvoice ----->', existingInvoice);
 
-  //         for (const category of existingInvoice.categories) {
-  //           console.log('4- category ----->', category);
+          for (const category of existingInvoice.categories) {
+            console.log('4- category ----->', category);
 
-  //           if (category.endIn === undefined) {
-  //             console.log('5- category.endIn ----->', category.endIn);
+            if (category.endTime === undefined) {
+              console.log('5- category.endIn ----->', category.endTime);
 
-  //             const updateQuery = {
-  //               $set: {
-  //                 'categories.$[elem].endIn': idsList.endIn ?? '',
-  //               }
-  //             };
-  //             const options = {
-  //               new: true,
-  //               arrayFilters: [{ 'elem.sessionId': sessionId }]
-  //             };
+              const updateQuery = {
+                $set: {
+                  'categories.$[elem].endIn': idsList.endIn ?? '',
+                }
+              };
+              const options = {
+                new: true,
+                arrayFilters: [{ 'elem.sessionId': sessionId }]
+              };
   
-  //             const updatedInvoice = await InvoiceModel.findByIdAndUpdate(
-  //               existingInvoice._id,
-  //               updateQuery,
-  //               options
-  //             );
+              const updatedInvoice = await InvoiceModel.findByIdAndUpdate(
+                existingInvoice._id,
+                updateQuery,
+                options
+              );
   
-  //             if (updatedInvoice) {
-  //               console.log('6- updatedInvoice ----->', updatedInvoice);
-
-  //               updatedInvoice.calculateCategoriesTotal();
-  //             } else {
-  //               console.error('Failed to update invoice. Updated document is null.');
-  //               throw new Error('Failed to update invoice. Updated document is null.');
-  //             }
-  //           }
-  //         }
-  //       } else {
-  //         throw new Error('Invoice not found. Cannot update category data.');
-  //       }
-  //     } catch (error) {
-  //       console.error('Error updating invoice:', error);
-  //       throw new Error('Error updating invoice.');
-  //     }
-  //   }
-  // }
+              if (updatedInvoice) {
+                updatedInvoice.calculateCategoriesTotal();
+              } else {
+                console.error('Failed to update invoice. Updated document is null.');
+                throw new Error('Failed to update invoice. Updated document is null.');
+              }
+            }
+          }
+        } else {
+          throw new Error('Invoice not found. Cannot update category data.');
+        }
+      } catch (error) {
+        console.error('Error updating invoice:', error);
+        throw new Error('Error updating invoice.');
+      }
+    }
+  }
   
 
 }

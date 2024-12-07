@@ -69,9 +69,9 @@ router.put(
   }
 );
 
-// Route: PUT /updateCategoryStopAllCategoresReletedToBill/:id (Stop all related categories)
+// Route: PUT /updateCategoryStopCategoresReletedToBillByIdsList/:id (Stop all related categories)
 router.put(
-  '/updateCategoryStopAllCategoresReletedToBill/:id',
+  '/updateCategoryStopCategoresReletedToBillByIdsList/:id',
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -80,7 +80,7 @@ router.put(
     }
 
     // Call controller method to update item
-    await categoryController.updateCategoryStopAllCategoresReletedToBill(req, res);
+    await categoryController.updateCategoryStopCategoresReletedToBillByIdsList(req, res);
   }
 );
 

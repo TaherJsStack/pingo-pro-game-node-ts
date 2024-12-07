@@ -71,7 +71,7 @@ router.put(
 
 // Route: PUT /items/:id (Update item)
 router.put(
-  '/updateCategoryStopAllCategoresReletedToBill/:id',
+  '/updateCategoryStopCategoresReletedToBillByIdsList/:id',
   // [
   //   // Validation rules using express-validator
   //   check('branche').optional().notEmpty().withMessage('branche is required'),
@@ -88,7 +88,7 @@ router.put(
     }
 
     // Call controller method to update item
-    await pricingController.updateCategoryStopAllCategoresReletedToBill(req, res);
+    await pricingController.updateCategoryStopCategoresReletedToBillByIdsList(req, res);
   }
 );
 

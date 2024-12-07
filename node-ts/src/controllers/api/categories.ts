@@ -18,7 +18,7 @@ export class CategoryController extends CRUDController<ICategory> {
     super(CategoryModel);
   }
   // Update - PUT request handler
-  updateCategoryStopAllCategoresReletedToBill = async (req: Request, res: Response): Promise<void> => {
+  updateCategoryStopCategoresReletedToBillByIdsList = async (req: Request, res: Response): Promise<void> => {
     try {
       // Check if IDs are provided in the request body
       const ids: string[] = await req.body;
@@ -26,7 +26,7 @@ export class CategoryController extends CRUDController<ICategory> {
       if (!Array.isArray(ids) || ids.length === 0) {
          res.status(400).json({ msg: 'Invalid or empty IDs array' });
       }
-  
+
       // Convert IDs to ObjectId
       let objectIds = await ids.map(id => new Types.ObjectId(id));
   
