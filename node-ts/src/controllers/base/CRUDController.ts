@@ -104,8 +104,28 @@ export abstract class CRUDController<T extends Document> extends SendResponse
   };
 
   public updateItem = async (req: Request, res: Response): Promise<void> => {
+
     // console.log('updateItem -->', req.params.id)
     try {
+
+      // let fileData = {};
+      if (req.file) {
+        // Construct the full URL for the uploaded file
+        // const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+        // Get file metadata
+        // fileData = await {
+        //   originalName: req.file.originalname,
+        //   storageName: req.file.filename,
+        //   size: req.file.size,
+        //   mimeType: req.file.mimetype,
+        //   path: req.file.path,
+        // };
+        req.body['logo'] = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+      }
+  
+      // console.log('req.body -->', req.rawHeaders);
+      // console.log('req.body -->', req.body, fileData);
+
       const updatedItem = await this.model.findByIdAndUpdate(req.params.id, req.body, { new: true });
       if (!updatedItem) {
        res.status(404).json({ msg: 'Item not found' });

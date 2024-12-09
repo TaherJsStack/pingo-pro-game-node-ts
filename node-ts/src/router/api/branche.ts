@@ -5,6 +5,8 @@ import {BrancheController} from '../../controllers/api/branche';
 import signReqData from '../../middleware/sign-req-data';
 import { IBranche } from '../../models/interfaces/branche.interface';
 
+import upload from '../../middleware/multer-config';
+
 const router: Router = express.Router();
 const brancheController:BrancheController = new BrancheController();
 
@@ -38,6 +40,7 @@ router.post(
 // Route: PUT /items/:id (Update item)
 router.put(
   '/:id',
+  upload.single('logo'),
   [
     // Validation rules using express-validator
     check('branche').optional().notEmpty().withMessage('branche is required'),
