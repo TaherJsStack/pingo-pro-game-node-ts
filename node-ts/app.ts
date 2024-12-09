@@ -62,7 +62,7 @@ class App {
     this.app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(this.swaggerDocs));
 
     // Serve static files (for accessing uploaded files)
-    this.app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+    this.app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
     // this.app.get('/', function (req, res) {

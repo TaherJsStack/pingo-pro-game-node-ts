@@ -120,7 +120,7 @@ export abstract class CRUDController<T extends Document> extends SendResponse
         //   mimeType: req.file.mimetype,
         //   path: req.file.path,
         // };
-        req.body['logo'] = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+        req.body['logo'] = `${req.protocol}://${req.get('host')}/api/uploads/${req.file.filename}`;
       }
   
       // console.log('req.body -->', req.rawHeaders);
