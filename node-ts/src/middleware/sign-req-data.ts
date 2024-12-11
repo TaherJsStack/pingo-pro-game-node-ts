@@ -16,9 +16,9 @@ const authMiddleware = (req: CustomRequest, res: Response, next: NextFunction) =
             const token: string = req.headers.authorization.split(" ")[1];
             const decodedToken: any = jwt.verify(token, 'secret_this_should_be_longer');
             req.authData = { 
-                email: decodedToken.email, 
-                id: decodedToken.userId, 
-                role: decodedToken.role,
+                id:         decodedToken.userId, 
+                role:       decodedToken.role,
+                email:      decodedToken.email, 
                 permeation: decodedToken.permeation 
             }
         } else {

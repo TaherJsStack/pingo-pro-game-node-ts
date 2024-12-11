@@ -10,7 +10,6 @@ import { AddressController } from './address';
 import { InboxController } from './inbox';
 import { SendResponse } from '../base/sendResponse';
 
-
 const createAddress: AddressController  = new AddressController();
 const inbox:         InboxController    = new InboxController();
 const tokenManager:  TokenManager       = new TokenManager();
@@ -172,7 +171,7 @@ export class AuthController extends SendResponse{
         Auth.findOne({ email: req.body.email })
             .then(async (user: IAuth | any) => {
                 if (!user || user === null) {
-                    throw new Error('this email doesn\'t exist');
+                    throw new Error('email doesn\'t exist');
                 }
                 if (user && !user['activeState']) {
                     throw new Error('this account has been blocked');
@@ -184,7 +183,7 @@ export class AuthController extends SendResponse{
             })
             .then(async (result: boolean | any) => {
                 if (!result) {
-                    throw new Error('this password doesn\'t compare');
+                    throw new Error('password not matched');
                 }
                 // let token = await generateToken(
                 //     fetchedData._id.toString(),
@@ -194,11 +193,13 @@ export class AuthController extends SendResponse{
                 //     fetchedData.permeation
                 // );
                 let token = await tokenManager.generateToken({ 
-                    _id:        fetchedData._id.toString(), 
-                    email:      fetchedData.email,
-                    name:       fetchedData.lastName + ' ' + fetchedData.firstName,
-                    role:       fetchedData.role, 
-                    permeation: fetchedData.permeation
+                    _id:         fetchedData._id.toString(), 
+                    email:       fetchedData.email,
+                    name:        fetchedData.lastName + ' ' + fetchedData.firstName,
+                    role:        fetchedData.role, 
+                    // permeation:  fetchedData.permeation,
+                    permeations: fetchedData.permissions,
+                    authType:    fetchedData.authType
                 });
 
                 res.status(200).json({
@@ -211,7 +212,7 @@ export class AuthController extends SendResponse{
             })
             .catch((err: Error) => {
                 return res.status(500).json({
-                    message: `login error -> + ${err.message}`,
+                    message: `${err.message}`,
                     status: 500
                 });
             });
@@ -309,6 +310,7 @@ async function compareLoginPassword(req: Request, userId: string, userPassword: 
         
     } catch (error) {
         console.log('compareLoginPassword -->', error);
+        throw error;
     }
 }
 
