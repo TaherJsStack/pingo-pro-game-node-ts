@@ -8,13 +8,6 @@ import { IInvoice } from '../../models/interfaces/invoice.interface';
 const router: Router = express.Router();
 const invoiceController:InvoiceController = new InvoiceController();
 
-interface CreateItemRequest extends Request {
-  authData: {
-    id: string;
-  };
-  body: IInvoice;
-}
-
 interface CreateRequest extends Request {
   authData: {
     id: string;
@@ -38,7 +31,7 @@ router.post( '', signReqData,
     }
     
     // Call controller method to create item
-    await invoiceController.createNewInvoice(req as CreateItemRequest, res);
+    await invoiceController.createNewInvoice(req as CreateRequest, res);
   
 })
 
@@ -155,5 +148,9 @@ router.put(
 
 // Other routes for GET (Read) and DELETE operations...
 router.get("",  invoiceController.getAllItems);
+
+router.get(
+  '/getInvoicesByEmployeeWithCountsasync/:id',
+  invoiceController.getInvoicesByEmployeeWithCountsasync);
 
 export default router;

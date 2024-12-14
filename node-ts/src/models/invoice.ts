@@ -5,10 +5,10 @@ import { IInvoice, IMenuItems } from './interfaces/invoice.interface';
 const invoiceSchema: Schema<IInvoice> = new Schema<IInvoice>(
   {
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
-    closedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth' },
+    closedBy:  { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', default: null },
     brancheId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },
-    // clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: true },
-    clientId: {  },
+    clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: false, default: null },
+    // clientId: {  },
     name: { type: String, default: '' },
     phone: { type: String, default: '' },
     activeState: { type: Boolean, default: true },
@@ -20,6 +20,8 @@ const invoiceSchema: Schema<IInvoice> = new Schema<IInvoice>(
     categories: [
       {
         categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: false, default: null },
+        closedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', default: null },
         type: { type: String, default: 'open', required: true }, // open or match
         price: { type: Number, required: true },
         startTime: { type: String, required: true },

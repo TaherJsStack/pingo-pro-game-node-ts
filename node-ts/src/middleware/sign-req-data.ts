@@ -15,11 +15,12 @@ const authMiddleware = (req: CustomRequest, res: Response, next: NextFunction) =
         if (req.headers && req.headers.authorization) {
             const token: string = req.headers.authorization.split(" ")[1];
             const decodedToken: any = jwt.verify(token, 'secret_this_should_be_longer');
+            // console.log('decodedToken -->', decodedToken);
             req.authData = { 
-                id:         decodedToken.userId, 
+                id:         decodedToken._id, 
                 role:       decodedToken.role,
                 email:      decodedToken.email, 
-                permeation: decodedToken.permeation 
+                permeation: decodedToken.permeations 
             }
         } else {
             // Handle the case where authorization header is missing

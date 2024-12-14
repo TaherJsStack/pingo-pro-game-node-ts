@@ -20,204 +20,13 @@ interface SessionsIdsList {
   endIn?: string;
 }
 
-// let subscription: any = null;
-// (async () => {
-//   // await InvoiceService.init();
-//   subscription = await InvoiceService.getDataObservable().subscribe(async (data: any) => {
-
-//     switch (data.setDataTyep) {
-//       case 'create':
-//         // createNewSession(data);
-//         break;
-//       case 'update':
-//         updateSession(data);
-//         break;
-//       case 'end':
-//         // deletedSession(data);
-//         break;
-//       case 'endList':
-//         // deletedListSession(data);
-//         break;
-//       default:
-//         throw new Error('Invalid setDataTyep');
-//     }
-
-//   });
-
-
-// })();
-
-
-// async function updateSession(data: any) {
-//   let _id: string = data.updatedItem.categoryId;
-//   let clientId: string = data.updatedItem.clientId;
-//   let brancheId: string = data.updatedItem.brancheId;
-//   let category: any = await CategoryModel.findOne({ _id });
-//   let priceValue: any = await PricingModel.findOne({ _id: new Types.ObjectId(category.priceId) });
-//   let existingInvoice: any = await InvoiceModel.findOne({ clientId, brancheId, activeState: true });
-
-//   if (existingInvoice) {
-
-//     const updateQuery = {
-//       $set: {
-//         // 'categories.$[elem].times': data.updatedItem.times,
-//         'categories.$[elem].endIn': data.updatedItem.endIn ? data.updatedItem.endIn : '',
-//         'categories.$[elem].price': priceValue.price // Assuming price is available in the category object
-//       }
-//     };
-
-//     const options = {
-//       new: true, // To return the updated document
-//       arrayFilters: [{ 'elem.category': { $eq: data.updatedItem.categoryId } }]
-//     };
-
-//     // Perform the update operation
-//     const updatedInvoice: any = await InvoiceModel.findByIdAndUpdate(
-//       existingInvoice._id,
-//       updateQuery,
-//       options
-//     );
-
-//     if (updatedInvoice) {
-//       // console.log('Invoice updated with new category data:', updatedInvoice);
-//       updatedInvoice.calculateCategoriesTotal()
-
-//     } else {
-//       // console.error('Failed to update invoice. Updated document is null.');
-//     }
-//     if (subscription) {
-//       // subscription.unsubscribe();
-//     }
-//     return
-//   } else {
-//     // console.log('Invoice not found. Cannot update category data.');
-//     if (subscription) {
-//       // subscription.unsubscribe();
-//     }
-//     throw new Error('Invoice not found. Cannot update category data.');
-//   }
-
-
-// }
-
-// async function deletedSession(data: any) {
-//   // console.log('deletedSession', data);
-//   let _id: string = data.deletedItem.categoryId;
-//   let clientId: string = data.deletedItem.clientId;
-//   let brancheId: string = data.deletedItem.brancheId;
-//   let category: any = await CategoryModel.findOne({ _id });
-//   let priceValue: any = await PricingModel.findOne({ _id: new Types.ObjectId(category.priceId) });
-//   let existingInvoice: any = await InvoiceModel.findOne({ clientId, brancheId, activeState: true });
-
-//   if (existingInvoice) {
-
-//     const updateQuery = {
-//       $set: {
-//         // 'categories.$[elem].times': data.deletedItem.times,
-//         'categories.$[elem].endIn': data.endIn ? data.endIn : '',
-//         'categories.$[elem].price': priceValue.price // Assuming price is available in the category object
-//       }
-//     };
-
-//     const options = {
-//       new: true, // To return the updated document
-//       arrayFilters: [{ 'elem.category': { $eq: data.deletedItem.categoryId } }]
-//     };
-
-//     // Perform the update operation
-//     const updatedInvoice: any = await InvoiceModel.findByIdAndUpdate(
-//       existingInvoice._id,
-//       updateQuery,
-//       options
-//     );
-
-//     if (updatedInvoice) {
-//       // console.log('Invoice updated with new category data:', updatedInvoice);
-//       updatedInvoice.calculateCategoriesTotal();
-
-//     } else {
-//       // console.error('Failed to update invoice. Updated document is null.');
-//     }
-//     if (subscription) {
-//       // subscription.unsubscribe();
-//     }
-//     return
-//   } else {
-//     // console.log('Invoice not found. Cannot update category data.');
-//     if (subscription) {
-//       // subscription.unsubscribe();
-//     }
-//     throw new Error('Invoice not found. Cannot update category data.');
-//   }
-
-
-// }
-
-// async function deletedListSession(data: any) {
-//   // console.log('deletedListSession data', data);
-//   // console.log('deletedListSession idsToDelete', data.idsToDelete);
-
-//   // let _id             = data.deletedItem.categoryId;
-//   // let clientId        = data.deletedItem.clientId;
-//   // let brancheId       = data.deletedItem.brancheId;
-//   // let category        = await CategoryModel.findOne({ _id });
-//   // let priceValue      = await PricingModel.findOne({ _id: new ObjectId(category.priceId) });
-
-
-//   for (let index = 0; index < data.idsToDelete.length; index++) {
-//     const sessionIdToDelete = data.idsToDelete[index];
-//     let existingInvoice: any = await InvoiceModel.findOne({ sessionId: data.idsToDelete[0] });
-
-//     // console.log('deletedListSession', existingInvoice.categories[index].endIn);
-
-//     if (existingInvoice) {
-
-//       if (existingInvoice.categories[index].endIn == undefined) {
-//         const updateQuery = {
-//           $set: {
-//             'categories.$[elem].endIn': data.endIn ? data.endIn : '',
-//           }
-//         };
-//         const options = {
-//           new: true, // To return the updated document
-//           arrayFilters: [{ 'elem.sessionId': sessionIdToDelete }]
-//         };
-
-//         try {
-//           // Perform the update operation
-//           const updatedInvoice: any = await InvoiceModel.findByIdAndUpdate(
-//             existingInvoice._id,
-//             updateQuery,
-//             options
-//           );
-
-//           if (updatedInvoice) {
-//             // console.log('Invoice updated with new category data:', updatedInvoice);
-//             updatedInvoice.calculateCategoriesTotal();
-//           } else {
-//             console.error('Failed to update invoice. Updated document is null.');
-//           }
-//         } catch (error) {
-//           console.error('Error updating invoice:', error);
-//           throw new Error('Error updating invoice.');
-//         }
-
-//       }
-
-//     } else {
-//       // console.log('Invoice not found for sessionId:', sessionIdToDelete);
-//       throw new Error('Invoice not found. Cannot update category data.');
-//     }
-
-//   }
-
-
-// }
-
 export class InvoiceController extends SendResponse{
 
   createNewInvoice = async (req: CreateRequest, res: Response) => {
+
     req.body['createdBy'] = new Types.ObjectId(req.authData.id);
+    req.body.categories[0]['createdBy'] = new ObjectId(req.authData.id);
+
     try{
       const newInvoice = new InvoiceModel(req.body);
       const savedInvoice = await newInvoice.save();
@@ -378,10 +187,12 @@ export class InvoiceController extends SendResponse{
           message: 'Category ID and End Time are required.',
         });
       }
-  
-      const categoryId = categories[0].categoryId;
-      const endTime = categories[0].endTime;
-  
+        
+      const categoryId      = categories[0].categoryId;
+      const endTime         = categories[0].endTime;
+      const closedBy        = req.authData.id;
+      const invoiceClosedBy = activeState == false ? req.authData.id : null;
+
       // Perform update
       const updateItem = await InvoiceModel.updateOne(
         {
@@ -390,8 +201,10 @@ export class InvoiceController extends SendResponse{
         },
         {
           $set: {
-            "categories.$.endTime": endTime,
-            activeState: activeState,
+            "categories.$.endTime":  endTime,
+            "categories.$.closedBy": closedBy,
+            activeState:  activeState,
+            closedBy:     invoiceClosedBy
           },
         }
       );
@@ -427,30 +240,37 @@ export class InvoiceController extends SendResponse{
       });
     }
   };
-  
 
   // Update - PUT request handler
   updateLockBill = async (req: CreateRequest, res: Response) => {
   
     // menuItems
     let _id = req.params.id
+    let closedBy = new Types.ObjectId(req.authData.id);
+
+    //console.log('updateLockBill req.authData ----------------> ', req.authData)
+    //console.log('updateLockBill closedBy ----------------> ', closedBy)
+
     try {
       // Update item by ID in database
-      req.body['closedBy'] = new Types.ObjectId(req.authData.id);
+      // req.body['closedBy'] = new Types.ObjectId(req.authData.id);
       const update = await InvoiceModel.updateMany(
         { 
           _id: new ObjectId(req.params.id), // Replace with the specific _id
-          "categories.endTime": null }, // Match documents where endTime is null in any category
+          "categories.endTime": null // Match documents where endTime is null in any category
+        }, 
+          
         { 
           $set: { 
             "categories.$[elem].endTime": (req.body as any)['endTime'] as string, // Set the endTime to the current timestamp or a specific value
-            "activeState": req.body['activeState'],                      // Set activeState to false
+            "categories.$[elem].closedBy": closedBy,
+            "activeState": req.body['activeState'], // Set activeState to false
+            "closedBy": closedBy,
           }
         },
         { 
           arrayFilters: [{ "elem.endTime": null }], // Filter to target categories with endTime as null
           upsert: false // Ensure it doesn't insert a new document if no match is found
-
         }
       );
 
@@ -675,5 +495,67 @@ export class InvoiceController extends SendResponse{
     }
   }
   
+  // --------------------------------------------------------------------------------------------------
+  // --------------------------------------------------------------------------------------------------
+  getInvoicesByEmployeeWithCountsasync = async (req: Request, res: Response) => {
+    let empId = req.params.id
+
+    //console.log('1- empId ----->', empId);
+
+    try {
+      // Match invoices created by the employee
+      const invoices = await InvoiceModel.aggregate([
+        {
+          $match: { closedBy: new ObjectId(empId) },
+        },
+        // {
+        //   $addFields: {
+        //     total: {
+        //       $sum: {
+        //         $map: {
+        //           input: '$categories',
+        //           as: 'category',
+        //           in: { $ifNull: ['$$category.price', 0] },
+        //         },
+        //       },
+        //     },
+        //   },
+        // },
+        {
+          $group: {
+            _id: {
+              date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+              createdBy: '$createdBy',
+            },
+            invoices: { $push: '$$ROOT' },
+            dailyTotal: { $sum: '$total' },
+            createdByCount: { $sum: 1 }, // Count invoices created by this employee
+          },
+        },
+        {
+          $sort: { '_id.date': 1 },
+        },
+      ]);
+
+      // Populate employee info
+      // const employee = await Employee.findById(empId);
+      // return { employee, invoices };
+      // console.log('2- invoices ----->', invoices);
+
+      res.status(201)
+      .json({
+        success: true,
+        errors: [], 
+        status: 200,
+        message: '',
+        data: invoices,
+      });
+      // return { invoices };
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+      throw error;
+    }
+  }
+
 
 }

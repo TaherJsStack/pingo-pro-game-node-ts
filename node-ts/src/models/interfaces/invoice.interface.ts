@@ -3,18 +3,19 @@ import { IInvoiceMenuItem } from './invoice-menu-item.interface';
 import { ICategories } from './categories.interface';
 
 export interface IMenuItems extends Document {
-    itemID: mongoose.Types.ObjectId;
-    itemName: string;
-    quantity: number;
-    price: number;
+    createdBy:  mongoose.Types.ObjectId;
+    itemID:     mongoose.Types.ObjectId;
+    itemName:   string;
+    quantity:   number;
+    price:      number;
 }
 
 
 export interface IInvoice extends Document {
     createdBy: mongoose.Types.ObjectId;
-    closedBy?: mongoose.Types.ObjectId;
+    closedBy: mongoose.Types.ObjectId;
     brancheId: mongoose.Types.ObjectId;
-    clientId: mongoose.Types.ObjectId;
+    clientId:  mongoose.Types.ObjectId;
     name: string;
     phone: string;
     activeState: boolean;
