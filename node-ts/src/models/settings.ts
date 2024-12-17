@@ -4,6 +4,7 @@ import { ISettings } from './interfaces/settings.interface';
 
 const settingsSchema: Schema<ISettings> = new Schema<ISettings>({
     ownerId:    { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
+    createdBy:  { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
     theme:      { type: String, default: '' },
     language:   { type: String, default: '' },
 

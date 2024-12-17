@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 interface IShop extends Document {
     ownerId: string;
     brancheId: string;
+    createdBy: string;
     name: string;
     type: string;
     activeState: boolean;

@@ -4,6 +4,7 @@ import { IPricing } from './interfaces/pricing.interface';
 
 const pricingSchema: Schema<IPricing> = new Schema({
     brancheId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },
+    createdBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
     title:        { type: String,  required: true },
     price:        { type: Number,  required: true },
     type:         { type: String,  required: true },

@@ -5,6 +5,7 @@ import InvoiceService from '../../services/invoice.service';
 import CategoryModel from '../../models/category';
 import PricingModel from '../../models/pricing';
 import { IInvoice } from '../../models/interfaces/invoice.interface';
+import ClientModel from '../../models/client';
 import { SendResponse } from '../base/sendResponse';
 const { ObjectId } = require('mongoose').Types;
 
@@ -390,61 +391,9 @@ export class InvoiceController extends SendResponse{
     }
   };
 
-  // updateEndTimeToSessionsList2 = async (req: Request, res: Response) => {
-
-  //   // console.log('1- idsList ----->', req.params.id);
-
-  //   try {
-  //     const existingInvoice = await InvoiceModel.findById(req.params.id);
-  //     if (!existingInvoice) {
-  //       return this.sendErrorResponse(req, res, 'Invoice not found');
-  //       // return res.status(404).json({ msg: 'invoice not found' });
-  //     }
-  //     // console.log('2- existingInvoice ----->', existingInvoice);
-  //     for (const category of existingInvoice.categories) {
-  //       // console.log('4- category ----->', category);
-
-  //       if (category.startTime === undefined) {
-  //         // console.log('5- category.endIn ----->', category.endIn);
-
-  //         const updateQuery = {
-  //           $set: {
-  //             'categories.$[elem].endIn': new Date().toISOString(),
-  //           }
-  //         };
-  //         const options = {
-  //           new: true,
-  //           arrayFilters: [{ 'elem.sessionId': new ObjectId(category.sessionId) }]
-  //         };
-
-  //         const updatedInvoice = await InvoiceModel.findByIdAndUpdate(
-  //           new ObjectId(existingInvoice._id),
-  //           updateQuery,
-  //           options
-  //         );
-
-  //         if (updatedInvoice) {
-  //           // console.log('6- updatedInvoice ----->', updatedInvoice);
-
-  //           updatedInvoice.calculateCategoriesTotal();
-  //           this.sendResponse(req,res, 200, updatedInvoice);
-  //         } else {
-  //           console.error('Failed to update invoice. Updated document is null.');
-  //           // throw new Error('Failed to update invoice. Updated document is null.');
-  //           this.sendErrorResponse(req, res, 'Failed to update invoice. Updated document is null.');
-  //         }
-  //       }
-  //     }
-  //   } catch (error) {
-      
-  //   }
-
-
-  // }
   // --------------------------------------------------------------------------------------------------
   // --------------------------------------------------------------------------------------------------
-  // --------------------------------------------------------------------------------------------------
-  
+  // --------------------------------------------------------------------------------------------------  
   async setEndTimeToSessionsList(idsList: SessionsIdsList) {
     console.log('1- idsList ----->', idsList);
     for (const sessionId of idsList.idsToDelete) {
@@ -497,10 +446,9 @@ export class InvoiceController extends SendResponse{
   
   // --------------------------------------------------------------------------------------------------
   // --------------------------------------------------------------------------------------------------
+  // --------------------------------------------------------------------------------------------------
   getInvoicesByEmployeeWithCountsasync = async (req: Request, res: Response) => {
     let empId = req.params.id
-
-    //console.log('1- empId ----->', empId);
 
     try {
       // Match invoices created by the employee
@@ -508,19 +456,6 @@ export class InvoiceController extends SendResponse{
         {
           $match: { closedBy: new ObjectId(empId) },
         },
-        // {
-        //   $addFields: {
-        //     total: {
-        //       $sum: {
-        //         $map: {
-        //           input: '$categories',
-        //           as: 'category',
-        //           in: { $ifNull: ['$$category.price', 0] },
-        //         },
-        //       },
-        //     },
-        //   },
-        // },
         {
           $group: {
             _id: {
@@ -533,14 +468,239 @@ export class InvoiceController extends SendResponse{
           },
         },
         {
-          $sort: { '_id.date': 1 },
+          $sort: { '_id.date': -1 },
         },
       ]);
 
-      // Populate employee info
-      // const employee = await Employee.findById(empId);
-      // return { employee, invoices };
-      // console.log('2- invoices ----->', invoices);
+      // const treeInvoices = await InvoiceModel.aggregate([
+      //   // Match only the relevant invoices
+      //   {
+      //     $match: { closedBy: new ObjectId(empId) },
+      //   },
+      //   // Add fields for day, week, month, and year
+      //   {
+      //     $addFields: {
+      //       year: { $year: '$createdAt' },
+      //       month: { $month: '$createdAt' },
+      //       week: { $isoWeek: '$createdAt' },
+      //       dayOfWeek: { $dayOfWeek: '$createdAt' }, // 1 (Sunday) to 7 (Saturday)
+      //       dayName: {
+      //         $arrayElemAt: [
+      //           ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      //           { $subtract: ['$dayOfWeek', 1] },
+      //         ],
+      //       },
+      //     },
+      //   },
+      //   // Group by day
+      //   {
+      //     $group: {
+      //       _id: {
+      //         year: '$year',
+      //         month: '$month',
+      //         week: '$week',
+      //         day: '$dayName',
+      //       },
+      //       invoices: { $push: '$$ROOT' },
+      //     },
+      //   },
+      //   // Group by week
+      //   {
+      //     $group: {
+      //       _id: {
+      //         year: '$_id.year',
+      //         month: '$_id.month',
+      //         week: '$_id.week',
+      //       },
+      //       days: {
+      //         $push: {
+      //           dayTitle: '$_id.day',
+      //           invoices: '$invoices',
+      //         },
+      //       },
+      //     },
+      //   },
+      //   // Group by month
+      //   {
+      //     $group: {
+      //       _id: {
+      //         year: '$_id.year',
+      //         month: '$_id.month',
+      //       },
+      //       weeks: {
+      //         $push: {
+      //           weekTitle: { $concat: ['Week ', { $toString: '$_id.week' }] },
+      //           days: '$days',
+      //         },
+      //       },
+      //     },
+      //   },
+      //   // Group by year
+      //   {
+      //     $group: {
+      //       _id: '$_id.year',
+      //       months: {
+      //         $push: {
+      //           monthTitle: {
+      //             $arrayElemAt: [
+      //               [
+      //                 'January', 'February', 'March', 'April', 'May', 'June',
+      //                 'July', 'August', 'September', 'October', 'November', 'December',
+      //               ],
+      //               { $subtract: ['$_id.month', 1] },
+      //             ],
+      //           },
+      //           weeks: '$weeks',
+      //         },
+      //       },
+      //     },
+      //   },
+      //   // Reshape the final output
+      //   {
+      //     $project: {
+      //       _id: 0,
+      //       year: {
+      //         yearTitle: '$_id',
+      //         months: '$months',
+      //       },
+      //     },
+      //   },
+      // ]);
+      
+      // console.log('2- invoices ----->', treeInvoices);
+
+      const treeInvoices = await InvoiceModel.aggregate([
+        // Match only the relevant invoices
+        {
+          $match: { closedBy: new ObjectId(empId) },
+        },
+        // Add fields for day, week, month, and year
+        {
+          $addFields: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' },
+            week: { $isoWeek: '$createdAt' },
+            dayOfWeek: { $dayOfWeek: '$createdAt' }, // 1 (Sunday) to 7 (Saturday)
+            dayName: {
+              $arrayElemAt: [
+                ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+                { $subtract: ['$dayOfWeek', 1] },
+              ],
+            },
+          },
+        },
+        // Sort by date before grouping
+        {
+          $sort: { createdAt: -1 },
+        },
+        // Group by day
+        {
+          $group: {
+            _id: {
+              year: '$year',
+              month: '$month',
+              week: '$week',
+              day: '$dayName',
+            },
+            invoices: { $push: '$$ROOT' },
+          },
+        },
+        // Sort days before grouping by weeks
+        {
+          $sort: { '_id.day': -1 },
+        },
+        // Group by week
+        {
+          $group: {
+            _id: {
+              year: '$_id.year',
+              month: '$_id.month',
+              week: '$_id.week',
+            },
+            days: {
+              $push: {
+                dayTitle: '$_id.day',
+                invoices: '$invoices',
+              },
+            },
+          },
+        },
+        // Sort weeks before grouping by months
+        {
+          $sort: { '_id.week': -1 },
+        },
+        // Group by month
+        {
+          $group: {
+            _id: {
+              year: '$_id.year',
+              month: '$_id.month',
+            },
+            weeks: {
+              $push: {
+                weekTitle: { $concat: ['Week ', { $toString: '$_id.week' }] },
+                days: '$days',
+              },
+            },
+          },
+        },
+        // Sort months before grouping by years
+        {
+          $sort: { '_id.month': -1 },
+        },
+        // Group by year
+        {
+          $group: {
+            _id: '$_id.year',
+            months: {
+              $push: {
+                monthTitle: {
+                  $arrayElemAt: [
+                    [
+                      'January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December',
+                    ],
+                    { $subtract: ['$_id.month', 1] },
+                  ],
+                },
+                weeks: '$weeks',
+              },
+            },
+          },
+        },
+        // Sort years (optional) and reshape the final output
+        {
+          $sort: { _id: -1 },
+        },
+        {
+          $project: {
+            _id: 0,
+            year: {
+              yearTitle: '$_id',
+              months: '$months',
+            },
+          },
+        },
+      ]);
+      
+      const totalInvoices = await InvoiceModel.countDocuments();
+      const totalInvoicesClosedBy = await InvoiceModel.countDocuments({ closedBy: new ObjectId(empId) });
+      const totalInvoicesCreatedBy = await InvoiceModel.countDocuments({ createdBy: new ObjectId(empId) });
+      const sharedDevicesAdded = await InvoiceModel.countDocuments({ 'categories.createdBy': new ObjectId(empId) });
+      const sharedDevicesClosed = await InvoiceModel.countDocuments({ 'categories.closedBy': new ObjectId(empId) });
+      
+      const clientAdded = await ClientModel.countDocuments({ createdBy: new ObjectId(empId) });
+
+      let percentages = {};
+      // Ensure totalInvoices is not zero
+      if (totalInvoices > 0) {
+        percentages = {
+          totalInvoicesClosedBy: (totalInvoicesClosedBy / totalInvoices) * 100,
+          totalInvoicesCreatedBy: (totalInvoicesCreatedBy / totalInvoices) * 100,
+          sharedDevicesAdded: (sharedDevicesAdded / totalInvoices) * 100,
+          sharedDevicesClosed: (sharedDevicesClosed / totalInvoices) * 100,
+        };
+      }
 
       res.status(201)
       .json({
@@ -548,9 +708,14 @@ export class InvoiceController extends SendResponse{
         errors: [], 
         status: 200,
         message: '',
-        data: invoices,
+        data: {
+          invoices, 
+          treeInvoices,
+          totalInvoices,
+          percentages,
+          clientAdded
+        },
       });
-      // return { invoices };
     } catch (error) {
       console.error('Error fetching invoices:', error);
       throw error;

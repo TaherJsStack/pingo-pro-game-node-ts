@@ -2,6 +2,7 @@ import mongoose, {  Document } from 'mongoose';
 
 export interface IComplaintsSuggestion extends Document {
   brancheId:   mongoose.Types.ObjectId;
+  createdBy:   mongoose.Types.ObjectId;
   name:        string;
   email:       string;
   phone:       string;

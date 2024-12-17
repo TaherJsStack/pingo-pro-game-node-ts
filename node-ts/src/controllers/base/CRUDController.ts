@@ -19,10 +19,16 @@ export abstract class CRUDController<T extends Document> extends SendResponse
   }
 
   public createItem = async (req: CreateItemRequest<T>, res: Response): Promise<void> => {
+
+    console.log('CRUDController createItem req.body -->', req.body, req.authData);
+
     try {
       const newItem: T = new this.model(req.body);
       if ('ownerId' in this.model.schema.obj) {
         newItem.$set('ownerId', new ObjectId(req.authData.id));
+      }
+      if ('createdBy' in this.model.schema.obj) {
+        newItem.$set('createdBy', new ObjectId(req.authData.id));
       }
       const savedItem = await newItem.save();
       const totalData = await this.model.find().countDocuments();

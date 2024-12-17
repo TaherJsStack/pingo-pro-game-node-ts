@@ -2,8 +2,6 @@ import mongoose, { Document, Schema } from 'mongoose';
 // import uniqueValidator from 'mongoose-unique-validator';
 import { ISubscription } from './interfaces/subscription.interface';
 
-
-
 const subscriptionSchema: Schema<ISubscription> = new Schema<ISubscription>({
     ownerId: { type: String, required: true },
     state: { type: String, required: true },

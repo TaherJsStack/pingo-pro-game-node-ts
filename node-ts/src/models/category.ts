@@ -5,6 +5,7 @@ import { ICategory } from './interfaces/category.interface';
 const CategorySchema: Schema<ICategory> = new Schema<ICategory>({
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
   brancheId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
   category: { type: String, required: true },
   priceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pricing', required: true },
   price: { type: Number, default: 0 },
