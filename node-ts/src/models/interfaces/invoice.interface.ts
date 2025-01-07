@@ -26,6 +26,7 @@ export interface IInvoice extends Document {
     menuItemsTotal: number;
     categories: ICategories[];
     menuItems: IMenuItems[];
+    invoiceNo: number;
     calculateCategoriesTotal(): Promise<number>;
     calculateMenuItemsTotal(): Promise<number>;
   }

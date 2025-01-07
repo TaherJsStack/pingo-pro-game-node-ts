@@ -19,6 +19,7 @@ interface CreateItemRequest extends Request {
 // Route: POST /items (Create item)
 router.post(
   '',
+  upload.single('logo'),
   signReqData,
   [
     // Validation rules using express-validator
@@ -31,6 +32,7 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
+    console.log('req.body -->', req.body);
     
     // Call controller method to create item
     await brancheController.createItem(req as CreateItemRequest, res);

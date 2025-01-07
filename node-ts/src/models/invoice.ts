@@ -17,6 +17,7 @@ const invoiceSchema: Schema<IInvoice> = new Schema<IInvoice>(
     total: { type: Number, default: 0 },
     categoriesTotal: { type: Number, default: 0 },
     menuItemsTotal: { type: Number, default: 0 },
+    invoiceNo: { type: Number, default: 0 },
     categories: [
       {
         categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },

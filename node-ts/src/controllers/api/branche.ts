@@ -12,6 +12,9 @@ export class BrancheController extends CRUDController<IBranche> {
 
   override createItem = async (req: Request, res: Response): Promise<void> => {
     try {
+      if (req.file) {
+        (req.body as any)['logo'] = `${req.protocol}://${req.get('host')}/api/uploads/${req.file.filename}`;
+      }
       const newItem: IBranche = new this.model(req.body);
       
       const savedItem = await newItem.save();

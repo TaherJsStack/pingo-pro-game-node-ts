@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Document, Model } from 'mongoose';
+import mongoose, { Document, Model } from 'mongoose';
 const { ObjectId } = require('mongoose').Types;
 import { CreateItemRequest } from '../interfaces/CustomRequestType';
 import { CreateOperation } from '../interfaces/CreateOperation';
@@ -23,6 +23,9 @@ export abstract class CRUDController<T extends Document> extends SendResponse
     console.log('CRUDController createItem req.body -->', req.body, req.authData);
 
     try {
+      if (req.file) {
+        (req.body as any)['logo'] = `${req.protocol}://${req.get('host')}/api/uploads/${req.file.filename}`;
+      }
       const newItem: T = new this.model(req.body);
       if ('ownerId' in this.model.schema.obj) {
         newItem.$set('ownerId', new ObjectId(req.authData.id));
@@ -80,9 +83,8 @@ export abstract class CRUDController<T extends Document> extends SendResponse
       if (typeof searchKeyword !== 'undefined' && searchKeyword !== null && searchKeyword !== '') {
         filter['$text'] = { $search: searchKeyword };
       }
-
-      // console.log('searchKeyword -->', searchKeyword);
       // console.log('CRUDController getAllItems filter -->', filter);
+
 
       const totalData = await this.model.find(filter).countDocuments();
 
@@ -91,6 +93,30 @@ export abstract class CRUDController<T extends Document> extends SendResponse
                                     .skip(skip)
                                     .limit(pageSize);
 
+      // if (typeof searchKeyword !== 'undefined' && searchKeyword !== null && searchKeyword !== '') {
+
+      //   // const indexes = await this.model.collection.indexes();
+      //   // console.log('indexes -------> ', indexes);
+        
+      //   // const textSearchIndex = indexes.find(index => index.name === 'textSearchIndex');
+      //   // console.log('textSearchIndex -------> ', textSearchIndex);
+      //   // const filter2 = { 
+      //   //   brancheId: new mongoose.Types.ObjectId('6633e103adf3db7b0c70fe73'), 
+      //   //   $text: { $search: "mmmmmm" },
+      //   //   // $or: [
+      //   //   //   { name: { $regex: "g", $options: "i" } },
+      //   //   //   { description: { $regex: "g", $options: "i" } }
+      //   //   //   // { name: { $regex: /g/i } },
+      //   //   //   // { description: { $regex: /g/i } }
+      //   //   // ]
+      //   // };
+      //   // console.log('filter2 -------> ', filter2);  
+      //   // const items1 = await this.model.find(filter2);
+
+      //   // console.log('items1 -------> ', items1);
+      
+      // }
+                                    
       this.sendResponse(req, res, 200, items, totalData);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);

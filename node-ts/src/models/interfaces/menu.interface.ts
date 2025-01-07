@@ -7,6 +7,7 @@ export interface IMenu extends Document {
   name: string;
   price: number;
   type: string;
+  stock: number;
   logo: string;
   description: string;
   activeState: boolean;

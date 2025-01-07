@@ -25,9 +25,12 @@ export class InvoiceController extends SendResponse{
 
   createNewInvoice = async (req: CreateRequest, res: Response) => {
 
+    const invocesCount = await InvoiceModel.find({"brancheId": req.body.brancheId}).countDocuments();
+
     req.body['createdBy'] = new Types.ObjectId(req.authData.id);
     req.body.categories[0]['createdBy'] = new ObjectId(req.authData.id);
-
+    req.body.invoiceNo = 20250601 + invocesCount + 1;
+    
     try{
       const newInvoice = new InvoiceModel(req.body);
       const savedInvoice = await newInvoice.save();
@@ -194,6 +197,8 @@ export class InvoiceController extends SendResponse{
       const closedBy        = req.authData.id;
       const invoiceClosedBy = activeState == false ? req.authData.id : null;
 
+      // const invoiceNo = await InvoiceModel.countDocuments({ activeState: false })+1;
+
       // Perform update
       const updateItem = await InvoiceModel.updateOne(
         {
@@ -307,10 +312,10 @@ export class InvoiceController extends SendResponse{
       const updateQuery = {
         $push: {
           menuItems: {
-            itemID: req.body.itemID,
+            itemID:   req.body.itemID,
             itemName: req.body.itemName,
             quantity: req.body.quantity,
-            price: req.body.price
+            price:    req.body.price
           }
         }
       };

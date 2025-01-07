@@ -14,6 +14,8 @@ const clientSchema: Schema<IClient> = new Schema<IClient>({
   timestamps: true
 });
 
+clientSchema.index({ name: 'text', description: 'text' });
+
 // Custom validation to check uniqueness 
 clientSchema.pre('validate', async function(this: IClient, next) {
   const existing = await mongoose.models.Client.findOne({
@@ -28,5 +30,7 @@ clientSchema.pre('validate', async function(this: IClient, next) {
 
   next();
 });
+
+
 
 export default mongoose.model<IClient>('Client', clientSchema);
