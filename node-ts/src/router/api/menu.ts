@@ -47,6 +47,31 @@ router.post(
 
 // Route: PUT /items/:id (Update item)
 router.put(
+  '/updateMenuItemsStockCount',
+  // [
+  //   // Validation rules using express-validator
+  //   // check('branche').optional().notEmpty().withMessage('branche is required'),
+  //   // check('address')
+  //   //   .optional()
+  //   //   .notEmpty()
+  //   //   .withMessage('address is required')
+  // ],
+  async (req: Request, res: Response) => {
+    // console.log('updateMenuItemsStockCount -->', req.body);
+    // Check for validation errors
+    // const errors = validationResult(req);
+    // if (!errors.isEmpty()) {
+    //   return res.status(400).json({ errors: errors.array() });
+    // }
+
+    // Call controller method to update item
+    await menuController.updateManyItems(req, res);
+  }
+);
+
+
+// Route: PUT /items/:id (Update item)
+router.put(
   '/:id',
   [
     // Validation rules using express-validator

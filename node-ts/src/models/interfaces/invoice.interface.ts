@@ -12,21 +12,21 @@ export interface IMenuItems extends Document {
 
 
 export interface IInvoice extends Document {
-    createdBy: mongoose.Types.ObjectId;
-    closedBy: mongoose.Types.ObjectId;
-    brancheId: mongoose.Types.ObjectId;
-    clientId:  mongoose.Types.ObjectId;
-    name: string;
-    phone: string;
-    activeState: boolean;
-    createdAt: Date;
-    description: string;
-    total: number;
+    createdBy:       mongoose.Types.ObjectId;
+    closedBy:        mongoose.Types.ObjectId;
+    brancheId:       mongoose.Types.ObjectId;
+    clientId:        mongoose.Types.ObjectId;
+    name:            string;
+    phone:           string;
+    activeState:     boolean;
+    createdAt:       Date;
+    description:     string;
+    total:           number;
     categoriesTotal: number;
-    menuItemsTotal: number;
-    categories: ICategories[];
-    menuItems: IMenuItems[];
-    invoiceNo: number;
+    menuItemsTotal:  number;
+    categories:      ICategories[];
+    menuItems:       IMenuItems[];
+    invoiceNo:       number;
     calculateCategoriesTotal(): Promise<number>;
     calculateMenuItemsTotal(): Promise<number>;
   }

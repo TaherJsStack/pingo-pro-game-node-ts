@@ -20,7 +20,7 @@ export abstract class CRUDController<T extends Document> extends SendResponse
 
   public createItem = async (req: CreateItemRequest<T>, res: Response): Promise<void> => {
 
-    console.log('CRUDController createItem req.body -->', req.body, req.authData);
+    // console.log('CRUDController createItem req.body -->', req.body, req.authData);
 
     try {
       if (req.file) {
@@ -158,11 +158,47 @@ export abstract class CRUDController<T extends Document> extends SendResponse
       // console.log('req.body -->', req.rawHeaders);
       // console.log('req.body -->', req.body, fileData);
 
+      req.body._id = req.params.id;
       const updatedItem = await this.model.findByIdAndUpdate(req.params.id, req.body, { new: true });
       if (!updatedItem) {
        res.status(404).json({ msg: 'Item not found' });
       }
       this.sendResponse(req, res, 200, [updatedItem]);
+    } catch (err: any) {
+      this.sendErrorResponse(req, res, err);
+    }
+  };
+
+  public updateManyItems = async (req: Request, res: Response): Promise<void> => {
+
+    try {
+      
+      // console.log('updateManyItems -->', req.body);
+
+      let ids: string[] = req.body.map((item: any) => item._id);
+
+      const updates = req.body; // Array of updates from the request body
+
+      if (!Array.isArray(updates)) {
+        res.status(400).json({ msg: 'Updates should be an array' });
+        return;
+      }
+  
+      const updatePromises = updates.map((item) =>
+        this.model.updateOne(
+          { _id: item._id }, // Filter by ID
+          {
+            $set: {
+              stock: item.stock,
+            },
+          }
+        )
+      );
+  
+      // Execute all updates in parallel
+      const results = await Promise.all(updatePromises);
+      let updatedItems = await this.model.find({ _id: { $in: ids } });
+      this.sendResponse(req, res, 200, updatedItems);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
     }

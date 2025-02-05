@@ -7,6 +7,7 @@ import PricingModel from '../../models/pricing';
 import { IInvoice } from '../../models/interfaces/invoice.interface';
 import ClientModel from '../../models/client';
 import { SendResponse } from '../base/sendResponse';
+import { CRUDController } from '../base/CRUDController';
 const { ObjectId } = require('mongoose').Types;
 
 interface CreateRequest extends Request {
@@ -21,7 +22,14 @@ interface SessionsIdsList {
   endIn?: string;
 }
 
-export class InvoiceController extends SendResponse{
+export class InvoiceController 
+// extends SendResponse{
+
+  extends CRUDController<IInvoice> {
+    constructor() {
+      super(InvoiceModel);
+    }
+
 
   createNewInvoice = async (req: CreateRequest, res: Response) => {
 
@@ -35,6 +43,7 @@ export class InvoiceController extends SendResponse{
       const newInvoice = new InvoiceModel(req.body);
       const savedInvoice = await newInvoice.save();
       await savedInvoice.calculateCategoriesTotal();
+      await savedInvoice.calculateMenuItemsTotal();
 
       // this.sendResponse(req, res, 200, savedInvoice);
       this.sendResponse(req, res, 200, [savedInvoice], savedInvoice.categories.length, 'Invoice created successfully');
@@ -45,44 +54,44 @@ export class InvoiceController extends SendResponse{
   }
   
   // Read - GET request handler (Get all items)
-  getAllItems = async (req: Request, res: Response) => {
+  //  getAllItems = async (req: Request, res: Response) => {
   
-    let filtersObject: { [key: string]: any } = {};
+  //   let filtersObject: { [key: string]: any } = {};
 
-    // let filter: any = JSON.parse(req.query.Filter);
-    let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
+  //   // let filter: any = JSON.parse(req.query.Filter);
+  //   let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
   
     
-    let { ownerId, brancheId, activeState } = filter;
-    const totalData = await InvoiceModel.find({brancheId}).countDocuments();
+  //   let { ownerId, brancheId, activeState } = filter;
+  //   const totalData = await InvoiceModel.find({brancheId}).countDocuments();
     
-    filtersObject.brancheId = brancheId;
-    // filter.activeState ? filtersObject.activeState = activeState : '';
-    // Check if activeState is defined and not null
-    if (activeState !== undefined && activeState !== null) {
-      filtersObject.activeState = activeState;
-    }
+  //   filtersObject.brancheId = brancheId;
+  //   // filter.activeState ? filtersObject.activeState = activeState : '';
+  //   // Check if activeState is defined and not null
+  //   if (activeState !== undefined && activeState !== null) {
+  //     filtersObject.activeState = activeState;
+  //   }
 
-    // const pageSize: number = req.query.PageSize && +req.query.PageSize > 0 ? req.query.PageSize : 15;
-    // const pageNo: number = req.query.PageNo && +req.query.PageNo > 0 ? req.query.PageNo : 1;
+  //   // const pageSize: number = req.query.PageSize && +req.query.PageSize > 0 ? req.query.PageSize : 15;
+  //   // const pageNo: number = req.query.PageNo && +req.query.PageNo > 0 ? req.query.PageNo : 1;
   
-    try {
-      // Fetch all items from database
-      const items = await InvoiceModel.find(filtersObject).sort({ createdAt: -1 });
-      res.status(201)
-        .json({
-          success: true,
-          errors: [],
-          status: 200,
-          message: 'Invoices fetched successfully',
-          data: items,
-          totalData
-        });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
-    }
-  };
+  //   try {
+  //     // Fetch all items from database
+  //     const items = await InvoiceModel.find(filtersObject).sort({ createdAt: -1 });
+  //     res.status(201)
+  //       .json({
+  //         success: true,
+  //         errors: [],
+  //         status: 200,
+  //         message: 'Invoices fetched successfully',
+  //         data: items,
+  //         totalData
+  //       });
+  //   } catch (err: any) {
+  //     console.error(err.message);
+  //     res.status(500).send('Server Error');
+  //   }
+  // };
   
   // Read - GET request handler (Get all items with pagination and filtering)
   getAllItemsPagination = async (req: Request, res: Response) => {
@@ -124,26 +133,26 @@ export class InvoiceController extends SendResponse{
   };
   
   // Read - GET request handler (Get item by ID)
-  getItemById = async (req: Request, res: Response) => {
-    try {
-      // Fetch item by ID from database
-      const item = await InvoiceModel.findById(req.params.id);
-      if (!item) {
-        return res.status(404).json({ msg: 'Item not found' });
-      }
-      res.status(201)
-        .json({
-          success: true,
-          errors: [],
-          status: 200,
-          message: '',
-          data: {}
-        });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
-    }
-  };
+  // getItemById = async (req: Request, res: Response) => {
+  //   try {
+  //     // Fetch item by ID from database
+  //     const item = await InvoiceModel.findById(req.params.id);
+  //     if (!item) {
+  //       return res.status(404).json({ msg: 'Item not found' });
+  //     }
+  //     res.status(201)
+  //       .json({
+  //         success: true,
+  //         errors: [],
+  //         status: 200,
+  //         message: '',
+  //         data: {}
+  //       });
+  //   } catch (err: any) {
+  //     console.error(err.message);
+  //     res.status(500).send('Server Error');
+  //   }
+  // };
   
   updateBill = async (req: CreateRequest, res: Response) => {
     let _id = req.params.id
@@ -346,55 +355,55 @@ export class InvoiceController extends SendResponse{
   };
   
   // Update - PUT request handler
-  updateItem = async (req: Request, res: Response) => {
+  // updateItem = async (req: Request, res: Response) => {
   
-    // menuItems
-    let _id = req.params.id
-    try {
-      // Update item by ID in database
-      const updatedItem = await InvoiceModel.findByIdAndUpdate(
-        _id,
-        req.body,
-        { new: true }
-      );
-      if (!updatedItem) {
-        return res.status(404).json({ msg: 'Item not found' });
-      }
-      res.status(201)
-        .json({
-          success: true,
-          errors: [],
-          status: 200,
-          message: '',
-          data: [updatedItem]
-        });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
-    }
-  };
+  //   // menuItems
+  //   let _id = req.params.id
+  //   try {
+  //     // Update item by ID in database
+  //     const updatedItem = await InvoiceModel.findByIdAndUpdate(
+  //       _id,
+  //       req.body,
+  //       { new: true }
+  //     );
+  //     if (!updatedItem) {
+  //       return res.status(404).json({ msg: 'Item not found' });
+  //     }
+  //     res.status(201)
+  //       .json({
+  //         success: true,
+  //         errors: [],
+  //         status: 200,
+  //         message: '',
+  //         data: [updatedItem]
+  //       });
+  //   } catch (err: any) {
+  //     console.error(err.message);
+  //     res.status(500).send('Server Error');
+  //   }
+  // };
   
   // Delete - DELETE request handler
-  deleteItem = async (req: Request, res: Response) => {
-    try {
-      // Delete item by ID from database
-      const deletedItem = await InvoiceModel.findByIdAndDelete(req.params.id);
-      if (!deletedItem) {
-        return res.status(404).json({ msg: 'Item not found' });
-      }
-      res.status(201)
-        .json({
-          success: true,
-          errors: [],
-          status: 200,
-          message: '',
-          data: {}
-        });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
-    }
-  };
+  // deleteItem = async (req: Request, res: Response) => {
+  //   try {
+  //     // Delete item by ID from database
+  //     const deletedItem = await InvoiceModel.findByIdAndDelete(req.params.id);
+  //     if (!deletedItem) {
+  //       return res.status(404).json({ msg: 'Item not found' });
+  //     }
+  //     res.status(201)
+  //       .json({
+  //         success: true,
+  //         errors: [],
+  //         status: 200,
+  //         message: '',
+  //         data: {}
+  //       });
+  //   } catch (err: any) {
+  //     console.error(err.message);
+  //     res.status(500).send('Server Error');
+  //   }
+  // };
 
   // --------------------------------------------------------------------------------------------------
   // --------------------------------------------------------------------------------------------------
