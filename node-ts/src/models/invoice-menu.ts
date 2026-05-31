@@ -1,15 +1,17 @@
-import mongoose, { Document, Schema, Model } from 'mongoose';
+import mongoose, { Model, Schema } from 'mongoose';
+import { IInvoiceMenu, IInvoiceMenuMethods } from './interfaces/invoice-menu.interface';
 import { IInvoiceMenuItem } from './interfaces/invoice-menu-item.interface';
-import { IInvoiceMenu } from './interfaces/invoice-menu.interface';
 
-const invoiceMenuSchema: Schema<IInvoiceMenu> = new Schema<IInvoiceMenu>({
+type InvoiceMenuModel = Model<IInvoiceMenu, {}, IInvoiceMenuMethods>;
+
+const invoiceMenuSchema: Schema<IInvoiceMenu, InvoiceMenuModel, IInvoiceMenuMethods> = new Schema<IInvoiceMenu, InvoiceMenuModel, IInvoiceMenuMethods>({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
   closedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth' },
   brancheId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },
   client: { type: String, required: true },
   total: { type: Number, default: 0 },
   activeState: { type: Boolean, default: true },
-  createdAt: { type: Date, default: new Date() },
+  createdAt: { type: Date, default: Date.now },
   description: { type: String, default: '' },
   menuItems: [
     {
@@ -34,4 +36,4 @@ invoiceMenuSchema.methods.updateTotal = async function (): Promise<number> {
   }
 };
 
-export default mongoose.model<IInvoiceMenu, Model<IInvoiceMenu>>('invoiceMenu', invoiceMenuSchema);
+export default mongoose.model<IInvoiceMenu, InvoiceMenuModel>('invoiceMenu', invoiceMenuSchema);

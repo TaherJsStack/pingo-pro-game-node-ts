@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
 import { IOwner } from './interfaces/owner.interface';
 // import { Email } from 'mongoose-type-email';
@@ -10,7 +10,7 @@ const ownerSchema: Schema<IOwner> = new Schema<IOwner>({
     permeation: { type: [Number], required: true, default: [3] },
     imageUrl: { type: String, default: '' },
     activeState: { type: Boolean, default: true },
-    createdAt: { type: Date, default: new Date() },
+    createdAt: { type: Date, default: Date.now },
     description: { type: String, default: '' },
     governorate: { type: String, default: '' },
     city: { type: String, default: '' },

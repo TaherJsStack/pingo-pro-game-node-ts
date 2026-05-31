@@ -1,5 +1,5 @@
 import { IAudit } from "./interfaces/audit.interface";
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 // const mongoose = require('mongoose');
 

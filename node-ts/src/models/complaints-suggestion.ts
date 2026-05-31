@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 import { IComplaintsSuggestion } from './interfaces/complaints-suggestion.interface';
 

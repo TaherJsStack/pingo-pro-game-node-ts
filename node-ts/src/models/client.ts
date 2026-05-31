@@ -1,5 +1,6 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import { IClient } from './interfaces/client.interface';
+import { invalidateIfDuplicate } from './helpers/uniqueness';
 
 const clientSchema: Schema<IClient> = new Schema<IClient>({
   ownerId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
@@ -8,7 +9,7 @@ const clientSchema: Schema<IClient> = new Schema<IClient>({
   name:        { type: String, required: true },
   phone:       { type: String, required: true },
   activeState: { type: Boolean, default: true },
-  createdAt:   { type: Date, default: new Date() },
+  createdAt:   { type: Date, default: Date.now },
   description: { type: String, default: '' },
 }, {
   timestamps: true
@@ -16,17 +17,22 @@ const clientSchema: Schema<IClient> = new Schema<IClient>({
 
 clientSchema.index({ name: 'text', description: 'text' });
 
-// Custom validation to check uniqueness 
-clientSchema.pre('validate', async function(this: IClient, next) {
-  const existing = await mongoose.models.Client.findOne({
-    phone: this.phone,
-    brancheId: this.brancheId,
-  });
-
-  if (existing) {
-    const error = new Error('Client must be unique for brancheId combination');
-    this.invalidate('Client', error.message);
+clientSchema.pre('validate', async function(next) {
+  if (!this.isModified('phone') && !this.isModified('brancheId')) {
+    return next();
   }
+
+  await invalidateIfDuplicate({
+    model: mongoose.models.Client,
+    filter: {
+      phone: this.phone,
+      brancheId: this.brancheId,
+    },
+    currentId: this._id,
+    invalidate: this.invalidate.bind(this),
+    path: 'phone',
+    message: 'Client must be unique for brancheId combination',
+  });
 
   next();
 });

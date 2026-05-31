@@ -1,5 +1,5 @@
 import { IPermissions } from './interfaces/permissions.interface';
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
 import { IAuth } from './interfaces/auth.interface';
 

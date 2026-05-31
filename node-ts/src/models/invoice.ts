@@ -1,8 +1,10 @@
-import mongoose, { Document, Schema, Model } from 'mongoose';
+import mongoose, { Model, Schema } from 'mongoose';
 import { ICategories } from './interfaces/categories.interface';
-import { IInvoice, IMenuItems } from './interfaces/invoice.interface';
+import { IInvoice, IInvoiceMethods, IMenuItems } from './interfaces/invoice.interface';
 
-const invoiceSchema: Schema<IInvoice> = new Schema<IInvoice>(
+type InvoiceModel = Model<IInvoice, {}, IInvoiceMethods>;
+
+const invoiceSchema: Schema<IInvoice, InvoiceModel, IInvoiceMethods> = new Schema<IInvoice, InvoiceModel, IInvoiceMethods>(
   {
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
     closedBy:  { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', default: null },
@@ -12,7 +14,7 @@ const invoiceSchema: Schema<IInvoice> = new Schema<IInvoice>(
     name: { type: String, default: '' },
     phone: { type: String, default: '' },
     activeState: { type: Boolean, default: true },
-    createdAt: { type: Date, default: new Date() },
+    createdAt: { type: Date, default: Date.now },
     description: { type: String, default: '' },
     total: { type: Number, default: 0 },
     categoriesTotal: { type: Number, default: 0 },
@@ -35,6 +37,7 @@ const invoiceSchema: Schema<IInvoice> = new Schema<IInvoice>(
     menuItems: [
       {
         itemID: { type: mongoose.Schema.Types.ObjectId, ref: 'Menu', required: true },
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', default: null },
         itemName: { type: String, required: true },
         quantity: { type: Number, required: true },
         price: { type: Number, default: 1 },
@@ -100,6 +103,6 @@ invoiceSchema.pre('save', async function (next) {
   }
 });
 
-const Invoice: Model<IInvoice> = mongoose.model<IInvoice>('Invoice', invoiceSchema);
+const Invoice: InvoiceModel = mongoose.model<IInvoice, InvoiceModel>('Invoice', invoiceSchema);
 
 export default Invoice;

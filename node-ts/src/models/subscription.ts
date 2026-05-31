@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 // import uniqueValidator from 'mongoose-unique-validator';
 import { ISubscription } from './interfaces/subscription.interface';
 
@@ -7,7 +7,7 @@ const subscriptionSchema: Schema<ISubscription> = new Schema<ISubscription>({
     state: { type: String, required: true },
     type: { type: String, required: true },
     activeState: { type: Boolean, default: true },
-    createdAt: { type: Date, default: new Date() },
+    createdAt: { type: Date, default: Date.now },
     description: { type: String, default: '' },
 
     userId: { type: String, required: true },

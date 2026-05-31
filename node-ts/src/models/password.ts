@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import { IPassword } from './interfaces/password.interface';
 
 const PasswordSchema: Schema<IPassword> = new Schema<IPassword>({

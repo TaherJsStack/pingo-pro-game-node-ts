@@ -1,8 +1,8 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import { IPlan } from './interfaces/plan.interface';
 
 
-const PlanSchema: Schema = new Schema<IPlan>({
+const PlanSchema: Schema<IPlan> = new Schema<IPlan>({
   name: { type: String, required: true },
   description: { type: String, required: true },
   price: { type: Number, required: true },

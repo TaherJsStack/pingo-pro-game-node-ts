@@ -1,10 +1,12 @@
-import mongoose, { Document, Schema, Model } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
 import { IMenu } from './interfaces/menu.interface';
+import { invalidateIfDuplicate } from './helpers/uniqueness';
 
 const MenuSchema: Schema<IMenu> = new Schema<IMenu>({
   ownerId:      { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
   brancheId:    { type: Schema.Types.ObjectId, ref: 'Branche', required: true },
+  createdBy:    { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
   name:         { type: String, required: true },
   price:        { type: Number, required: true },
   type:         { type: String, required: true },
@@ -12,27 +14,31 @@ const MenuSchema: Schema<IMenu> = new Schema<IMenu>({
   logo:         { type: String, default: '' },
   description:  { type: String, default: '' },
   activeState:  { type: Boolean, default: true },
-  createdAt:    { type: Date, default: new Date() },
+  createdAt:    { type: Date, default: Date.now },
 }, {
   timestamps: true
 });
 
-// Custom validation to check uniqueness of menu for ownerId and brancheId combination
 MenuSchema.pre('validate', async function (next) {
-  const existingMenu = await mongoose.models.Menu.findOne({
-    name: this.name,
-    brancheId: this.brancheId,
-  });
-
-  if (existingMenu) {
-    const error = new Error('Menu must be unique for brancheId combination');
-    this.invalidate('menu', error.message);
+  if (!this.isModified('name') && !this.isModified('brancheId')) {
+    return next();
   }
+
+  await invalidateIfDuplicate({
+    model: mongoose.models.Menu,
+    filter: {
+      name: this.name,
+      brancheId: this.brancheId,
+    },
+    currentId: this._id,
+    invalidate: this.invalidate.bind(this),
+    path: 'name',
+    message: 'Menu must be unique for brancheId combination',
+  });
 
   next();
 });
 
 MenuSchema.plugin(uniqueValidator);
 
-const MenuModel: Model<IMenu> = mongoose.model<IMenu>('Menu', MenuSchema);
-export default MenuModel;
+export default mongoose.model<IMenu>('Menu', MenuSchema);

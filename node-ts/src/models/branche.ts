@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
 import { IBranche } from './interfaces/branche.interface';
 
@@ -9,7 +9,7 @@ const brancheSchema: Schema<IBranche> = new Schema<IBranche>({
     address: { type: String, default: '' },
     description: { type: String, default: '' },
     activeState: { type: Boolean, default: true },
-    createdAt: { type: Date, default: new Date() },
+    createdAt: { type: Date, default: Date.now },
 }, {
     timestamps: true
 });

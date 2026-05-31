@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import { IBlacklistedToken } from './interfaces/black-listed-token';
 
 const BlacklistedTokenSchema: Schema = new Schema<IBlacklistedToken>({

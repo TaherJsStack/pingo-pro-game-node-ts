@@ -1,6 +1,7 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
 import { ICategory } from './interfaces/category.interface';
+import { invalidateIfDuplicate } from './helpers/uniqueness';
 
 const CategorySchema: Schema<ICategory> = new Schema<ICategory>({
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
@@ -13,27 +14,31 @@ const CategorySchema: Schema<ICategory> = new Schema<ICategory>({
   description: { type: String, default: '' },
   activeState: { type: Boolean, default: true },
   bookState: { type: Boolean, default: false },
-  createdAt: { type: Date, default: new Date() },
+  createdAt: { type: Date, default: Date.now },
 }, {
   timestamps: true
 });
 
-// Custom validation to check uniqueness of category for ownerId and brancheId combination
-CategorySchema.pre<ICategory>('validate', async function (next: any) {
-  const existingCategory = await mongoose.models.Category.findOne({
-    category: next.category,
-    brancheId: next.brancheId,
-  });
-
-  if (existingCategory) {
-    const error = new Error('Category must be unique for brancheId combination');
-    next.invalidate('category', error.message);
+CategorySchema.pre('validate', async function (next) {
+  if (!this.isModified('category') && !this.isModified('brancheId')) {
+    return next();
   }
+
+  await invalidateIfDuplicate({
+    model: mongoose.models.Category,
+    filter: {
+      category: this.category,
+      brancheId: this.brancheId,
+    },
+    currentId: this._id,
+    invalidate: this.invalidate.bind(this),
+    path: 'category',
+    message: 'Category must be unique for brancheId combination',
+  });
 
   next();
 });
 
 CategorySchema.plugin(uniqueValidator);
 
-const CategoryModel: Model<ICategory> = mongoose.model<ICategory>('Category', CategorySchema);
-export default CategoryModel;
+export default mongoose.model<ICategory>('Category', CategorySchema);

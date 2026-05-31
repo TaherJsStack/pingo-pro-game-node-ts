@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+// Legacy model kept for compatibility during the safe stabilization pass.
 interface IShop extends Document {
     ownerId: string;
     brancheId: string;
@@ -17,7 +18,7 @@ const shopSchema: Schema<IShop> = new Schema({
     name: { type: String },
     type: { type: String },
     activeState: { type: Boolean, default: true },
-    createdAt: { type: Date, default: new Date() },
+    createdAt: { type: Date, default: Date.now },
     description: { type: String, default: '' },
 }, {
     timestamps: true
