@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import mongoose, { Document, Model } from 'mongoose';
+import { Model } from 'mongoose';
 const { ObjectId } = require('mongoose').Types;
 import { CreateItemRequest } from '../interfaces/CustomRequestType';
 import { CreateOperation } from '../interfaces/CreateOperation';
@@ -8,7 +8,7 @@ import { DeleteOperation } from '../interfaces/DeleteOperation';
 import { UpdateOperation } from '../interfaces/UpdateOperation';
 import { SendResponse } from './sendResponse';
 
-export abstract class CRUDController<T extends Document> extends SendResponse
+export abstract class CRUDController<T extends object> extends SendResponse
   implements CreateOperation<T>, ReadOperation<T>, UpdateOperation<T>, DeleteOperation<T> {
   
   protected model: Model<T>;
@@ -26,7 +26,7 @@ export abstract class CRUDController<T extends Document> extends SendResponse
       if (req.file) {
         (req.body as any)['logo'] = `${req.protocol}://${req.get('host')}/api/uploads/${req.file.filename}`;
       }
-      const newItem: T = new this.model(req.body);
+      const newItem = new this.model(req.body);
       if ('ownerId' in this.model.schema.obj) {
         newItem.$set('ownerId', new ObjectId(req.authData.id));
       }
@@ -93,29 +93,6 @@ export abstract class CRUDController<T extends Document> extends SendResponse
                                     .skip(skip)
                                     .limit(pageSize);
 
-      // if (typeof searchKeyword !== 'undefined' && searchKeyword !== null && searchKeyword !== '') {
-
-      //   // const indexes = await this.model.collection.indexes();
-      //   // console.log('indexes -------> ', indexes);
-        
-      //   // const textSearchIndex = indexes.find(index => index.name === 'textSearchIndex');
-      //   // console.log('textSearchIndex -------> ', textSearchIndex);
-      //   // const filter2 = { 
-      //   //   brancheId: new mongoose.Types.ObjectId('6633e103adf3db7b0c70fe73'), 
-      //   //   $text: { $search: "mmmmmm" },
-      //   //   // $or: [
-      //   //   //   { name: { $regex: "g", $options: "i" } },
-      //   //   //   { description: { $regex: "g", $options: "i" } }
-      //   //   //   // { name: { $regex: /g/i } },
-      //   //   //   // { description: { $regex: /g/i } }
-      //   //   // ]
-      //   // };
-      //   // console.log('filter2 -------> ', filter2);  
-      //   // const items1 = await this.model.find(filter2);
-
-      //   // console.log('items1 -------> ', items1);
-      
-      // }
                                     
       this.sendResponse(req, res, 200, items, totalData);
     } catch (err: any) {
@@ -158,7 +135,7 @@ export abstract class CRUDController<T extends Document> extends SendResponse
       // console.log('req.body -->', req.rawHeaders);
       // console.log('req.body -->', req.body, fileData);
 
-      req.body._id = req.params.id;
+      (req.body as any)._id = req.params.id;
       const updatedItem = await this.model.findByIdAndUpdate(req.params.id, req.body, { new: true });
       if (!updatedItem) {
        res.status(404).json({ msg: 'Item not found' });
