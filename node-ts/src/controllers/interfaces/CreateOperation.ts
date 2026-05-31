@@ -1,8 +1,6 @@
-import { Document, Model } from 'mongoose';
 import { Request, Response } from 'express';
 import { CreateItemRequest } from './CustomRequestType';
 
-// Interface for Create operation
-export interface CreateOperation<T extends Document> {
+export interface CreateOperation<T extends object> {
   createItem(req: CreateItemRequest<T>, res: Response): Promise<void>;
 }
