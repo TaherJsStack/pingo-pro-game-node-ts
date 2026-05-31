@@ -12,20 +12,20 @@ interface Filter {
   activeState: boolean;
 }
 
-export class StatisticsController{
+export class StatisticsController {
   getGroupedInvoicesByClosedBy = async (req: Request, res: Response) => {
     // let filter: Filter = JSON.parse(req.query.Filter);
-  
+
     let filterObg = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
-  
+
     let { ownerId, brancheId, filter } = filterObg;
     let { startDate, endDate, activeState } = filter;
-  
+
     // console.log('getGroupedInvoicesByClosedBy filter', filterObg);
-  
+
     try {
       const invoices = await Invoice.aggregate([
-        
+
         {
           $match: {
             createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
@@ -71,38 +71,8 @@ export class StatisticsController{
           },
         },
 
-        // {
-        //   $match: {
-        //     createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
-        //     brancheId: new ObjectId(brancheId),
-        //     activeState: activeState,
-        //   },
-        // },
-        // {
-        //   $group: {
-        //     _id: "$closedBy",
-        //     invoices: { $push: "$$ROOT" },
-        //     invoicesTotal: { $sum: "$total" },
-        //     categoriesTotal: { $sum: "$categoriesTotal" },
-        //     menuItemsTotal: { $sum: "$menuItemsTotal" },
-        //   },
-        // },
-        // {
-        //   $lookup: {
-        //     from: 'auths',
-        //     localField: '_id',
-        //     foreignField: '_id',
-        //     as: 'closedByUser',
-        //   },
-        // },
-        // {
-        //   $unwind: {
-        //     path: "$closedByUser",
-        //     preserveNullAndEmptyArrays: true,
-        //   },
-        // },
       ]);
-  
+
       res.status(201).json({
         success: true,
         errors: [],
@@ -125,14 +95,14 @@ export class StatisticsController{
     // let filter: Filter = JSON.parse(req.query.Filter);
     let _id = req.params.id;
     let filterObg = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : req.query.Filter;
-  
+
     let { ownerId, brancheId, filter, startDate, endDate, activeState } = filterObg;
     // let {  } = filter;
-  
+
     // console.log('getGroupedInvoicesByClosedBy filter', filterObg);
-  
+
     try {
-  
+
       const invoices = await Invoice.aggregate([
         {
           $match: {
@@ -179,7 +149,7 @@ export class StatisticsController{
             preserveNullAndEmptyArrays: true,
           },
         },
-      
+
         {
           $project: {
             "closedByUser._id": 1,
@@ -224,60 +194,7 @@ export class StatisticsController{
           },
         },
       ]);
-      
-      // console.log(invoices);
-      
-  
-      // const invoices = await Invoice.aggregate([
-        
-      //   {
-      //     $match: {
-      //       // createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
-      //       brancheId: new ObjectId(brancheId),
-      //       activeState,
-      //       closedBy: new ObjectId(_id),
-      //     },
-      //   },
-      //   {
-      //     $group: {
-      //       _id: "$closedBy",
-      //       invoices: { $push: "$$ROOT" },
-      //       invoicesTotal: { $sum: "$total" },
-      //       categoriesTotal: { $sum: "$categoriesTotal" },
-      //       menuItemsTotal: { $sum: "$menuItemsTotal" },
-      //     },
-      //   },
-        
-      //   {
-      //     $lookup: {
-      //       from: 'auths',
-      //       localField: '_id',
-      //       foreignField: '_id',
-      //       as: 'closedByUser',
-      //     },
-      //   },
-      //   {
-      //     $lookup: {
-      //       from: 'invoicemenus',
-      //       localField: '_id',
-      //       foreignField: 'closedBy',
-      //       as: 'invoicemenus',
-      //     },
-      //   },
-      //   {
-      //     $unwind: {
-      //       path: "$closedByUser",
-      //       preserveNullAndEmptyArrays: true,
-      //     },
-      //   },
-      //   {
-      //     $unwind: {
-      //       path: "$invoicemenus",
-      //       preserveNullAndEmptyArrays: true,
-      //     },
-      //   },
-      // ]);
-  
+
       res.status(201).json({
         success: true,
         errors: [],

@@ -13,7 +13,7 @@ export class InboxController extends CRUDController<IInbox> {
 
   async sendWelcomMessage(userId: string) {
     try {
-      const message: IInbox = new InboxModel();
+      const message = new InboxModel();
       await message.$set('ownerId', new ObjectId(userId));
       await message.$set('title', 'welcom to our inbox');
       await message.$set('type', 'welcom');

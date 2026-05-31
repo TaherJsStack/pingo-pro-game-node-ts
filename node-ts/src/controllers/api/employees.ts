@@ -5,18 +5,18 @@ import Password from '../../models/password';
 import { generateBcryptHash } from '../../util/jwtUtil';
 import { CRUDController } from '../base/CRUDController';
 
-export class EmployeesController extends CRUDController<IAuth>{
+export class EmployeesController extends CRUDController<IAuth> {
     constructor() {
         super(Auth);
-      }
-    
+    }
+
     checkEmail = (req: Request, res: Response, next: NextFunction): void => {
         Auth.findOne({ email: req.params.email })
             .then((user: any) => {
-    
+
                 if (!user || user === null) { throw new Error('this email doesn\'t exist ') }
-                if (user && !user['activeState'] ) { throw new Error('this account has been blocked ') }
-    
+                if (user && !user['activeState']) { throw new Error('this account has been blocked ') }
+
                 res.status(200).json({
                     userId: user._id,
                     message: 'Welcom....',
@@ -24,19 +24,19 @@ export class EmployeesController extends CRUDController<IAuth>{
                 })
             })
             .catch((err: Error) => {
-    
+
                 res.status(500).json({
                     message: 'check Email' + err,
                     status: 500
                 })
             })
     }
-    
+
     updatePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    
-        let bcryptHash =  await generateBcryptHash(req.body.password, 10);
-    
-        Password.updateOne({ userId: req.body.id }, {password: bcryptHash})
+
+        let bcryptHash = await generateBcryptHash(req.body.password, 10);
+
+        Password.updateOne({ userId: req.body.id }, { password: bcryptHash })
             .then((saved: any) => {
                 res.status(200).json({
                     message: "updated password successfully",
@@ -50,117 +50,75 @@ export class EmployeesController extends CRUDController<IAuth>{
                 });
             });
     }
-    
+
     saveAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    
-        let bcryptHash  = await generateBcryptHash(req.body.password, 10)
-        const newAuth   = await new Auth(req.body);
+
+        let bcryptHash = await generateBcryptHash(req.body.password, 10)
+        const newAuth = await new Auth(req.body);
         // newAuth['password'] = await bcryptHash;
         let password = await bcryptHash;
         newAuth.save()
             .then(async (saved: any) => {
-    
+
                 let savedPassword = await saveNewPassword(req, saved._id, password)
-    
+
                 if (!savedPassword) {
                     await Auth.deleteOne({ _id: saved._id })
                     throw new Error('new user not added !!!')
                 }
                 res.status(200)
                     .json({
-                        success:  true,
-                        errors:   [],
-                        status:   200,
-                        message:  'new employee added successfully',
-                        data:     [saved]
+                        success: true,
+                        errors: [],
+                        status: 200,
+                        message: 'new employee added successfully',
+                        data: [saved]
                     })
             })
             .catch((err: Error) => {
                 res.status(500).json({
-                    message: `login error ->  ${ err.message }`,
+                    message: `login error ->  ${err.message}`,
                     status: 500,
                     success: true,
                     errors: [
-                        `login error ->  ${ err.message }`
+                        `login error ->  ${err.message}`
                     ],
                     data: []
                 });
             })
     }
-    
-    updateOne  = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    
+
+    updateOne = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+
         try {
             // Update item by ID in database
             const updatedItem = await Auth.findByIdAndUpdate(
-              req.params.id,
-              req.body,
-              { new: true }
+                req.params.id,
+                req.body,
+                { new: true }
             );
             if (!updatedItem) {
                 res.status(404).json({ msg: 'Item not found' });
             }
             res.status(201)
                 .json({
-                success: true,
-                errors: [],
-                status: 200,
-                message:  'updated successfully',
-                data: [updatedItem]
-            });
+                    success: true,
+                    errors: [],
+                    status: 200,
+                    message: 'updated successfully',
+                    data: [updatedItem]
+                });
         } catch (err: any) {
             console.error(err.message);
             res.status(500).send('Server Error');
         }
     }
-    
-    // getAllItems = async (req: Request, res: Response): Promise<void> => {
-        
-    //     let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
-    
-    //     let {ownerId, brancheId} = filter;
 
-    //     console.log('filter---> ', filter);
-    
-    //     const pageSize = req.query.PageSize && +req.query.PageSize > 0 ? req.query.PageSize : 15;
-    //     const pageNo   = req.query.PageNo && +req.query.PageNo > 0 ? req.query.PageNo : 1 ;
-    
-    //     try {
-    //         // console.log('filter', filter);
-    //         // console.log('brancheId', brancheId);
-    
-    //         // Fetch all items from database
-    //     //   const items = await Auth.find({ brancheId, authType: "employee"}).sort({ createdAt: -1, activeState: 1 });
-    //         const items = brancheId ? await Auth.find({ brancheId}).sort({ createdAt: -1, activeState: 1 }) : [];
-    //         const totalData = await Auth.find({ brancheId}).countDocuments();
-
-    //         res.status(201)
-    //         .json({
-    //             success: true,
-    //             errors: [],
-    //             status: 200,
-    //             message:  '',
-    //             data: items,
-    //             totalData
-    //         });
-    //     } catch (err: any) {
-    //         console.error(err.message);
-    //         res.status(500)
-    //         .json({
-    //             success: false,
-    //             errors: [err.message],
-    //             status: 500,
-    //             message:  '',
-    //             data: []
-    //         });
-    //     }
-    // };
-    
     getById = (req: Request, res: Response, next: NextFunction): void => {
         Auth.findOne({ _id: req.params.authId })
             .then((member: any) => {
-    
-                if(member == null) {
+
+                if (member == null) {
                     throw new Error(' user no data found')
                 }
                 res.status(200).json({
@@ -171,12 +129,12 @@ export class EmployeesController extends CRUDController<IAuth>{
             })
             .catch((err: Error) => {
                 res.status(500).json({
-                    message: `err => ::: error catch ${ err.message }`,
+                    message: `err => ::: error catch ${err.message}`,
                     status: 500
                 })
             })
     }
-    
+
     deleteOne = (req: Request, res: Response, next: NextFunction): void => {
         Auth.deleteOne({ _id: req.params.id })
             .then((admin: any) => {
@@ -188,7 +146,7 @@ export class EmployeesController extends CRUDController<IAuth>{
             })
             .catch((err: Error) => {
                 res.status(500).json({
-                    message: `err => ::: error catch  ${ err.message }`,
+                    message: `err => ::: error catch  ${err.message}`,
                     status: 500
                 })
             })
@@ -199,7 +157,7 @@ export class EmployeesController extends CRUDController<IAuth>{
 async function saveNewPassword(req: Request, userId: string, password: string): Promise<any> {
 
     try {
-        let setPassword   = new Password({userId, password})    
+        let setPassword = new Password({ userId, password })
         let savedPassword = await setPassword.save()
         return savedPassword
     } catch (err) {

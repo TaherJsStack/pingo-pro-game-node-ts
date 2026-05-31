@@ -15,26 +15,55 @@ interface CreateItemRequest extends Request {
   body: ISession;
 }
 
-export class SessionController{
+export class SessionController {
+
   createItem = async (req: CreateItemRequest, res: Response) => {
     try {
-      // Create new item using request body
-      let newItem:ISession = new SessionClientModel(req.body);
-  
-      newItem.createdBy = new ObjectId(req.authData.id);
-  
-      // Save item to database
-      const savedItem = await newItem.save();
-      // InvoiceService.setData({
-      //   message: 'Invoice Service setData from create Item',
-      //   setDataTyep: 'create',
-      //   savedItem,
-      // });
-  
-      res.status(201).json({
+      const createdBy = new ObjectId(req.authData.id);
+      const incomingCategories = Array.isArray(req.body.categories) ? req.body.categories : [];
+      const categories = incomingCategories.map((device: any) => ({
+        ...device,
+        createdBy,
+        closedBy: device.closedBy ?? null,
+        type: device.type ?? 'open',
+        Sessiontype: device.Sessiontype ?? 'open',
+        startTime: device.startTime ?? new Date(),
+        price: Number(device.price ?? 0),
+        estimationInHours: Number(device.estimationInHours ?? 0),
+        estimationInMinutes: Number(device.estimationInMinutes ?? 0),
+      }));
+
+      console.log("req.body --->", req.body)
+      console.log("req.authData --->", req.authData)
+
+      const existingSession = await SessionClientModel.findOne({
+        clientId: req.body.clientId,
+        brancheId: req.body.brancheId,
+        activeState: true,
+      });
+
+      let savedItem;
+
+      if (existingSession) {
+        existingSession.categories.push(...categories);
+        savedItem = await existingSession.save();
+      } else {
+        const newItem = new SessionClientModel({
+          ...req.body,
+          createdBy,
+          activeState: true,
+          categories,
+        });
+
+        savedItem = await newItem.save();
+      }
+
+      const responseStatus = existingSession ? 200 : 201;
+
+      res.status(responseStatus).json({
         success: true,
         errors: [],
-        status: 200,
+        status: responseStatus,
         message: '',
         data: [savedItem],
       });
@@ -45,20 +74,20 @@ export class SessionController{
         errors: [err.message],
         status: 500,
         message: '',
-        data: {},
+        data: [],
       });
     }
   };
-  
+
   getAllItems = async (req: Request, res: Response) => {
     // let filter = JSON.parse(req.query.Filter);
     let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
-  // console.log('sessions filter --->', filter);
+    // console.log('sessions filter --->', filter);
     let { ownerId, brancheId } = filter;
-  
+
     const pageSize = req.query.PageSize && +req.query.PageSize > 0 ? req.query.PageSize : 15;
     const pageNo = req.query.PageNo && +req.query.PageNo > 0 ? req.query.PageNo : 1;
-  
+
     try {
       // Fetch all items from database
       const items = await SessionClientModel.find({ brancheId }).sort({ createdAt: -1, activeState: 1 });
@@ -74,25 +103,25 @@ export class SessionController{
       res.status(500).send('Server Error');
     }
   };
-  
+
   getAllItemsPagination = async (req: Request, res: Response) => {
     try {
       let { page = 1, limit = 10, filterBy, filterValue } = req.query;
       page = +page;
       limit = +limit;
-  
+
       // Build filter object based on query parameters
       let filter = {};
       // if (filterBy && filterValue) {
       //   filter[filterBy] = { $regex: new RegExp(filterValue, 'i') }; // Case-insensitive regex search
       // }
-  
+
       // Fetch items from database with pagination and filtering
       const items = await SessionClientModel.find(filter).skip((page - 1) * limit).limit(limit);
-  
+
       // Count total number of items (for pagination)
       const totalCount = await SessionClientModel.countDocuments(filter);
-  
+
       res.status(200).json({
         success: true,
         data: {
@@ -110,7 +139,7 @@ export class SessionController{
       res.status(500).send('Server Error');
     }
   };
-  
+
   getItemById = async (req: Request, res: Response) => {
     try {
       // Fetch item by ID from database
@@ -130,7 +159,7 @@ export class SessionController{
       res.status(500).send('Server Error');
     }
   };
-  
+
   updateItem = async (req: Request, res: Response) => {
     try {
       // Update item by ID in database
@@ -155,7 +184,22 @@ export class SessionController{
       res.status(500).send('Server Error');
     }
   };
-  
+
+  endSession = async (req: Request, res: Response) => {
+    try {
+      res.status(201).json({
+        success: true,
+        errors: [],
+        status: 200,
+        message: '',
+        data: [],
+      });
+    } catch (err: any) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
+    }
+  };
+
   deleteItem = async (req: Request, res: Response) => {
     try {
       // Delete item by ID from database
@@ -175,7 +219,7 @@ export class SessionController{
       res.status(500).send('Server Error');
     }
   };
-  
+
   deleteSessionItem = async (req: Request, res: Response) => {
     try {
       // Delete item by ID from database
@@ -183,7 +227,7 @@ export class SessionController{
       if (!deletedItem) {
         return res.status(404).json({ msg: 'Item not found' });
       }
-  
+
       InvoiceService.setData({
         message: 'Invoice Service setData from delete Session Item',
         setDataTyep: 'end',
@@ -203,16 +247,16 @@ export class SessionController{
       res.status(500).send('Server Error');
     }
   };
-  
+
   deleteAllReletedToBill = async (req: Request, res: Response) => {
     try {
       // console.log('deleteAllReletedToBill req.params', req.params);
-  
+
       let ids = req.params.id.split(',');
       let idsToDelete = ids.map((id) => new Types.ObjectId(id));
-  
+
       let deletedList = await SessionClientModel.deleteMany({ _id: { $in: idsToDelete } });
-  
+
       // InvoiceService.setData({
       //   message: 'Invoice Service setData from delete All Releted To Bill',
       //   setDataTyep: 'endList',
@@ -225,7 +269,7 @@ export class SessionController{
       //   idsToDelete: idsToDelete as [],
       //   endIn: req.params.endIn,
       // });
-  
+
       res.status(201).json({
         success: true,
         errors: [],

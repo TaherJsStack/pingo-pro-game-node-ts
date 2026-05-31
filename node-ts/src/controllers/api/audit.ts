@@ -12,7 +12,7 @@ export class AuditController {
 
    async createAuditItem(data: Partial<IAudit>): Promise<void> {
     try {
-      const newItem: IAudit = new AuditModel(data);
+      const newItem = new AuditModel(data);
       await newItem.save();
       // console.log('Audit item created successfully:', newItem);
     } catch (error) {

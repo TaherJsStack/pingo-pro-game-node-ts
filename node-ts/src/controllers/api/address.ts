@@ -23,7 +23,7 @@ export class AddressController extends CRUDController<IAddress> implements Creat
 
   createItemAuthAddress = async ( res: Response, auth: IAuth): Promise<void| {}> => {
     try {
-      const newItem: IAddress = new AddressModel();
+      const newItem = new AddressModel();
       // newItem['ownerId'] = req['_id']
       // if ('ownerId' in this.model.schema.obj) {
         newItem.$set('ownerId', new ObjectId(auth._id));

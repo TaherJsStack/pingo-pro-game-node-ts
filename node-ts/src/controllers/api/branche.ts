@@ -15,7 +15,7 @@ export class BrancheController extends CRUDController<IBranche> {
       if (req.file) {
         (req.body as any)['logo'] = `${req.protocol}://${req.get('host')}/api/uploads/${req.file.filename}`;
       }
-      const newItem: IBranche = new this.model(req.body);
+      const newItem = new this.model(req.body);
       
       const savedItem = await newItem.save();
       // const totalData = await this.model.find().countDocuments();
