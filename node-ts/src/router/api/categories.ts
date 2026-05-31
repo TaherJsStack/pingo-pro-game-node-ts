@@ -24,7 +24,7 @@ router.post(
     // Validation rules using express-validator
     check('brancheId').notEmpty().withMessage('brancheId is required'),
     check('category').notEmpty().withMessage('category is required'),
-    check('priceId').notEmpty().withMessage('price is required'),
+    check('price').notEmpty().withMessage('price is required'),
     check('type').notEmpty().withMessage('type is required'),
   ],
   async (req: Request, res: Response) => {

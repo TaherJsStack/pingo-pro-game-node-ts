@@ -6,7 +6,7 @@ const CategorySchema = new mongoose.Schema({
     ownerId:      { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
     brancheId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },
     category:     { type: String,   required: true },
-    priceId:      { type: mongoose.Schema.Types.ObjectId, ref: 'Pricing', required: true },
+    price:        { type: mongoose.Schema.Types.ObjectId, ref: 'Pricing', required: true },
     price:        { type: Number,   default: 0 },
     type:         { type: String,   required: true },
     logo:         { type: String,   default: '' },

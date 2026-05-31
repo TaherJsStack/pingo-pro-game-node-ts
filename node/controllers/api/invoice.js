@@ -36,7 +36,7 @@ async function createNewSession(data) {
   let clientId        = data.savedItem.clientId;
   let brancheId       = data.savedItem.brancheId;
   let category        = await CategoryModel.findOne({ _id });
-  let priceValue      = await PricingModel.findOne({ _id: new ObjectId(category.priceId) });
+  let priceValue      = await PricingModel.findOne({ _id: new ObjectId(category.price) });
   let existingInvoice = await InvoiceModel.findOne({ clientId, brancheId, activeState: true });
 
   if (existingInvoice) {
@@ -101,7 +101,7 @@ async function updateSession(data) {
   let clientId        = data.updatedItem.clientId;
   let brancheId       = data.updatedItem.brancheId;
   let category        = await CategoryModel.findOne({ _id });
-  let priceValue      = await PricingModel.findOne({ _id: new ObjectId(category.priceId) });
+  let priceValue      = await PricingModel.findOne({ _id: new ObjectId(category.price) });
   let existingInvoice = await InvoiceModel.findOne({ clientId, brancheId, activeState: true });
 
   if (existingInvoice) {
@@ -154,7 +154,7 @@ async function deletedSession(data) {
   let clientId        = data.deletedItem.clientId;
   let brancheId       = data.deletedItem.brancheId;
   let category        = await CategoryModel.findOne({ _id });
-  let priceValue      = await PricingModel.findOne({ _id: new ObjectId(category.priceId) });
+  let priceValue      = await PricingModel.findOne({ _id: new ObjectId(category.price) });
   let existingInvoice = await InvoiceModel.findOne({ clientId, brancheId, activeState: true });
 
   if (existingInvoice) {
@@ -204,13 +204,6 @@ async function deletedSession(data) {
 async function deletedListSession(data) {
   console.log('deletedListSession data', data);
   console.log('deletedListSession idsToDelete', idsToDelete);
-
-  // let _id             = data.deletedItem.categoryId;
-  // let clientId        = data.deletedItem.clientId;
-  // let brancheId       = data.deletedItem.brancheId;
-  // let category        = await CategoryModel.findOne({ _id });
-  // let priceValue      = await PricingModel.findOne({ _id: new ObjectId(category.priceId) });
-
 
   for (let index = 0; index < data.idsToDelete.length; index++) {
     const sessionIdToDelete = data.idsToDelete[index];
