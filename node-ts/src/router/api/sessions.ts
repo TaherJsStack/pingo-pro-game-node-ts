@@ -23,8 +23,8 @@ router.post(
   [
     // Validation rules using express-validator
     check('brancheId').notEmpty().withMessage('brancheId is required'),
-    check('categoryId').notEmpty().withMessage('category is required'),
-    // check('clientId').notEmpty().withMessage('client Id is required'),
+    check('categories').notEmpty().withMessage('categories is required'),
+    check('clientId').notEmpty().withMessage('client Id is required'),
   ],
   async (req: Request, res: Response) => {
     // Check for validation errors
@@ -45,6 +45,25 @@ router.put(
     // Validation rules using express-validator
     check('brancheId').notEmpty().withMessage('brancheId is required'),
     check('categoryId').notEmpty().withMessage('categoryId is required'),
+    check('clientId').notEmpty().withMessage('clientId is required'),
+  ],
+  async (req: Request, res: Response) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Call controller method to update item
+    await sessionController.updateItem(req, res);
+  }
+);
+
+router.put(
+  'endSession/:id',
+  [
+    // Validation rules using express-validator
+    check('brancheId').notEmpty().withMessage('brancheId is required'),
     check('clientId').notEmpty().withMessage('clientId is required'),
   ],
   async (req: Request, res: Response) => {
