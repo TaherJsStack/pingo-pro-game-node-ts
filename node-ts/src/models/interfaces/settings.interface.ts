@@ -1,12 +1,8 @@
-import mongoose, {  Document } from 'mongoose';
+import { ActivityFields, BaseEntity, ObjectId } from './common.interface';
 
-export interface ISettings extends Document {
-  ownerId:    mongoose.Types.ObjectId;
-  createdBy:  mongoose.Types.ObjectId;
-  theme:      string;
-  language:   string;
-
-  activeState: Boolean;
-  createdAt:   Date;
-  description: String;
+export interface ISettings extends BaseEntity, ActivityFields {
+  ownerId: ObjectId;
+  createdBy: ObjectId;
+  theme: string;
+  language: string;
 }

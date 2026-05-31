@@ -1,16 +1,12 @@
-import mongoose, {  Document } from 'mongoose';
+import { ActivityFields, BaseEntity, ObjectId } from './common.interface';
 
-
-export interface ICategory extends Document {
-    ownerId: mongoose.Schema.Types.ObjectId;
-    brancheId: mongoose.Schema.Types.ObjectId;
-    createdBy: mongoose.Schema.Types.ObjectId;
-    category: string;
-    price: number;
-    type: string;
-    logo: string;
-    description: string;
-    activeState: boolean;
-    bookState: boolean;
-    createdAt: Date;
-  }
+export interface ICategory extends BaseEntity, ActivityFields {
+  ownerId: ObjectId;
+  brancheId: ObjectId;
+  createdBy: ObjectId;
+  category: string;
+  price: number;
+  type: string;
+  logo: string;
+  bookState: boolean;
+}

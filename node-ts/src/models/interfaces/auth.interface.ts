@@ -1,21 +1,16 @@
-import mongoose, {  Document } from 'mongoose';
 import { IPermissions } from './permissions.interface';
+import { ActivityFields, BaseEntity, ObjectId } from './common.interface';
 
-// Define the interface for the Auth document
-export interface IAuth extends Document {
-    _id:          mongoose.Schema.Types.ObjectId;
-    brancheId:    mongoose.Schema.Types.ObjectId;
-    username:     String,
-    firstName:    String;
-    lastName:     String;
-    email:        String;
-    phone:        String;
-    image:        String;
-    activeState:  Boolean;
-    role:         Number;
-    permeation:   Number[];
-    permissions:  IPermissions[];
-    createdAt:    Date;
-    description:  String;
-    authType:     'owner' | 'employee' | 'root';
+export interface IAuth extends BaseEntity, ActivityFields {
+  brancheId?: ObjectId;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  image: string;
+  role: number;
+  permeation: number[];
+  permissions: IPermissions[];
+  authType: 'owner' | 'employee' | 'root' | 'client';
 }

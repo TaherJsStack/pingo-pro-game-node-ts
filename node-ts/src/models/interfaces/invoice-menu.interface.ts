@@ -1,16 +1,17 @@
-import mongoose, {  Document } from 'mongoose';
 import { IInvoiceMenuItem } from './invoice-menu-item.interface';
+import { ActivityFields, BaseEntity, ModelDocument, ObjectId } from './common.interface';
 
-export interface IInvoiceMenu extends Document {
-  _id: mongoose.Schema.Types.ObjectId;
-  createdBy: mongoose.Schema.Types.ObjectId;
-  closedBy?: mongoose.Schema.Types.ObjectId;
-  brancheId: mongoose.Schema.Types.ObjectId;
+export interface IInvoiceMenu extends BaseEntity, ActivityFields {
+  createdBy: ObjectId;
+  closedBy?: ObjectId | null;
+  brancheId: ObjectId;
   client: string;
   total: number;
-  activeState: boolean;
-  createdAt: Date;
-  description: string;
   menuItems: IInvoiceMenuItem[];
-  updateTotal: () => Promise<number>;
 }
+
+export interface IInvoiceMenuMethods {
+  updateTotal(): Promise<number>;
+}
+
+export type InvoiceMenuDocument = ModelDocument<IInvoiceMenu, IInvoiceMenuMethods>;

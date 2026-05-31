@@ -1,17 +1,14 @@
-import mongoose, {  Document } from 'mongoose';
+import { ActivityFields, BaseEntity, ObjectId } from './common.interface';
 
-export interface IAddress extends Document {
-  ownerId:    mongoose.Types.ObjectId;
-  country:    string;
-  address:    string;
-  city:       string;
+export interface IAddress extends BaseEntity, ActivityFields {
+  ownerId: ObjectId;
+  country: string;
+  address: string;
+  city: string;
   postalCode: string;
-  state:      string;
-  activeState: Boolean;
-  createdAt:   Date;
-  description: String;
+  state: string;
   coordinates: {
-      lat: number;
-      lng: number;
-  },
+    lat: number;
+    lng: number;
+  };
 }

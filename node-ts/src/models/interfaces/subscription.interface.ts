@@ -1,15 +1,13 @@
-export interface ISubscription extends Document {
-    ownerId: string;
-    state: string;
-    type: string;
-    activeState: boolean;
-    createdAt: Date;
-    description: string;
+import { ActivityFields, BaseEntity } from './common.interface';
 
-    userId: string;
-    plan: string;
-    status: 'active' | 'inactive' | 'canceled';
-    startDate: Date;
-    endDate: Date;
-    trial: boolean;
+export interface ISubscription extends BaseEntity, ActivityFields {
+  ownerId: string;
+  state: string;
+  type: string;
+  userId: string;
+  plan: string;
+  status: 'active' | 'inactive' | 'canceled';
+  startDate: Date;
+  endDate: Date;
+  trial: boolean;
 }

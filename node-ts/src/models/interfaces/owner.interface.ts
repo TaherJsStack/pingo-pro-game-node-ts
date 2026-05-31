@@ -1,14 +1,11 @@
-import mongoose, {  Document } from 'mongoose';
+import { ActivityFields, BaseEntity } from './common.interface';
 
-export interface IOwner extends Document {
+export interface IOwner extends BaseEntity, ActivityFields {
   name: string;
   email: string;
   role: number;
   permeation: number[];
   imageUrl: string;
-  activeState: boolean;
-  createdAt: Date;
-  description: string;
   governorate: string;
   city: string;
   area: string;

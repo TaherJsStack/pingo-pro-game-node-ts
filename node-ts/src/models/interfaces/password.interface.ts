@@ -1,8 +1,7 @@
-import mongoose, {  Document } from 'mongoose';
+import { BaseEntity, ObjectId } from './common.interface';
 
-// Define the interface for the Password document
-export interface IPassword extends Document {
-  userId: mongoose.Schema.Types.ObjectId;
+export interface IPassword extends BaseEntity {
+  userId: ObjectId;
   password: string;
   createdAt: Date;
 }

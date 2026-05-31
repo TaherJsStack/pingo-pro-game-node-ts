@@ -1,16 +1,16 @@
-import mongoose, {  Document } from 'mongoose';
+import { BaseEntity } from './common.interface';
 
-export interface IAudit extends Document {
-    action:       String ,
-    method:       String,
-    baseUrl:      String,
-    platform:     String,
-    success:      String,
-    status:       String,
-    error:        String,
-    auditByName:  String,
-    auditById:    String,
-    auditOn:      Date,
-    role:         Number,
-    permeation:   Number[]
+export interface IAudit extends BaseEntity {
+  action: string;
+  method: string;
+  baseUrl: string;
+  platform?: string;
+  success: string;
+  status: string;
+  error: string;
+  auditByName: string;
+  auditById: string;
+  auditOn: Date;
+  role: number;
+  permeation: number[];
 }

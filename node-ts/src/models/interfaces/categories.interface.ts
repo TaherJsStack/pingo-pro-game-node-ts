@@ -1,13 +1,14 @@
-import mongoose, {  Document } from 'mongoose';
+import { ObjectId } from './common.interface';
 
-export interface ICategories extends Document {
-  categoryId:          mongoose.Types.ObjectId;
-  createdBy:           mongoose.Schema.Types.ObjectId,
-  type:                string;
-  price:               number;
-  startTime:           string;
-  endTime?:            string;
-  estimationTime:      String;
-  estimationInHours:   number;
+export interface ICategories {
+  categoryId: ObjectId;
+  createdBy?: ObjectId | null;
+  closedBy?: ObjectId | null;
+  type: string;
+  price: number;
+  startTime: string;
+  endTime?: string;
+  estimationTime?: string;
+  estimationInHours: number;
   estimationInMinutes: number;
 }

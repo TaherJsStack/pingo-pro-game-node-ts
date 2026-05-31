@@ -1,11 +1,8 @@
-import mongoose, {  Document } from 'mongoose';
+import { ActivityFields, BaseEntity, ObjectId } from './common.interface';
 
-export interface IBranche extends Document {
-    ownerId: mongoose.Schema.Types.ObjectId;
-    branche: string;
-    logo: string;
-    address: string;
-    description: string;
-    activeState: boolean;
-    createdAt: Date;
+export interface IBranche extends BaseEntity, ActivityFields {
+  ownerId: ObjectId;
+  branche: string;
+  logo: string;
+  address: string;
 }

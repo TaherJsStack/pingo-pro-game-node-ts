@@ -1,13 +1,10 @@
-import mongoose, {  Document } from 'mongoose';
+import { ActivityFields, BaseEntity, ObjectId } from './common.interface';
 
-export interface IPricing extends Document {
-  brancheId: mongoose.Schema.Types.ObjectId;
-  ownerId: mongoose.Schema.Types.ObjectId;
-  createdBy: mongoose.Schema.Types.ObjectId;
+export interface IPricing extends BaseEntity, ActivityFields {
+  brancheId: ObjectId;
+  ownerId: ObjectId;
+  createdBy: ObjectId;
   title: string;
   price: number;
   type: string;
-  activeState: boolean;
-  createdAt: Date;
-  description: string;
 }

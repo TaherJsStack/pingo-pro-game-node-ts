@@ -1,17 +1,21 @@
-import mongoose, {  Document } from 'mongoose';
+import { ICategories } from './categories.interface';
+import { ActivityFields, BaseEntity, ObjectId } from './common.interface';
+import { IMenuItems } from './invoice.interface';
 
-export interface ISession extends Document {
-  createdBy: mongoose.Schema.Types.ObjectId;
-  brancheId?: mongoose.Schema.Types.ObjectId;
-  categoryId: mongoose.Schema.Types.ObjectId;
-  clientId: mongoose.Schema.Types.ObjectId;
-  times: number;
+export interface ISession extends BaseEntity, ActivityFields {
+  createdBy: ObjectId;
+  brancheId?: ObjectId;
+  clientId?: ObjectId;
+  // times: number;
   startTime: string;
   endTime?: string;
-  estimationTime: String;
+  estimationTime: string;
   estimationInHours: number;
   estimationInMinutes: number;
-  activeState: boolean;
-  createdAt: Date;
-  description: string;
+  total: number;
+  categoriesTotal: number;
+  menuItemsTotal: number;
+  Sessiontype: string;
+  categories: ICategories[];
+  menuItems: IMenuItems[];
 }
