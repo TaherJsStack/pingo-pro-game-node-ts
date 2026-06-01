@@ -6,7 +6,7 @@ interface CustomRequest extends Request {
         id:           string;
         role:         string;
         email:        string;
-        permeation:   string;
+        permission:   string;
     };
   }
 
@@ -20,7 +20,7 @@ const authMiddleware = (req: CustomRequest, res: Response, next: NextFunction) =
                 id:         decodedToken._id, 
                 role:       decodedToken.role,
                 email:      decodedToken.email, 
-                permeation: decodedToken.permeations 
+                permission: decodedToken.permission 
             }
         } else {
             // Handle the case where authorization header is missing

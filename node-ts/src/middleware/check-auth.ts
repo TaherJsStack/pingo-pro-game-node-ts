@@ -6,7 +6,7 @@ interface CustomRequest extends Request {
         id:         string;
         email:      string;
         role:       string;
-        permeation: string;
+        permission: string;
     };
   }
 
@@ -20,7 +20,7 @@ const authMiddleware = (req: CustomRequest, res: Response, next: NextFunction) =
                 id:         decodedToken.userId, 
                 email:      decodedToken.email, 
                 role:       decodedToken.role,
-                permeation: decodedToken.permeation 
+                permission: decodedToken.permission 
             }
             next();
         } else {
