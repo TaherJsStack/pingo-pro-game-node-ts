@@ -3,13 +3,13 @@ import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 dotenv.config();
 
-export const generateToken = (userId: string, email: string, username: string, userRoles: number, permeation: number[]): string => {
+export const generateToken = (userId: string, email: string, username: string, userRoles: number, permission: number[]): string => {
     const token = jwt.sign({
         userId:     userId,
         email:      email,
         name:       username,
         role:       userRoles,
-        permeation: permeation
+        permission: permission
     }, process.env.SECRET!, { expiresIn: "3d" });
     return token;
 }
