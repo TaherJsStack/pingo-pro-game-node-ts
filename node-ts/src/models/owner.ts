@@ -1,13 +1,14 @@
 import mongoose, { Schema } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
 import { IOwner } from './interfaces/owner.interface';
+import { requiredEmailValidator } from './helpers/validators';
 // import { Email } from 'mongoose-type-email';
 
 const ownerSchema: Schema<IOwner> = new Schema<IOwner>({
     name: { type: String },
-    email: { type: String, required: true, unique: true, validate: /^\S+@\S+\.\S+$/ },
+    email: { type: String, required: true, unique: true, validate: requiredEmailValidator },
     role: { type: Number, required: true, default: 3 },
-    permeation: { type: [Number], required: true, default: [3] },
+    permission: { type: [Number], required: true, default: [3] },
     imageUrl: { type: String, default: '' },
     activeState: { type: Boolean, default: true },
     createdAt: { type: Date, default: Date.now },

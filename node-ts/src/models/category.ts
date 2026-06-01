@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
 import { ICategory } from './interfaces/category.interface';
-import { invalidateIfDuplicate } from './helpers/uniqueness';
+import { uniquePerBranch } from './plugins/unique-per-branch.plugin';
 
 const CategorySchema: Schema<ICategory> = new Schema<ICategory>({
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
@@ -19,24 +19,10 @@ const CategorySchema: Schema<ICategory> = new Schema<ICategory>({
   timestamps: true
 });
 
-CategorySchema.pre('validate', async function (next) {
-  if (!this.isModified('category') && !this.isModified('brancheId')) {
-    return next();
-  }
-
-  await invalidateIfDuplicate({
-    model: mongoose.models.Category,
-    filter: {
-      category: this.category,
-      brancheId: this.brancheId,
-    },
-    currentId: this._id,
-    invalidate: this.invalidate.bind(this),
-    path: 'category',
-    message: 'Category must be unique for brancheId combination',
-  });
-
-  next();
+CategorySchema.plugin(uniquePerBranch, {
+  path: 'category',
+  scope: 'brancheId',
+  message: 'Category must be unique for brancheId combination',
 });
 
 CategorySchema.plugin(uniqueValidator);

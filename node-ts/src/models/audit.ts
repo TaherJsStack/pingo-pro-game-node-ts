@@ -13,10 +13,10 @@ const AuditSchema:Schema<IAudit> = new Schema<IAudit>({
     status:       { type: String },
     error:        { type: String },
     auditByName:  { type: String },
-    auditById:    { type: String },
+    auditById:    { type: mongoose.Schema.Types.ObjectId, ref: 'Auth' },
     auditOn:      { type: Date },
     role:         { type: Number },
-    permeation:   { type: [Number] }
+    permission:   { type: [Number] }
 
 }, {
     timestamps: true

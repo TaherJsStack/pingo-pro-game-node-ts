@@ -1,15 +1,17 @@
 import mongoose, { Model, Schema } from 'mongoose';
-import { ICategories } from './interfaces/categories.interface';
-import { IInvoice, IInvoiceMethods, IMenuItems } from './interfaces/invoice.interface';
+import { IInvoice } from './interfaces/invoice.interface';
+import { menuItemSchema } from './schemas/menu-item.schema';
+import { sessionCategorySchema } from './schemas/session-category.schema';
 
-type InvoiceModel = Model<IInvoice, {}, IInvoiceMethods>;
+type InvoiceModel = Model<IInvoice>;
 
-const invoiceSchema: Schema<IInvoice, InvoiceModel, IInvoiceMethods> = new Schema<IInvoice, InvoiceModel, IInvoiceMethods>(
+const invoiceSchema: Schema<IInvoice, InvoiceModel> = new Schema<IInvoice, InvoiceModel>(
   {
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
     closedBy:  { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', default: null },
     brancheId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },
     sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Session', required: false, default: null },
+    shiftId: { type: mongoose.Schema.Types.ObjectId, ref: 'Shift', required: false, default: null },
     clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: false, default: null },
     // clientId: {  },
     name: { type: String, default: '' },
@@ -21,88 +23,13 @@ const invoiceSchema: Schema<IInvoice, InvoiceModel, IInvoiceMethods> = new Schem
     categoriesTotal: { type: Number, default: 0 },
     menuItemsTotal: { type: Number, default: 0 },
     invoiceNo: { type: Number, default: 0 },
-    categories: [
-      {
-        categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
-        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: false, default: null },
-        closedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', default: null },
-        type: { type: String, default: 'open', required: true }, // open or match
-        price: { type: Number, required: true },
-        startTime: { type: String, required: true },
-        endTime: { type: String },
-        estimationTime: { type: String },
-        estimationInHours: { type: Number, default: 0 },
-        estimationInMinutes: { type: Number, default: 0 },
-      },
-    ],
-    menuItems: [
-      {
-        itemID: { type: mongoose.Schema.Types.ObjectId, ref: 'Menu', required: true },
-        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', default: null },
-        itemName: { type: String, required: true },
-        quantity: { type: Number, required: true },
-        price: { type: Number, default: 1 },
-      },
-    ],
+    categories: [sessionCategorySchema],
+    menuItems: [menuItemSchema],
   },
   {
     timestamps: true,
   }
 );
-
-invoiceSchema.methods.calculateCategoriesTotal = async function (): Promise<number> {
-  try {
-    let total = 0;
-
-    this.categories.forEach((category: ICategories) => {
-      if (category.startTime && category.endTime) {
-        // Parse the startTime and endTime strings into Date objects
-        const startTime = new Date(category.startTime);
-        const endTime = new Date(category.endTime);
-        // Calculate duration in hours
-        const durationMs = endTime.getTime() - startTime.getTime();
-        const durationHours = durationMs / (1000 * 60 * 60); // Convert milliseconds to hours
-        // Calculate quantity based on duration and price per hour
-        const categoryTotal = durationHours * category.price;
-        // Add categoryTotal to overall total
-        total += categoryTotal;
-      }
-    });
-
-    // Update the total field in the document
-    this.categoriesTotal = total;
-    await this.save();
-    return this.categoriesTotal;
-  } catch (error) {
-    throw error;
-  }
-};
-
-invoiceSchema.methods.calculateMenuItemsTotal = async function (): Promise<number> {
-  try {
-    const total = this.menuItems.reduce((acc: number, item: IMenuItems) => acc + item.quantity * item.price, 0);
-    this.menuItemsTotal = total;
-    await this.save();
-    return this.menuItemsTotal;
-  } catch (error) {
-    console.log('calculateMenuItemsTotal ----> ', error);
-    throw error;
-  }
-};
-
-invoiceSchema.pre('save', async function (next) {
-  try {
-    if (this.isNew) {
-      this.total = this.menuItemsTotal + this.categoriesTotal;
-    } else {
-      this.total = this.menuItemsTotal + this.categoriesTotal;
-    }
-    next();
-  } catch (error: any) {
-    console.error('Error in pre-save middleware:', error);
-    next(error);
-  }
-});
 
 const Invoice: InvoiceModel = mongoose.model<IInvoice, InvoiceModel>('Invoice', invoiceSchema);
 

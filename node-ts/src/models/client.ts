@@ -1,6 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { IClient } from './interfaces/client.interface';
-import { invalidateIfDuplicate } from './helpers/uniqueness';
+import { uniquePerBranch } from './plugins/unique-per-branch.plugin';
 
 const clientSchema: Schema<IClient> = new Schema<IClient>({
   ownerId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
@@ -17,26 +17,10 @@ const clientSchema: Schema<IClient> = new Schema<IClient>({
 
 clientSchema.index({ name: 'text', description: 'text' });
 
-clientSchema.pre('validate', async function(next) {
-  if (!this.isModified('phone') && !this.isModified('brancheId')) {
-    return next();
-  }
-
-  await invalidateIfDuplicate({
-    model: mongoose.models.Client,
-    filter: {
-      phone: this.phone,
-      brancheId: this.brancheId,
-    },
-    currentId: this._id,
-    invalidate: this.invalidate.bind(this),
-    path: 'phone',
-    message: 'Client must be unique for brancheId combination',
-  });
-
-  next();
+clientSchema.plugin(uniquePerBranch, {
+  path: 'phone',
+  scope: 'brancheId',
+  message: 'Client must be unique for brancheId combination',
 });
-
-
 
 export default mongoose.model<IClient>('Client', clientSchema);

@@ -1,6 +1,7 @@
 import mongoose, { Model, Schema } from 'mongoose';
 import { IInvoiceMenu, IInvoiceMenuMethods } from './interfaces/invoice-menu.interface';
 import { IInvoiceMenuItem } from './interfaces/invoice-menu-item.interface';
+import { invoiceMenuItemSchema } from './schemas/menu-item.schema';
 
 type InvoiceMenuModel = Model<IInvoiceMenu, {}, IInvoiceMenuMethods>;
 
@@ -8,19 +9,12 @@ const invoiceMenuSchema: Schema<IInvoiceMenu, InvoiceMenuModel, IInvoiceMenuMeth
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
   closedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth' },
   brancheId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },
-  client: { type: String, required: true },
+  client: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: true },
   total: { type: Number, default: 0 },
   activeState: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
   description: { type: String, default: '' },
-  menuItems: [
-    {
-      itemId: { type: mongoose.Schema.Types.ObjectId, ref: 'Menu', required: true },
-      itemName: { type: String, required: true },
-      quantity: { type: Number, required: true },
-      price: { type: Number, default: 1 }
-    }
-  ]
+  menuItems: [invoiceMenuItemSchema]
 }, {
   timestamps: true
 });

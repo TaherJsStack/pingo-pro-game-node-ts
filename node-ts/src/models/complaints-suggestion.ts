@@ -1,12 +1,13 @@
 import mongoose, { Schema } from 'mongoose';
 
 import { IComplaintsSuggestion } from './interfaces/complaints-suggestion.interface';
+import { optionalEmailValidator } from './helpers/validators';
 
 const complaintsSuggestionSchema: Schema<IComplaintsSuggestion> = new Schema<IComplaintsSuggestion>({
     brancheId:    { type: Schema.Types.ObjectId, ref: 'Branche', required: true },
     createdBy:    { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
     name:         { type: String, default: '' },
-    email:        { type: String, default: '' },
+    email:        { type: String, default: '', validate: optionalEmailValidator },
     phone:        { type: String, default: '' },
     comment:      { type: String, required: true },
     type:         { type: String, required: true },

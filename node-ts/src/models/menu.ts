@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
 import { IMenu } from './interfaces/menu.interface';
-import { invalidateIfDuplicate } from './helpers/uniqueness';
+import { uniquePerBranch } from './plugins/unique-per-branch.plugin';
 
 const MenuSchema: Schema<IMenu> = new Schema<IMenu>({
   ownerId:      { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
@@ -19,24 +19,10 @@ const MenuSchema: Schema<IMenu> = new Schema<IMenu>({
   timestamps: true
 });
 
-MenuSchema.pre('validate', async function (next) {
-  if (!this.isModified('name') && !this.isModified('brancheId')) {
-    return next();
-  }
-
-  await invalidateIfDuplicate({
-    model: mongoose.models.Menu,
-    filter: {
-      name: this.name,
-      brancheId: this.brancheId,
-    },
-    currentId: this._id,
-    invalidate: this.invalidate.bind(this),
-    path: 'name',
-    message: 'Menu must be unique for brancheId combination',
-  });
-
-  next();
+MenuSchema.plugin(uniquePerBranch, {
+  path: 'name',
+  scope: 'brancheId',
+  message: 'Menu must be unique for brancheId combination',
 });
 
 MenuSchema.plugin(uniqueValidator);

@@ -9,6 +9,8 @@ const PasswordSchema: Schema<IPassword> = new Schema<IPassword>({
     timestamps: true
 });
 
+PasswordSchema.index({ userId: 1 });
+
 const Password = mongoose.model<IPassword>('Password', PasswordSchema);
 
 export default Password;
