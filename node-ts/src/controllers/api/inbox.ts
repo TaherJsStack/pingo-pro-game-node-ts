@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { IInbox } from '../../types';
 import { CRUDController } from '../base/CRUDController';
 import { inboxRepository } from '../../repositories/instances';
+import { InboxType } from '../../enums/inbox-type.enum';
 const { ObjectId } = require('mongoose').Types;
 
 
@@ -16,7 +17,7 @@ export class InboxController extends CRUDController<IInbox> {
       const messageRes = await this.repository.create({
         ownerId: new ObjectId(userId),
         title: 'welcom to our inbox',
-        type: 'welcom',
+        type: InboxType.Welcome,
         context:
           'Lorem ipsum dolor, sit amet consectetur adipisicing elit. Qui perspiciatis quas aliquam natus animi quod modi ex placeat incidunt veritatis voluptatum dolore repudiandae illo vel quo, doloremque ipsum tempore deserunt.',
       } as any);

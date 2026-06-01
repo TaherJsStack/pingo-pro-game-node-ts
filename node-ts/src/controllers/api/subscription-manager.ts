@@ -1,5 +1,6 @@
 import {ISubscription} from '../../types';
 import { subscriptionRepository } from '../../repositories/instances';
+import { SubscriptionStatus } from '../../enums/subscription-status.enum';
 
 class SubscriptionManager {
   async createSubscription(userId: string, plan: string | null, trialDays: number = 0): Promise<ISubscription> {
@@ -14,7 +15,7 @@ class SubscriptionManager {
     return subscriptionRepository.create({
       userId,
       plan: plan || null,
-      status: 'active',
+      status: SubscriptionStatus.Active,
       startDate,
       endDate,
       trial: trialDays > 0,
@@ -26,16 +27,16 @@ class SubscriptionManager {
   }
 
   async cancelSubscription(subscriptionId: string): Promise<ISubscription | null> {
-    return await subscriptionRepository.updateById(subscriptionId, { status: 'canceled' } as any);
+    return await subscriptionRepository.updateById(subscriptionId, { status: SubscriptionStatus.Canceled } as any);
   }
 
   async getSubscription(userId: string): Promise<ISubscription | null> {
-    return await subscriptionRepository.findOne({ userId, status: 'active' });
+    return await subscriptionRepository.findOne({ userId, status: SubscriptionStatus.Active });
   }
 
   async renewSubscription(subscriptionId: string): Promise<ISubscription | null> {
     const subscription = await subscriptionRepository.findById(subscriptionId);
-    if (subscription && subscription.status === 'active') {
+    if (subscription && subscription.status === SubscriptionStatus.Active) {
       subscription.endDate.setMonth(subscription.endDate.getMonth() + 12);
       return await subscriptionRepository.updateById(subscriptionId, {
         endDate: subscription.endDate,

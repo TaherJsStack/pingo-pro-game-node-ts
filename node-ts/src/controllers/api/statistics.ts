@@ -3,9 +3,9 @@ import { Types } from 'mongoose';
 import { invoiceRepository } from '../../repositories/instances';
 import ShiftModel from '../../models/shift';
 import SessionModel from '../../models/session';
+import { KpiPeriod } from '../../enums/kpi-period.enum';
+import { ShiftStatus } from '../../enums/shift-status.enum';
 const { ObjectId } = require('mongoose').Types;
-
-type KpiPeriod = 'day' | 'week' | 'month' | 'year';
 
 interface Filter {
   ownerId: string;
@@ -227,9 +227,9 @@ export class StatisticsController {
       const brancheId = filterObg.brancheId || innerFilter.brancheId;
       const startDate = innerFilter.startDate ? new Date(innerFilter.startDate) : new Date(0);
       const endDate = innerFilter.endDate ? new Date(innerFilter.endDate) : new Date();
-      const allowedPeriods: KpiPeriod[] = ['day', 'week', 'month', 'year'];
-      const requested = innerFilter.period || filterObg.period || 'day';
-      const period: KpiPeriod = allowedPeriods.includes(requested) ? requested : 'day';
+      const allowedPeriods: KpiPeriod[] = Object.values(KpiPeriod);
+      const requested = innerFilter.period || filterObg.period || KpiPeriod.Day;
+      const period: KpiPeriod = allowedPeriods.includes(requested) ? requested : KpiPeriod.Day;
 
       const branchMatch: any = brancheId ? { brancheId: new ObjectId(brancheId) } : {};
 
@@ -243,7 +243,7 @@ export class StatisticsController {
 
       // Worked hours bucketed by period (from closed shifts)
       const workedHoursByPeriod = await ShiftModel.aggregate([
-        { $match: { ...branchMatch, status: 'closed', openedAt: { $gte: startDate, $lte: endDate } } },
+        { $match: { ...branchMatch, status: ShiftStatus.Closed, openedAt: { $gte: startDate, $lte: endDate } } },
         { $group: { _id: { $dateTrunc: { date: '$openedAt', unit: period } }, workedMinutes: { $sum: '$workedMinutes' } } },
         { $sort: { _id: 1 } },
         { $project: { _id: 0, period: '$_id', total: { $round: [{ $divide: ['$workedMinutes', 60] }, 2] }, count: '$workedMinutes' } },
@@ -269,7 +269,7 @@ export class StatisticsController {
 
       // Worked hours + activity per employee (from closed shifts)
       const workedHoursByEmployee = await ShiftModel.aggregate([
-        { $match: { ...branchMatch, status: 'closed', openedAt: { $gte: startDate, $lte: endDate } } },
+        { $match: { ...branchMatch, status: ShiftStatus.Closed, openedAt: { $gte: startDate, $lte: endDate } } },
         {
           $group: {
             _id: '$employeeId',
