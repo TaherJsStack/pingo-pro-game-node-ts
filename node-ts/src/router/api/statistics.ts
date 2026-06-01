@@ -11,8 +11,12 @@ router.get("/getGroupedInvoicesByClosedBy", (req: Request, res: Response) => {
 });
 
 router.get("/member/:id", (req: Request, res: Response) => {
-  
+
   statisticsController.getGroupedInvoicesByClosedByMemberId(req, res);
+});
+
+router.get("/kpi", (req: Request, res: Response) => {
+  statisticsController.getKpiSummary(req, res);
 });
 
 export default router;

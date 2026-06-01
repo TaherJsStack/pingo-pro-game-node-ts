@@ -1,4 +1,5 @@
-import { Router } from 'express';
+import { NextFunction, Request, Response, Router } from 'express';
+import { check, validationResult } from 'express-validator';
 import {AuthController} from '../../controllers/api/auth';
 
 const router:Router = Router();
@@ -8,7 +9,28 @@ router.get('/check-phone/:phone',  authController.checkPhone);
 router.get('/check-email/:email',  authController.checkEmail.bind(authController));
 router.post('/check-password/:id', authController.checkPassword.bind(authController));
 router.put('/update-password/:id', authController.updatePassword.bind(authController));
-router.post('',                    authController.saveAuth);
+router.post(
+  '',
+  [
+    check('branche')
+      .custom((value, { req }) => {
+        const hasBranche = typeof value === 'string' && value.trim().length > 0;
+        const clubName = req.body?.club?.name || req.body?.club?.branche || req.body?.club;
+        const hasClubName = typeof clubName === 'string' && clubName.trim().length > 0;
+        if (!hasBranche && !hasClubName) {
+          throw new Error('branche or club name is required');
+        }
+        return true;
+      }),
+  ],
+  (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    return authController.saveAuth(req, res, next);
+  }
+);
 router.post('/refresh',            authController.refreshToken.bind(authController));
 router.put('/:id',                 authController.updateOne);
 router.post('/login',              authController.login.bind(authController));
