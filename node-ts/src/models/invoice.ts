@@ -9,6 +9,7 @@ const invoiceSchema: Schema<IInvoice, InvoiceModel, IInvoiceMethods> = new Schem
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
     closedBy:  { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', default: null },
     brancheId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },
+    sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Session', required: false, default: null },
     clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: false, default: null },
     // clientId: {  },
     name: { type: String, default: '' },
