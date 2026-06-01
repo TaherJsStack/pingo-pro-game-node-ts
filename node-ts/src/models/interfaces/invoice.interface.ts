@@ -1,18 +1,15 @@
 import { ICategories } from './categories.interface';
+import { IMenuItem } from './menu-item.interface';
 import { ActivityFields, BaseEntity, ModelDocument, ObjectId } from './common.interface';
 
-export interface IMenuItems {
-  itemID: ObjectId;
-  itemName: string;
-  quantity: number;
-  price: number;
-}
+export type IMenuItems = IMenuItem;
 
 export interface IInvoice extends BaseEntity, ActivityFields {
   createdBy: ObjectId;
   closedBy: ObjectId | null;
   brancheId: ObjectId;
   sessionId: ObjectId | null;
+  shiftId?: ObjectId | null;
   clientId: ObjectId | null;
   name: string;
   phone: string;
@@ -20,13 +17,8 @@ export interface IInvoice extends BaseEntity, ActivityFields {
   categoriesTotal: number;
   menuItemsTotal: number;
   categories: ICategories[];
-  menuItems: IMenuItems[];
+  menuItems: IMenuItem[];
   invoiceNo: number;
 }
 
-export interface IInvoiceMethods {
-  calculateCategoriesTotal(): Promise<number>;
-  calculateMenuItemsTotal(): Promise<number>;
-}
-
-export type InvoiceDocument = ModelDocument<IInvoice, IInvoiceMethods>;
+export type InvoiceDocument = ModelDocument<IInvoice>;

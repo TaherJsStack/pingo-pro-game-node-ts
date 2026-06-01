@@ -4,7 +4,7 @@ export interface IOwner extends BaseEntity, ActivityFields {
   name: string;
   email: string;
   role: number;
-  permeation: number[];
+  permission: number[];
   imageUrl: string;
   governorate: string;
   city: string;

@@ -1,14 +1,3 @@
-import { ObjectId } from './common.interface';
+import { ISessionCategory } from './session-category.interface';
 
-export interface ICategories {
-  categoryId: ObjectId;
-  createdBy?: ObjectId | null;
-  closedBy?: ObjectId | null;
-  type: string;
-  price: number;
-  startTime: string;
-  endTime?: string;
-  estimationTime?: string;
-  estimationInHours: number;
-  estimationInMinutes: number;
-}
+export type ICategories = ISessionCategory;

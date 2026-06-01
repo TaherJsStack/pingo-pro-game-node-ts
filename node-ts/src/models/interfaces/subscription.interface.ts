@@ -1,11 +1,8 @@
-import { ActivityFields, BaseEntity } from './common.interface';
+import { ActivityFields, BaseEntity, ObjectId } from './common.interface';
 
 export interface ISubscription extends BaseEntity, ActivityFields {
-  ownerId: string;
-  state: string;
-  type: string;
-  userId: string;
-  plan: string;
+  userId: ObjectId;
+  plan?: ObjectId | null;
   status: 'active' | 'inactive' | 'canceled';
   startDate: Date;
   endDate: Date;

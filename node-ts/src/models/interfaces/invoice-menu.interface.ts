@@ -5,7 +5,7 @@ export interface IInvoiceMenu extends BaseEntity, ActivityFields {
   createdBy: ObjectId;
   closedBy?: ObjectId | null;
   brancheId: ObjectId;
-  client: string;
+  client: ObjectId;
   total: number;
   menuItems: IInvoiceMenuItem[];
 }

@@ -6,6 +6,7 @@ export interface ISession extends BaseEntity, ActivityFields {
   createdBy: ObjectId;
   brancheId?: ObjectId;
   clientId?: ObjectId;
+  shiftId?: ObjectId | null;
   // times: number;
   startTime: string;
   endTime?: string;

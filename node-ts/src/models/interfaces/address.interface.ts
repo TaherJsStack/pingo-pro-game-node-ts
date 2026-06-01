@@ -11,4 +11,8 @@ export interface IAddress extends BaseEntity, ActivityFields {
     lat: number;
     lng: number;
   };
+  location?: {
+    type: 'Point';
+    coordinates: [number, number];
+  };
 }

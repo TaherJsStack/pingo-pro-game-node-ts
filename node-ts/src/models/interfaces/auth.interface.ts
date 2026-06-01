@@ -10,7 +10,7 @@ export interface IAuth extends BaseEntity, ActivityFields {
   phone: string;
   image: string;
   role: number;
-  permeation: number[];
+  permission: number[];
   permissions: IPermissions[];
   authType: 'owner' | 'employee' | 'root' | 'client';
 }

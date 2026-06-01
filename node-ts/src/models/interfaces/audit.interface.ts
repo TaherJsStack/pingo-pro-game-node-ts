@@ -1,4 +1,4 @@
-import { BaseEntity } from './common.interface';
+import { BaseEntity, ObjectId } from './common.interface';
 
 export interface IAudit extends BaseEntity {
   action: string;
@@ -9,8 +9,8 @@ export interface IAudit extends BaseEntity {
   status: string;
   error: string;
   auditByName: string;
-  auditById: string;
+  auditById: ObjectId;
   auditOn: Date;
   role: number;
-  permeation: number[];
+  permission: number[];
 }

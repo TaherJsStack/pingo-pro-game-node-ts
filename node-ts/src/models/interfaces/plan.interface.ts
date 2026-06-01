@@ -1,8 +1,7 @@
-import { BaseEntity } from './common.interface';
+import { ActivityFields, BaseEntity } from './common.interface';
 
-export interface IPlan extends BaseEntity {
+export interface IPlan extends BaseEntity, ActivityFields {
   name: string;
-  description: string;
   price: number;
   durationMonths: number;
 }

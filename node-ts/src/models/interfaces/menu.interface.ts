@@ -9,5 +9,4 @@ export interface IMenu extends BaseEntity, ActivityFields {
   type: string;
   stock: number;
   logo: string;
-  description: string;
 }
