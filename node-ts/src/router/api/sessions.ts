@@ -60,11 +60,12 @@ router.put(
 );
 
 router.put(
-  'endSession/:id',
+  '/endSession/:id',
+  signReqData,
   [
     // Validation rules using express-validator
-    check('brancheId').notEmpty().withMessage('brancheId is required'),
-    check('clientId').notEmpty().withMessage('clientId is required'),
+    check('categoryId').optional().notEmpty().withMessage('categoryId is required'),
+    check('categoriesIds').optional().isArray({ min: 1 }).withMessage('categoriesIds must be a non-empty array'),
   ],
   async (req: Request, res: Response) => {
     // Check for validation errors
@@ -74,7 +75,7 @@ router.put(
     }
 
     // Call controller method to update item
-    await sessionController.updateItem(req, res);
+    await sessionController.endSession(req as CreateItemRequest, res);
   }
 );
 
