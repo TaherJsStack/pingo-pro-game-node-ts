@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { Model } from 'mongoose';
 const { ObjectId } = require('mongoose').Types;
 import { CreateItemRequest } from '../interfaces/CustomRequestType';
 import { CreateOperation } from '../interfaces/CreateOperation';
@@ -7,15 +6,16 @@ import { ReadOperation } from '../interfaces/ReadOperation';
 import { DeleteOperation } from '../interfaces/DeleteOperation';
 import { UpdateOperation } from '../interfaces/UpdateOperation';
 import { SendResponse } from './sendResponse';
+import { IRepository } from '../../repositories/interfaces/IRepository';
 
 export abstract class CRUDController<T extends object> extends SendResponse
   implements CreateOperation<T>, ReadOperation<T>, UpdateOperation<T>, DeleteOperation<T> {
   
-  protected model: Model<T>;
+  protected repository: IRepository<T>;
 
-  constructor(model: Model<T>) {
+  constructor(repository: IRepository<T>) {
     super();
-    this.model = model;
+    this.repository = repository;
   }
 
   public createItem = async (req: CreateItemRequest<T>, res: Response): Promise<void> => {
@@ -26,15 +26,15 @@ export abstract class CRUDController<T extends object> extends SendResponse
       if (req.file) {
         (req.body as any)['logo'] = `${req.protocol}://${req.get('host')}/api/uploads/${req.file.filename}`;
       }
-      const newItem = new this.model(req.body);
-      if ('ownerId' in this.model.schema.obj) {
-        newItem.$set('ownerId', new ObjectId(req.authData.id));
+      const payload: any = { ...(req.body as any) };
+
+      if (req.authData?.id) {
+        payload.ownerId = new ObjectId(req.authData.id);
+        payload.createdBy = new ObjectId(req.authData.id);
       }
-      if ('createdBy' in this.model.schema.obj) {
-        newItem.$set('createdBy', new ObjectId(req.authData.id));
-      }
-      const savedItem = await newItem.save();
-      const totalData = await this.model.find().countDocuments();
+
+      const savedItem = await this.repository.create(payload);
+      const totalData = await this.repository.countDocuments();
       this.sendResponse(req, res, 201, [savedItem], totalData);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
@@ -46,54 +46,11 @@ export abstract class CRUDController<T extends object> extends SendResponse
  
       // console.clear();
       // console.log('CRUDController getAllItems filter -->', req.query.Filter);
-      const filter    = this.parseFilter(req.query.Filter);
-      const startDate = this.parseFilter(req.query.Filter).startDate ? new Date(this.parseFilter(req.query.Filter as string).startDate) : null;
-      const endDate   = this.parseFilter(req.query.Filter).endDate   ? new Date(this.parseFilter(req.query.Filter as string).endDate)   : null;
-      
-      const searchKeyword = filter['searchKeyword'] ? filter['searchKeyword'] : '';
-
-      const page     = filter['pageNo']   || 1;
+      const filter = this.parseFilter(req.query.Filter);
+      const page = filter['pageNo'] || 1;
       const pageSize = filter['pageSize'] || 10;
-      const skip     = (page - 1 ) * pageSize;
+      const { items, totalData } = await this.repository.paginate(filter, page, pageSize);
 
-      for (const property in filter) {
-        if (!(property in this.model.schema.obj)) {
-          delete filter[property];
-        }
-      }
-
-      // Add date range filter
-      if (startDate || endDate) {
-        filter['createdAt'] = {};
-        if (startDate) {
-          filter['createdAt']["$lte"] = new Date(startDate);
-        }
-        if (endDate) {
-          filter['createdAt']["$gte"] = new Date(endDate);
-        }
-      }
-      
-      if (typeof filter['activeState'] === undefined || filter['activeState'] === null || filter['activeState'] === '') {
-        delete filter['activeState'];
-      }else if (filter['activeState'] !== undefined && typeof filter['activeState'] === 'string') {
-        filter['activeState'] = filter['activeState'] === 'true' ? true : false;
-      }
-
-      // search keyword
-      if (typeof searchKeyword !== 'undefined' && searchKeyword !== null && searchKeyword !== '') {
-        filter['$text'] = { $search: searchKeyword };
-      }
-      // console.log('CRUDController getAllItems filter -->', filter);
-
-
-      const totalData = await this.model.find(filter).countDocuments();
-
-      const items = await this.model.find(filter)
-                                    .sort({ createdAt: -1, activeState: 1 })
-                                    .skip(skip)
-                                    .limit(pageSize);
-
-                                    
       this.sendResponse(req, res, 200, items, totalData);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
@@ -102,9 +59,10 @@ export abstract class CRUDController<T extends object> extends SendResponse
 
   public getItemById = async (req: Request, res: Response): Promise<void> => {
     try {
-      const item = await this.model.findById(req.params.id);
+      const item = await this.repository.findById(req.params.id);
       if (!item) {
         res.status(404).json({ msg: 'Item not found' });
+        return;
       }
       this.sendResponse(req, res, 200, [item]);
     } catch (err: any) {
@@ -136,9 +94,10 @@ export abstract class CRUDController<T extends object> extends SendResponse
       // console.log('req.body -->', req.body, fileData);
 
       (req.body as any)._id = req.params.id;
-      const updatedItem = await this.model.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const updatedItem = await this.repository.updateById(req.params.id, req.body as any);
       if (!updatedItem) {
        res.status(404).json({ msg: 'Item not found' });
+       return;
       }
       this.sendResponse(req, res, 200, [updatedItem]);
     } catch (err: any) {
@@ -160,21 +119,11 @@ export abstract class CRUDController<T extends object> extends SendResponse
         res.status(400).json({ msg: 'Updates should be an array' });
         return;
       }
-  
-      const updatePromises = updates.map((item) =>
-        this.model.updateOne(
-          { _id: item._id }, // Filter by ID
-          {
-            $set: {
-              stock: item.stock,
-            },
-          }
-        )
-      );
-  
-      // Execute all updates in parallel
-      const results = await Promise.all(updatePromises);
-      let updatedItems = await this.model.find({ _id: { $in: ids } });
+
+      const updatePromises = updates.map((item) => this.repository.updateById(item._id, { stock: item.stock } as any));
+
+      await Promise.all(updatePromises);
+      let updatedItems = await this.repository.find({ _id: { $in: ids } });
       this.sendResponse(req, res, 200, updatedItems);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
@@ -183,11 +132,12 @@ export abstract class CRUDController<T extends object> extends SendResponse
 
   public deleteItem = async (req: Request, res: Response): Promise<void> => {
     try {
-      const deletedItem = await this.model.findByIdAndDelete(req.params.id);
+      const deletedItem = await this.repository.deleteById(req.params.id);
       if (!deletedItem) {
        res.status(404).json({ msg: 'Item not found' });
+       return;
       }
-      const totalData = await this.model.find().countDocuments();
+      const totalData = await this.repository.countDocuments();
       this.sendResponse(req, res, 200, [deletedItem], totalData);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
