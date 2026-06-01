@@ -12,6 +12,7 @@ export interface IInvoice extends BaseEntity, ActivityFields {
   createdBy: ObjectId;
   closedBy: ObjectId | null;
   brancheId: ObjectId;
+  sessionId: ObjectId | null;
   clientId: ObjectId | null;
   name: string;
   phone: string;
