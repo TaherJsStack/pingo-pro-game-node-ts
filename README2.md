@@ -91,3 +91,13 @@ db.complaintssuggestions.deleteOne({ _id: ObjectId("666aa24d7c6937e0f5d3ba0f") }
 
 owner => barnches list[]
 employyee = barnch[]
+
+## Phase 5 SOLID migration run order
+1. Deploy the Phase 1/3 backend changes first (with permission, ObjectId refs, and Date category times support).
+2. Run the one-off idempotent migration from `node-ts`:
+```bash
+cd node-ts
+npx ts-node scripts/migrate-solid.ts
+```
+3. After migration finishes successfully, point the new frontend build to production.
+
