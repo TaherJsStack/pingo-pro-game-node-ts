@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 // import { CRUDController } from './base/CRUDController';
-import { IAddress } from '../../models/interfaces/address.interface';
-import AddressModel from '../../models/address';
+import { IAddress } from '../../types';
 import { CreateOperation } from '../interfaces/CreateOperation';
+import { addressRepository } from '../../repositories/instances';
 
 // import { SendResponse } from './base/sendResponse';
-import { IAuth } from '../../models/interfaces/auth.interface';
+import { IAuth } from '../../types';
 import { CRUDController } from '../base/CRUDController';
 const { ObjectId } = require('mongoose').Types;
 
@@ -18,17 +18,14 @@ const { ObjectId } = require('mongoose').Types;
 
 export class AddressController extends CRUDController<IAddress> implements CreateOperation<IAddress>{
   constructor() {
-    super(AddressModel);
+    super(addressRepository);
   }
 
   createItemAuthAddress = async ( res: Response, auth: IAuth): Promise<void| {}> => {
     try {
-      const newItem = new AddressModel();
-      // newItem['ownerId'] = req['_id']
-      // if ('ownerId' in this.model.schema.obj) {
-        newItem.$set('ownerId', new ObjectId(auth._id));
-      // }
-      const savedItem = await newItem.save();
+      const savedItem = await this.repository.create({
+        ownerId: new ObjectId(auth._id),
+      } as any);
       return savedItem
       // this.sendResponse(res, 201, [savedItem]);
     } catch (err: any) {
@@ -39,3 +36,4 @@ export class AddressController extends CRUDController<IAddress> implements Creat
 
 
 }
+

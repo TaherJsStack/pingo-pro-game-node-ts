@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
-import PricingModel from '../../models/pricing';
 // import { CRUDController } from './base/CRUDController';
-import { IPricing } from '../../models/interfaces/pricing.interface';
+import { IPricing } from '../../types';
 import { CRUDController } from '../base/CRUDController';
+import { pricingRepository } from '../../repositories/instances';
 
 
 export class PricingController extends CRUDController<IPricing> {
   constructor() {
-    super(PricingModel);
+    super(pricingRepository);
   }
 
   // Update - PUT request handler
@@ -26,7 +26,7 @@ export class PricingController extends CRUDController<IPricing> {
       let objectIds = await ids.map((id) => new Types.ObjectId(id));
 
       // Update multiple categories by IDs in the database
-      const updatedItems = await PricingModel.updateMany(
+      const updatedItems = await this.repository.updateMany(
         { _id: { $in: objectIds } },
         { $set: { bookState: false } }
       );
@@ -55,3 +55,4 @@ export class PricingController extends CRUDController<IPricing> {
   };
 
 }
+

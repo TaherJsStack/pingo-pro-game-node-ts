@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
-import ClientModel from '../../models/client';
 // import { CRUDController } from './base/CRUDController';
-import { IClient } from '../../models/interfaces/client.interface';
+import { IClient } from '../../types';
 import { CRUDController } from '../base/CRUDController';
+import { clientRepository } from '../../repositories/instances';
 
 export class ClientController extends CRUDController<IClient> {
   constructor() {
-    super(ClientModel);
+    super(clientRepository);
   }
 
   checkPhone = async (req: Request, res: Response) => {
@@ -29,7 +29,7 @@ export class ClientController extends CRUDController<IClient> {
 
       // console.log('checkPhone query ---> ', query);
       // Use regular expression to filter phone numbers that contain the provided string
-      let users: IClient[] = await ClientModel.find( query );
+      let users: IClient[] = await this.repository.find(query);
       // console.log('checkPhone users ---> ', users);
 
       if (users) {
@@ -63,21 +63,24 @@ export class ClientController extends CRUDController<IClient> {
       //   filter[filterBy] = { $regex: new RegExp(filterValue, 'i') };
       // }
   
-      const items = await ClientModel.find(filter)
-        .skip((+page - 1) * +limit)
-        .limit(+limit);
+      const pageNo = Number(page) || 1;
+      const pageSize = Number(limit) || 10;
+      const items = await this.repository.find(filter, {
+        skip: (pageNo - 1) * pageSize,
+        limit: pageSize,
+      });
   
-      const totalCount = await ClientModel.countDocuments(filter);
+      const totalCount = await this.repository.countDocuments(filter);
   
       res.status(200).json({
         success: true,
         data: {
           items,
           pagination: {
-            currentPage: page,
-            totalPages: Math.ceil(totalCount / +limit),
+            currentPage: pageNo,
+            totalPages: Math.ceil(totalCount / pageSize),
             totalItems: totalCount,
-            itemsPerPage: limit,
+            itemsPerPage: pageSize,
           },
         },
       });
@@ -88,3 +91,4 @@ export class ClientController extends CRUDController<IClient> {
   };
 
 }
+

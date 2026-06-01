@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
-import CategoryModel from '../../models/category';
-import { ICategory } from '../../models/interfaces/category.interface';
+import { ICategory } from '../../types';
 import { CRUDController } from '../base/CRUDController';
+import { categoryRepository } from '../../repositories/instances';
 // import { CRUDController } from './base/CRUDController';
 // const { ObjectId } = require('mongoose').Types;
 
@@ -15,7 +15,7 @@ import { CRUDController } from '../base/CRUDController';
 
 export class CategoryController extends CRUDController<ICategory> {
   constructor() {
-    super(CategoryModel);
+    super(categoryRepository);
   }
   // Update - PUT request handler
   updateCategoryStopCategoresReletedToBillByIdsList = async (req: Request, res: Response): Promise<void> => {
@@ -31,7 +31,7 @@ export class CategoryController extends CRUDController<ICategory> {
       let objectIds = await ids.map(id => new Types.ObjectId(id));
   
       // Update multiple categories by IDs in the database
-      const updatedItems = await CategoryModel.updateMany(
+      const updatedItems = await this.repository.updateMany(
         { _id: { $in: objectIds } },
         { $set: { bookState: false } }
       );
@@ -62,3 +62,4 @@ export class CategoryController extends CRUDController<ICategory> {
   };
   
 }
+

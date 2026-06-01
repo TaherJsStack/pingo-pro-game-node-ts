@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
-import BrancheModel from '../../models/branche';
 // import { CRUDController } from './base/CRUDController';
-import { IBranche } from '../../models/interfaces/branche.interface';
+import { IBranche } from '../../types';
 import { CRUDController } from '../base/CRUDController';
+import { brancheRepository } from '../../repositories/instances';
 
 
 export class BrancheController extends CRUDController<IBranche> {
   constructor() {
-    super(BrancheModel);
+    super(brancheRepository);
   }
 
   override createItem = async (req: Request, res: Response): Promise<void> => {
@@ -15,9 +15,7 @@ export class BrancheController extends CRUDController<IBranche> {
       if (req.file) {
         (req.body as any)['logo'] = `${req.protocol}://${req.get('host')}/api/uploads/${req.file.filename}`;
       }
-      const newItem = new this.model(req.body);
-      
-      const savedItem = await newItem.save();
+      const savedItem = await this.repository.create(req.body as any);
       // const totalData = await this.model.find().countDocuments();
       this.sendResponse(req, res, 201, [savedItem], 1, 'new branche added successfully, with id: ' + req.body.ownerId);
     } catch (err: any) {
@@ -29,24 +27,15 @@ export class BrancheController extends CRUDController<IBranche> {
     try {
       const filter = this.parseFilter(req.query.Filter);
       
-      // console.log('Clients getAllItems filter -->', filter);
-      // console.log('filter -->', this.model);
-      for (const property in filter) {
-        // console.log(`${property}: ${filter[property]}`);
-        if (!(property in this.model.schema.obj)) {
-          delete filter[property];
-        }
-        if (property !== 'ownerId') {
-          delete filter[property];
-        }
-      }
+      const ownerId = filter['ownerId'];
 
       // console.log('branches filter -->', filter);
-      if (!filter['ownerId']) {
+      if (!ownerId) {
         return this.sendResponse(req, res, 200, [], 0, 'no branche found!!');
       }
-      const items = await this.model.find(filter).sort({ createdAt: -1, activeState: 1 });
-      const totalData = await this.model.find(filter).countDocuments();
+      const query = { ownerId };
+      const items = await this.repository.find(query, { sort: { createdAt: -1, activeState: 1 } });
+      const totalData = await this.repository.countDocuments(query);
 
 
       this.sendResponse(req, res, 200, items, totalData, 'branche');
@@ -58,3 +47,4 @@ export class BrancheController extends CRUDController<IBranche> {
 
   
 }
+

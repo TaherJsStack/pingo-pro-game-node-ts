@@ -1,27 +1,27 @@
-import Plan from '../../models/plan';
-import { IPlan } from '../../models/interfaces/plan.interface';
+import { IPlan } from '../../types';
+import { planRepository } from '../../repositories/instances';
 
 class PlanManager {
   async create(name: string, description: string, price: number, durationMonths: number): Promise<IPlan> {
-    const plan = new Plan({ name, description, price, durationMonths });
-    return await plan.save();
+    return planRepository.create({ name, description, price, durationMonths } as any);
   }
 
   async update(planId: string, name: string, description: string, price: number, durationMonths: number): Promise<IPlan | null> {
-    return await Plan.findByIdAndUpdate(planId, { name, description, price, durationMonths }, { new: true });
+    return await planRepository.updateById(planId, { name, description, price, durationMonths } as any);
   }
 
   async delete(planId: string): Promise<IPlan | null> {
-    return await Plan.findByIdAndDelete(planId);
+    return await planRepository.deleteById(planId);
   }
 
   async getPlan(planId: string): Promise<IPlan | null> {
-    return await Plan.findById(planId);
+    return await planRepository.findById(planId);
   }
 
   async getAllPlans(): Promise<IPlan[]> {
-    return await Plan.find();
+    return await planRepository.find();
   }
 }
 
 export default PlanManager;
+

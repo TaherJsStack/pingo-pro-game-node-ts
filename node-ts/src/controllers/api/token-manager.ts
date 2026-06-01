@@ -1,6 +1,6 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import BlacklistedToken from '../../models/black-listed-token';
 import dotenv from 'dotenv';
+import { blacklistedTokenRepository } from '../../repositories/instances';
 dotenv.config();
 
 export class TokenManager {
@@ -51,11 +51,10 @@ export class TokenManager {
       const payload = jwt.decode(token) as JwtPayload;
       if (payload && payload.exp) {
         const expirationDate = new Date(payload.exp * 1000);
-        const blacklistedToken = new BlacklistedToken({
+        await blacklistedTokenRepository.create({
           token,
           expiresAt: expirationDate,
-        });
-        await blacklistedToken.save();
+        } as any);
         // console.log('Token revoked:', token);
       }
     } catch (error) {
@@ -65,7 +64,7 @@ export class TokenManager {
 
   // Check if a token is revoked
   private async isTokenRevoked(token: string): Promise<boolean> {
-    const result = await BlacklistedToken.findOne({ token });
+    const result = await blacklistedTokenRepository.findOne({ token });
     return !!result;
   }
 }

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import InvoiceMenuModel from '../../models/invoice-menu';
-import { IInvoiceMenu } from '../../models/interfaces/invoice-menu.interface';
+import { IInvoiceMenu } from '../../types';
 import { CRUDController } from '../base/CRUDController';
+import { invoiceMenuRepository } from '../../repositories/instances';
 const { ObjectId } = require('mongoose').Types;
 
 interface CreateItemRequest extends Request {
@@ -13,22 +13,22 @@ interface CreateItemRequest extends Request {
 
 export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
   constructor() {
-    super(InvoiceMenuModel);
+    super(invoiceMenuRepository);
   }
   // Create - POST request handler
   createItem = async (req: CreateItemRequest, res: Response): Promise<void> => {
     try {
       // Create new item using request body
-      const newItem = new InvoiceMenuModel(req.body);
-  
-      newItem.createdBy = new ObjectId(req.authData.id);
-      // Save item to database
-      const savedItem = await newItem.save();
-      savedItem.updateTotal()
-        .then(total => {
+      const savedItem = await this.repository.create({
+        ...(req.body as any),
+        createdBy: new ObjectId(req.authData.id),
+      } as any);
+
+      (savedItem as any).updateTotal?.()
+        .then((total: any) => {
           // console.log('Updated total:', total);
         })
-        .catch(error => {
+        .catch((error: any) => {
           // console.error('Error updating total:', error);
         });
       res.status(201)
@@ -60,20 +60,17 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
       req.body.activeState = false;
   
       // Update item by ID in database
-      const updatedItem = await InvoiceMenuModel.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        { new: true }
-      );
+      const updatedItem = await this.repository.updateById(req.params.id, req.body as any);
       if (!updatedItem) {
         res.status(404).json({ msg: 'Item not found' });
+        return;
       }
       if (updatedItem) {
-        updatedItem.updateTotal()
-        .then(total => {
+        (updatedItem as any).updateTotal?.()
+        .then((total: any) => {
           // console.log('Updated total:', total);
         })
-        .catch(error => {
+        .catch((error: any) => {
           console.error('Error updating total:', error);
         });
       }
@@ -95,20 +92,17 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
   updateMenuItems = async (req: Request, res: Response): Promise<void> => {
     try {
       // Update item by ID in database
-      const updatedItem = await InvoiceMenuModel.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        { new: true }
-      );
+      const updatedItem = await this.repository.updateById(req.params.id, req.body as any);
       if (!updatedItem) {
         res.status(404).json({ msg: 'Item not found' });
+        return;
       }
       if (updatedItem) {      
-        updatedItem.updateTotal()
-          .then(total => {
+        (updatedItem as any).updateTotal?.()
+          .then((total: any) => {
             // console.log('Updated total:', total);
           })
-          .catch(error => {
+          .catch((error: any) => {
             console.error('Error updating total:', error);
           });
       }
@@ -128,3 +122,4 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
   };
 
 }
+

@@ -1,17 +1,17 @@
-import { IAuth } from './../../models/interfaces/auth.interface';
+import { IAuth } from '../../types';
 import { Request, Response, NextFunction } from 'express';
-import Auth from '../../models/auth';
-import Password from '../../models/password';
 import { generateBcryptHash } from '../../util/jwtUtil';
 import { CRUDController } from '../base/CRUDController';
+import { authRepository, passwordRepository } from '../../repositories/instances';
+
 
 export class EmployeesController extends CRUDController<IAuth> {
     constructor() {
-        super(Auth);
+        super(authRepository);
     }
 
     checkEmail = (req: Request, res: Response, next: NextFunction): void => {
-        Auth.findOne({ email: req.params.email })
+        authRepository.findOne({ email: req.params.email })
             .then((user: any) => {
 
                 if (!user || user === null) { throw new Error('this email doesn\'t exist ') }
@@ -36,7 +36,7 @@ export class EmployeesController extends CRUDController<IAuth> {
 
         let bcryptHash = await generateBcryptHash(req.body.password, 10);
 
-        Password.updateOne({ userId: req.body.id }, { password: bcryptHash })
+        passwordRepository.updateMany({ userId: req.body.id }, { password: bcryptHash })
             .then((saved: any) => {
                 res.status(200).json({
                     message: "updated password successfully",
@@ -54,16 +54,14 @@ export class EmployeesController extends CRUDController<IAuth> {
     saveAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 
         let bcryptHash = await generateBcryptHash(req.body.password, 10)
-        const newAuth = await new Auth(req.body);
-        // newAuth['password'] = await bcryptHash;
         let password = await bcryptHash;
-        newAuth.save()
+        authRepository.create(req.body as any)
             .then(async (saved: any) => {
 
-                let savedPassword = await saveNewPassword(req, saved._id, password)
+                let savedPassword = await saveNewPassword(saved._id, password)
 
                 if (!savedPassword) {
-                    await Auth.deleteOne({ _id: saved._id })
+                    await authRepository.deleteById(saved._id.toString())
                     throw new Error('new user not added !!!')
                 }
                 res.status(200)
@@ -91,14 +89,10 @@ export class EmployeesController extends CRUDController<IAuth> {
     updateOne = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 
         try {
-            // Update item by ID in database
-            const updatedItem = await Auth.findByIdAndUpdate(
-                req.params.id,
-                req.body,
-                { new: true }
-            );
+            const updatedItem = await authRepository.updateById(req.params.id, req.body as any);
             if (!updatedItem) {
                 res.status(404).json({ msg: 'Item not found' });
+                return;
             }
             res.status(201)
                 .json({
@@ -115,7 +109,7 @@ export class EmployeesController extends CRUDController<IAuth> {
     }
 
     getById = (req: Request, res: Response, next: NextFunction): void => {
-        Auth.findOne({ _id: req.params.authId })
+        authRepository.findOne({ _id: req.params.authId })
             .then((member: any) => {
 
                 if (member == null) {
@@ -136,7 +130,7 @@ export class EmployeesController extends CRUDController<IAuth> {
     }
 
     deleteOne = (req: Request, res: Response, next: NextFunction): void => {
-        Auth.deleteOne({ _id: req.params.id })
+        authRepository.deleteById(req.params.id)
             .then((admin: any) => {
                 res.status(200).json({
                     admin: admin,
@@ -154,12 +148,10 @@ export class EmployeesController extends CRUDController<IAuth> {
 
 }
 
-async function saveNewPassword(req: Request, userId: string, password: string): Promise<any> {
+async function saveNewPassword(userId: string, password: string): Promise<any> {
 
     try {
-        let setPassword = new Password({ userId, password })
-        let savedPassword = await setPassword.save()
-        return savedPassword
+        return await passwordRepository.create({ userId, password } as any);
     } catch (err) {
         throw Error('error in saving password')
     }
