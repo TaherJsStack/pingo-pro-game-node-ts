@@ -3,10 +3,11 @@ import ClientModel from '../../models/client';
 // import { CRUDController } from './base/CRUDController';
 import { IClient } from '../../models/interfaces/client.interface';
 import { CRUDController } from '../base/CRUDController';
+import { BaseRepository } from '../../repositories/BaseRepository';
 
 export class ClientController extends CRUDController<IClient> {
   constructor() {
-    super(ClientModel);
+    super(new BaseRepository<IClient>(ClientModel));
   }
 
   override getAllItems = async (req: Request, res: Response): Promise<void> => {
@@ -22,7 +23,7 @@ export class ClientController extends CRUDController<IClient> {
       // }
       // console.log('filter -->', filter);
 
-      const items = await this.model.find().sort({ createdAt: -1, activeState: 1 });
+      const items = await this.repository.find({}, { sort: { createdAt: -1, activeState: 1 } });
       this.sendResponse(req, res, 200, items);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);

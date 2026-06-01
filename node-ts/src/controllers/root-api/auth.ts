@@ -5,13 +5,7 @@ import { generateBcryptHash, compareBcryptHash, generateToken } from '../../util
 import { IAuth } from '../../models/interfaces/auth.interface';
 import { IPassword } from '../../models/interfaces/password.interface';
 // import { SendResponse } from './base/sendResponse';
-import { AddressController } from '../api/address';
-import { InboxController } from '../api/inbox';
 import { SendResponse } from '../base/sendResponse';
-
-
-const createAddress: AddressController = new AddressController()
-const inbox: InboxController = new InboxController()
 
 export class AuthController extends SendResponse{
 

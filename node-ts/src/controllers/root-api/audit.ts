@@ -3,11 +3,12 @@ import AuditModel from '../../models/audit';
 // import { CRUDController } from './base/CRUDController';
 import { CRUDController } from '../base/CRUDController';
 import { IAudit } from '../../models/interfaces/audit.interface';
+import { BaseRepository } from '../../repositories/BaseRepository';
 
 
 export class AuditController  extends CRUDController<IAudit>{
   constructor() {
-    super(AuditModel);
+    super(new BaseRepository<IAudit>(AuditModel));
   }
 
   override getAllItems = async (req: Request, res: Response): Promise<void> => {
@@ -23,7 +24,7 @@ export class AuditController  extends CRUDController<IAudit>{
       // }
       // console.log('filter -->', filter);
 
-      const items = await this.model.find().sort({ auditOn: -1 });
+      const items = await this.repository.find({}, { sort: { auditOn: -1 } });
       this.sendResponse(req, res, 200, items);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
