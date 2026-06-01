@@ -1,5 +1,6 @@
 import { IPermissions } from './permissions.interface';
 import { ActivityFields, BaseEntity, ObjectId } from './common.interface';
+import { AuthType } from '../../enums/auth-type.enum';
 
 export interface IAuth extends BaseEntity, ActivityFields {
   brancheId?: ObjectId;
@@ -12,5 +13,5 @@ export interface IAuth extends BaseEntity, ActivityFields {
   role: number;
   permission: number[];
   permissions: IPermissions[];
-  authType: 'owner' | 'employee' | 'root' | 'client';
+  authType: AuthType;
 }

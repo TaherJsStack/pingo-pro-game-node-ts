@@ -1,6 +1,7 @@
 import { ActivityFields, BaseEntity, ObjectId } from './common.interface';
+import { ShiftStatus } from '../../enums/shift-status.enum';
 
-export type ShiftStatus = 'open' | 'closed';
+export { ShiftStatus };
 
 export interface IShift extends BaseEntity, ActivityFields {
   employeeId: ObjectId;
