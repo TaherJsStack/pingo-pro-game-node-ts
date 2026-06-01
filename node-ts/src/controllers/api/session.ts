@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
+import CategoryModel from '../../models/category';
+import ClientModel from '../../models/client';
+import InvoiceModel from '../../models/invoice';
 import SessionClientModel from '../../models/session';
 import InvoiceService from '../../services/invoice.service';
 import { ISession } from '../../models/interfaces/session.interface';
-import { InvoiceController } from './invoice';
 
 const { ObjectId } = require('mongoose').Types;
 
@@ -15,7 +17,98 @@ interface CreateItemRequest extends Request {
   body: ISession;
 }
 
+interface EndSessionRequest extends Request {
+  authData: {
+    id: string;
+  };
+  body: Partial<ISession> & {
+    categoryId?: string;
+    categoriesIds?: string[];
+    endTime?: string;
+    description?: string;
+    name?: string;
+    phone?: string;
+  };
+}
+
 export class SessionController {
+
+  private normalizeCategoryIds(body: EndSessionRequest['body']): string[] {
+    const idsFromCategories = Array.isArray(body.categories)
+      ? body.categories
+          .map((category: any) => String(category?.categoryId ?? ''))
+          .filter(Boolean)
+      : [];
+
+    const requestedIds = body.categoriesIds ?? (body.categoryId ? [body.categoryId] : idsFromCategories);
+
+    return [...new Set(requestedIds.map((id) => String(id)).filter(Boolean))];
+  }
+
+  private toInvoiceDateString(value: unknown): string | undefined {
+    if (!value) {
+      return undefined;
+    }
+
+    const parsedDate = value instanceof Date ? value : new Date(value as string);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return undefined;
+    }
+
+    return parsedDate.toISOString();
+  }
+
+  private async createBillFromSession(session: any, req: EndSessionRequest, closedBy: any) {
+    const existingInvoice = await InvoiceModel.findOne({ sessionId: session._id });
+    if (existingInvoice) {
+      return existingInvoice;
+    }
+
+    const createdBy = new ObjectId(req.authData.id);
+    const client = session.clientId ? await ClientModel.findById(session.clientId) : null;
+    const invoicesCount = await InvoiceModel.countDocuments({ brancheId: session.brancheId });
+
+    const newInvoice = new InvoiceModel({
+      sessionId: session._id,
+      createdBy,
+      closedBy,
+      brancheId: session.brancheId,
+      clientId: session.clientId ?? null,
+      name: req.body.name ?? client?.name ?? '',
+      phone: req.body.phone ?? client?.phone ?? '',
+      activeState: false,
+      description: req.body.description ?? session.description ?? '',
+      invoiceNo: 20250601 + invoicesCount + 1,
+      categories: session.categories.map((category: any) => ({
+        categoryId: category.categoryId,
+        createdBy: category.createdBy ?? createdBy,
+        closedBy: category.closedBy ?? closedBy,
+        type: category.type ?? 'open',
+        price: Number(category.price ?? 0),
+        startTime: this.toInvoiceDateString(category.startTime) ?? new Date().toISOString(),
+        endTime: this.toInvoiceDateString(category.endTime),
+        estimationTime: category.estimationTime ?? '',
+        estimationInHours: Number(category.estimationInHours ?? 0),
+        estimationInMinutes: Number(category.estimationInMinutes ?? 0),
+      })),
+      menuItems: Array.isArray(session.menuItems)
+        ? session.menuItems.map((item: any) => ({
+            itemID: item.itemID,
+            createdBy: item.createdBy ?? createdBy,
+            itemName: item.itemName,
+            quantity: Number(item.quantity ?? 0),
+            price: Number(item.price ?? 0),
+          }))
+        : [],
+    });
+
+    const savedInvoice = await newInvoice.save();
+    await savedInvoice.calculateCategoriesTotal();
+    await savedInvoice.calculateMenuItemsTotal();
+
+    return savedInvoice;
+  }
 
   createItem = async (req: CreateItemRequest, res: Response) => {
     try {
@@ -185,14 +278,90 @@ export class SessionController {
     }
   };
 
-  endSession = async (req: Request, res: Response) => {
+  endSession = async (req: EndSessionRequest, res: Response) => {
     try {
-      res.status(201).json({
+      const session = await SessionClientModel.findById(req.params.id);
+      if (!session) {
+        return res.status(404).json({ msg: 'Session not found' });
+      }
+
+      const requestedCategoryIds = this.normalizeCategoryIds(req.body);
+      if (!requestedCategoryIds.length) {
+        return res.status(400).json({
+          success: false,
+          errors: ['At least one categoryId is required to end a session.'],
+          status: 400,
+          message: '',
+          data: [],
+        });
+      }
+
+      const parsedEndTime = req.body.endTime ? new Date(req.body.endTime) : new Date();
+      if (Number.isNaN(parsedEndTime.getTime())) {
+        return res.status(400).json({
+          success: false,
+          errors: ['Invalid endTime value.'],
+          status: 400,
+          message: '',
+          data: [],
+        });
+      }
+
+      const closedBy = new ObjectId(req.authData.id);
+      const matchedCategoryIds = new Set<string>();
+
+      for (const category of session.categories as any[]) {
+        const categoryId = String(category.categoryId);
+        if (!requestedCategoryIds.includes(categoryId)) {
+          continue;
+        }
+
+        matchedCategoryIds.add(categoryId);
+
+        if (!category.endTime) {
+          category.endTime = parsedEndTime;
+          category.closedBy = closedBy;
+        }
+      }
+
+      if (!matchedCategoryIds.size) {
+        return res.status(400).json({
+          success: false,
+          errors: ['No matching session categories were found for the provided categoriesIds list.'],
+          status: 400,
+          message: '',
+          data: [],
+        });
+      }
+
+      if (req.body.description?.trim()) {
+        session.description = req.body.description.trim();
+      }
+
+      await Promise.all(
+        [...matchedCategoryIds].map((categoryId) =>
+          CategoryModel.updateOne(
+            { _id: new Types.ObjectId(categoryId) },
+            { $set: { bookState: false } }
+          )
+        )
+      );
+
+      const allCategoriesEnded = (session.categories as any[]).every((category) => !!category.endTime);
+      if (allCategoriesEnded) {
+        session.activeState = false;
+      }
+
+      const savedSession = await session.save();
+      const createdBill = allCategoriesEnded ? await this.createBillFromSession(savedSession, req, closedBy) : null;
+
+      res.status(200).json({
         success: true,
         errors: [],
         status: 200,
-        message: '',
-        data: [],
+        message: createdBill ? 'Session ended and bill created successfully.' : 'Session categories ended successfully.',
+        data: [savedSession],
+        bill: createdBill,
       });
     } catch (err: any) {
       console.error(err.message);
