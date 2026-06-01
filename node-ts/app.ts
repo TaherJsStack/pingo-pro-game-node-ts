@@ -11,6 +11,8 @@ import { init } from './socket';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import swaggerOptions from './swagger';
+import { auditMiddleware } from './src/middleware/audit.middleware';
+import { errorHandler } from './src/middleware/errorHandler';
 
 config();
 
@@ -71,9 +73,11 @@ class App {
   }
 
   private initializeRoutes(): void {
+    this.app.use(auditMiddleware);
     this.app.use("/api/root/v1", rootAPI);
     this.app.use("/api/v1", routerAPI);
     this.app.use("/", express.static(path.join(__dirname, "../../views/browser/")));
+    this.app.use(errorHandler);
   }
 
   private initializeDatabase(): void {
