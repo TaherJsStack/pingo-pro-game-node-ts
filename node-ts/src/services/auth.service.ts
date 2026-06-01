@@ -1,0 +1,89 @@
+import Auth from '../models/auth';
+import Password from '../models/password';
+import Address from '../models/address';
+import Inbox from '../models/inbox';
+import Branche from '../models/branche';
+import Subscription from '../models/subscription';
+import { BaseRepository } from '../repositories/BaseRepository';
+import { AuthRepository } from '../repositories/AuthRepository';
+import { generateBcryptHash } from '../util/jwtUtil';
+import { TokenManager } from '../controllers/api/token-manager';
+import SubscriptionManager from '../controllers/api/subscription-manager';
+import { IAuthService } from './interfaces/IAuthService';
+import { AppError } from '../errors/AppError';
+import { InboxType } from '../enums/inbox-type.enum';
+
+export class AuthService implements IAuthService {
+  private readonly authRepository = new AuthRepository(Auth);
+  private readonly passwordRepository = new BaseRepository<any>(Password);
+  private readonly addressRepository = new BaseRepository<any>(Address);
+  private readonly inboxRepository = new BaseRepository<any>(Inbox);
+  private readonly brancheRepository = new BaseRepository<any>(Branche);
+  private readonly subscriptionRepository = new BaseRepository<any>(Subscription);
+  private readonly subscriptionManager = new SubscriptionManager();
+  private readonly tokenManager = new TokenManager();
+
+  async register(payload: any): Promise<{ token: string; user: any }> {
+    const bcryptHash = await generateBcryptHash(payload.password, 10);
+    const savedUser = await this.authRepository.create(payload);
+    let savedBranche: any = null;
+    let subscriptionData: any = null;
+    const createdInboxIds: string[] = [];
+    try {
+      await this.passwordRepository.create({ userId: savedUser._id, password: bcryptHash });
+      await this.addressRepository.create({ ownerId: savedUser._id });
+      const fallbackBranchName = `${payload.username || payload.email || 'Main'} Main Branch`;
+      const branchName =
+        payload?.branche ||
+        payload?.club?.branche ||
+        payload?.club?.name ||
+        payload?.club ||
+        fallbackBranchName;
+      savedBranche = await this.brancheRepository.create({
+        ownerId: savedUser._id,
+        branche: branchName,
+      });
+      await this.authRepository.updateById(savedUser._id.toString(), { brancheId: savedBranche._id });
+      savedUser.brancheId = savedBranche._id;
+      const welcomeMessage = await this.inboxRepository.create({
+        ownerId: savedUser._id,
+        title: 'Welcome to pingo',
+        type: InboxType.Welcome,
+        context: 'Your account is ready.',
+        isSeen: false,
+      });
+      createdInboxIds.push(welcomeMessage._id.toString());
+      const trialDays = 20;
+      subscriptionData = await this.subscriptionManager.createSubscription(savedUser._id.toString(), null, trialDays);
+      const trialEndDate = new Date(subscriptionData.endDate);
+      const trialMessage = await this.inboxRepository.create({
+        ownerId: savedUser._id,
+        title: 'Free trial activated',
+        type: InboxType.System,
+        context: `Your free trial is active until ${trialEndDate.toISOString().split('T')[0]}.`,
+        isSeen: false,
+      });
+      createdInboxIds.push(trialMessage._id.toString());
+      const token = await this.tokenManager.generateToken({
+        _id: savedUser._id.toString(),
+        email: savedUser.email,
+        name: `${savedUser.lastName} ${savedUser.firstName}`,
+        role: savedUser.role,
+        permission: savedUser.permission,
+      });
+      return { token, user: savedUser };
+    } catch (error) {
+      if (createdInboxIds.length > 0) {
+        await this.inboxRepository.deleteMany({ _id: { $in: createdInboxIds } });
+      }
+      if (subscriptionData?._id) {
+        await this.subscriptionRepository.deleteById(subscriptionData._id.toString());
+      }
+      if (savedBranche?._id) {
+        await this.brancheRepository.deleteById(savedBranche._id.toString());
+      }
+      await this.authRepository.deleteById(savedUser._id.toString());
+      throw new AppError('new user not added !!!');
+    }
+  }
+}
