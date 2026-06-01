@@ -17,6 +17,7 @@ import inboxAPI                 from './api/inbox';
 import complaintsSuggestionAPI  from './api/complaints-suggestion';
 import subscriptionAPI          from './api/subscription';
 import planAPI                  from './api/plan';
+import shiftsAPI                from './api/shifts';
 
 // Import middleware if needed
 // import signReqData from '../middleware/sign-req-data';
@@ -153,6 +154,7 @@ routerAPI.use("/inbox",                 inboxAPI);
 routerAPI.use("/complaints-suggestion", complaintsSuggestionAPI);
 routerAPI.use("/subscription",          subscriptionAPI);
 routerAPI.use("/plan",                  planAPI);
+routerAPI.use("/shifts",                shiftsAPI);
 
 
 
