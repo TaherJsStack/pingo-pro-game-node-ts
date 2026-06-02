@@ -19,4 +19,8 @@ router.get("/kpi", (req: Request, res: Response) => {
   statisticsController.getKpiSummary(req, res);
 });
 
+router.get("/top-customers", (req: Request, res: Response) => {
+  statisticsController.getTopCustomers(req, res);
+});
+
 export default router;
