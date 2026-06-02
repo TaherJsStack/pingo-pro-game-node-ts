@@ -50,7 +50,9 @@ export class SessionService implements ISessionService {
       estimationInMinutes: Number(device.estimationInMinutes ?? 0),
     }));
 
-    const existingSession = await this.sessionRepository.findActiveSessionByClientAndBranch(body.clientId, body.brancheId);
+    const existingSession = body.clientId
+      ? await this.sessionRepository.findActiveSessionByClientAndBranch(body.clientId, body.brancheId)
+      : null;
     if (existingSession) {
       existingSession.categories.push(...categories);
       return existingSession.save();
