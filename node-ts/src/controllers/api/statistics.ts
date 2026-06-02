@@ -217,6 +217,90 @@ export class StatisticsController {
     }
   }
 
+  getTopCustomers = async (req: Request, res: Response) => {
+    try {
+      const filterObg = typeof req.query.Filter === 'string'
+        ? JSON.parse(req.query.Filter)
+        : ((req.query.Filter as any) || {});
+
+      const innerFilter = filterObg.filter || filterObg;
+      const brancheId = filterObg.brancheId || innerFilter.brancheId;
+      const parsedLimit = Number(innerFilter.limit || filterObg.limit || 5);
+      const limit = Number.isFinite(parsedLimit) ? Math.max(parsedLimit, 1) : 5;
+      const createdAtMatch: any = {};
+
+      if (innerFilter.startDate) {
+        createdAtMatch.$gte = new Date(innerFilter.startDate);
+      }
+
+      if (innerFilter.endDate) {
+        createdAtMatch.$lte = new Date(innerFilter.endDate);
+      }
+
+      const matchStage: any = {
+        clientId: { $ne: null },
+      };
+
+      if (brancheId) {
+        matchStage.brancheId = new ObjectId(brancheId);
+      }
+
+      if (Object.keys(createdAtMatch).length) {
+        matchStage.createdAt = createdAtMatch;
+      }
+
+      const customers = await invoiceRepository.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: '$clientId',
+            totalSpent: { $sum: '$total' },
+            sessionsCount: { $sum: 1 },
+            name: { $first: '$name' },
+            phone: { $first: '$phone' },
+          },
+        },
+        { $sort: { totalSpent: -1 } },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: 'clients',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'client',
+          },
+        },
+        {
+          $unwind: {
+            path: '$client',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            clientId: '$_id',
+            name: { $ifNull: ['$client.name', '$name'] },
+            phone: { $ifNull: ['$client.phone', '$phone'] },
+            totalSpent: { $round: ['$totalSpent', 2] },
+            sessionsCount: 1,
+          },
+        },
+      ]);
+
+      res.status(200).json({
+        success: true,
+        errors: [],
+        status: 200,
+        message: '',
+        data: customers,
+      });
+    } catch (error) {
+      console.error('Error fetching top customers:', error);
+      res.status(500).json({ success: false, errors: [String(error)], status: 500, message: '', data: [] });
+    }
+  }
+
   getKpiSummary = async (req: Request, res: Response) => {
     try {
       const filterObg = typeof req.query.Filter === 'string'
