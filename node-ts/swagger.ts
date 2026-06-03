@@ -1,4 +1,5 @@
 import { SwaggerOptions } from "swagger-ui-express";
+import { env } from './src/config/env';
 
 const swaggerOptions: SwaggerOptions = {
   swaggerDefinition: {
@@ -10,7 +11,7 @@ const swaggerOptions: SwaggerOptions = {
     },
     servers: [
       {
-        url: 'http://localhost:4001/api/v1',
+        url: env.swaggerServerUrl,
       },
     ],
     components: {
