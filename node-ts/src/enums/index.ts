@@ -3,3 +3,6 @@ export { SubscriptionStatus } from './subscription-status.enum';
 export { ShiftStatus } from './shift-status.enum';
 export { InboxType } from './inbox-type.enum';
 export { KpiPeriod } from './kpi-period.enum';
+export { PaymentProvider } from './payment-provider.enum';
+export { PaymentMethod } from './payment-method.enum';
+export { PaymentStatus } from './payment-status.enum';
