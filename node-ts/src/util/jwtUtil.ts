@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import dotenv from 'dotenv';
-dotenv.config();
+import { env } from '../config/env';
 
 export const generateToken = (userId: string, email: string, username: string, userRoles: number, permission: number[]): string => {
     const token = jwt.sign({
@@ -10,7 +9,7 @@ export const generateToken = (userId: string, email: string, username: string, u
         name:       username,
         role:       userRoles,
         permission: permission
-    }, process.env.SECRET!, { expiresIn: "3d" });
+    }, env.secret, { expiresIn: "3d" });
     return token;
 }
 
@@ -32,7 +31,7 @@ export const verifyToken = (roles: { userType: string }[]) => {
                 return res.status(500).send({ error: 'Token is not exist' });
             }
             // should validate if loggedIn user has the same role
-            const decode: any = jwt.verify(token, process.env.SECRET!);
+            const decode: any = jwt.verify(token, env.secret);
             // console.log("decode:" + JSON.stringify(decode));
             req.user = {
                 userId: decode.userId,
