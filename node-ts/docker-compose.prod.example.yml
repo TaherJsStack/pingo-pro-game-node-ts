@@ -1,0 +1,34 @@
+# Production VPS example.
+# Create .env.production beside this file and set MONGODB_URL to an external MongoDB
+# server/cluster. Run only one API replica with ENABLE_BILLING_CRON=true.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pingo-pro-game-api:latest
+    restart: unless-stopped
+    env_file:
+      - ./.env.production
+    environment:
+      NODE_ENV: production
+      PORT: 4001
+    ports:
+      - "4001:4001"
+    volumes:
+      - pingo_uploads:/app/uploads
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:' + (process.env.PORT || 4001) + '/readyz').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  pingo_uploads:
