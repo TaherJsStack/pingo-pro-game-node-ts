@@ -1,22 +1,18 @@
 import express from "express";
 import PlanManager from "../../controllers/api/plan-manager";
+import signReqData from "../../middleware/sign-req-data";
 
 const router = express.Router();
+const planManager = new PlanManager();
 
-// const { saveAuth, updateOne, updatePassword, getAllItems, checkEmail, getById, deleteOne } = new PlanManager();
+router.post("/", signReqData, planManager.createItem as unknown as express.RequestHandler);
 
-// router.post("/", saveAuth);
+router.get("/", signReqData, planManager.getAllItems);
 
-// router.put("/member/:id", updateOne);
+router.get("/:id", signReqData, planManager.getItemById);
 
-// router.put("/updatePassword", updatePassword);
+router.put("/:id", signReqData, planManager.updateItem);
 
-// router.get("/", getAllItems);
-
-// router.get("/checkEmail/:email", checkEmail);
-
-// router.get("/getById/:authId", getById);
-
-// router.delete("/:id", deleteOne);
+router.delete("/:id", signReqData, planManager.deleteItem);
 
 export default router;

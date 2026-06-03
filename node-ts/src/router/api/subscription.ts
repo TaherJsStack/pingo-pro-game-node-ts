@@ -1,7 +1,11 @@
-import express, { Request, Response, Router } from 'express';
+import express, { NextFunction, Request, Response, Router } from 'express';
 import signReqData from '../../middleware/sign-req-data';
-import SubscriptionManager from '../../controllers/api/subscription-manager';
 import { SendResponse } from '../../controllers/base/sendResponse';
+import { NotFoundError, ValidationError } from '../../errors/AppError';
+import { PaymentMethod, PaymentProvider } from '../../enums';
+import { planRepository, subscriptionRepository } from '../../repositories/instances';
+import PaymentService from '../../services/payment.service';
+import SubscriptionService from '../../services/subscription.service';
 
 interface AuthRequest extends Request {
   authData?: {
@@ -13,85 +17,116 @@ class SubscriptionResponse extends SendResponse {
   ok(req: Request, res: Response, statusCode: number, data: any[], totalData?: number) {
     this.sendResponse(req, res, statusCode, data, totalData);
   }
-
-  fail(req: Request, res: Response, error: any) {
-    this.sendErrorResponse(req, res, error);
-  }
 }
 
 const router: Router = express.Router();
-const subscriptionManager = new SubscriptionManager();
 const response = new SubscriptionResponse();
 
-router.post('/subscribe', signReqData, async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.body.userId || req.authData?.id;
-    const { plan = null, trialDays = 0 } = req.body;
-    const subscription = await subscriptionManager.createSubscription(userId, plan, Number(trialDays));
+function asyncHandler(handler: (req: AuthRequest, res: Response) => Promise<void>) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    handler(req as AuthRequest, res).catch(next);
+  };
+}
+
+function requireUser(req: AuthRequest): string {
+  const userId = req.authData?.id;
+  if (!userId) {
+    throw new ValidationError('Authenticated user is required.');
+  }
+  return userId;
+}
+
+async function assertOwnsSubscription(subscriptionId: string, userId: string) {
+  const subscription = await subscriptionRepository.findById(subscriptionId);
+  if (!subscription) {
+    throw new NotFoundError('Subscription not found.');
+  }
+  if (String(subscription.userId) !== String(userId)) {
+    throw new ValidationError('Subscription does not belong to the authenticated user.');
+  }
+  return subscription;
+}
+
+router.post('/subscribe', signReqData, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = requireUser(req);
+  const { trialDays = 0 } = req.body;
+  const planId = req.body.planId || req.body.plan;
+
+  if (Number(trialDays) > 0) {
+    const plan = await planRepository.findById(planId);
+    if (!plan) {
+      throw new NotFoundError('Plan not found.');
+    }
+    const subscription = await SubscriptionService.startTrial(userId, plan, Number(trialDays));
     response.ok(req, res, 201, [subscription], 1);
-  } catch (error) {
-    response.fail(req, res, error);
+    return;
   }
-});
 
-router.get('', signReqData, async (req: AuthRequest, res: Response) => {
-  try {
-    const subscription = await subscriptionManager.getSubscription(req.authData?.id as string);
-    const data = subscription ? [subscription] : [];
-    response.ok(req, res, 200, data, data.length);
-  } catch (error) {
-    response.fail(req, res, error);
-  }
-});
+  const checkout = await PaymentService.initiate({
+    userId,
+    planId,
+    provider: req.body.provider as PaymentProvider,
+    method: req.body.method as PaymentMethod,
+    idempotencyKey: req.header('Idempotency-Key') ?? undefined,
+  });
 
-router.get('/member/:id', async (req: Request, res: Response) => {
-  try {
-    const subscription = await subscriptionManager.getSubscription(req.params.id);
-    const data = subscription ? [subscription] : [];
-    response.ok(req, res, 200, data, data.length);
-  } catch (error) {
-    response.fail(req, res, error);
-  }
-});
+  response.ok(req, res, 201, [checkout], 1);
+}));
 
-router.get('/trial-check/:id', async (req: Request, res: Response) => {
-  try {
-    const isActive = await subscriptionManager.isTrialPeriodActive(req.params.id);
-    response.ok(req, res, 200, [{ trialActive: isActive }], 1);
-  } catch (error) {
-    response.fail(req, res, error);
-  }
-});
+router.get('', signReqData, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const subscription = await SubscriptionService.getSubscription(requireUser(req));
+  const data = subscription ? [subscription] : [];
+  response.ok(req, res, 200, data, data.length);
+}));
 
-router.put('/member/:id', async (req: Request, res: Response) => {
-  try {
-    const { plan } = req.body;
-    const subscription = await subscriptionManager.updateSubscription(req.params.id, plan);
-    const data = subscription ? [subscription] : [];
-    response.ok(req, res, 200, data, data.length);
-  } catch (error) {
-    response.fail(req, res, error);
+router.get('/member/:id', signReqData, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = requireUser(req);
+  if (req.params.id !== userId) {
+    throw new ValidationError('Cannot read another user subscription.');
   }
-});
+  const subscription = await SubscriptionService.getSubscription(userId);
+  const data = subscription ? [subscription] : [];
+  response.ok(req, res, 200, data, data.length);
+}));
 
-router.put('/renew/:id', async (req: Request, res: Response) => {
-  try {
-    const subscription = await subscriptionManager.renewSubscription(req.params.id);
-    const data = subscription ? [subscription] : [];
-    response.ok(req, res, 200, data, data.length);
-  } catch (error) {
-    response.fail(req, res, error);
-  }
-});
+router.get('/trial-check/:id', signReqData, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = requireUser(req);
+  const subscription = await assertOwnsSubscription(req.params.id, userId);
+  const now = new Date();
+  const isActive = Boolean(subscription.trial && now <= subscription.endDate);
+  response.ok(req, res, 200, [{ trialActive: isActive }], 1);
+}));
 
-router.delete('/:id', async (req: Request, res: Response) => {
-  try {
-    const subscription = await subscriptionManager.cancelSubscription(req.params.id);
-    const data = subscription ? [subscription] : [];
-    response.ok(req, res, 200, data, data.length);
-  } catch (error) {
-    response.fail(req, res, error);
+router.put('/member/:id', signReqData, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = requireUser(req);
+  if (req.params.id !== userId) {
+    throw new ValidationError('Cannot update another user subscription.');
   }
-});
+  const subscription = await SubscriptionService.getSubscription(userId);
+  if (!subscription) {
+    throw new NotFoundError('Subscription not found.');
+  }
+  const updated = await subscriptionRepository.updateById(String(subscription._id), { plan: req.body.plan } as any);
+  response.ok(req, res, 200, updated ? [updated] : [], updated ? 1 : 0);
+}));
+
+router.put('/renew/:id', signReqData, asyncHandler(async (req: AuthRequest, res: Response) => {
+  await assertOwnsSubscription(req.params.id, requireUser(req));
+  throw new ValidationError('Subscription renewal is handled by the billing scheduler.');
+}));
+
+router.patch('/:id/auto-renew', signReqData, asyncHandler(async (req: AuthRequest, res: Response) => {
+  await assertOwnsSubscription(req.params.id, requireUser(req));
+  const subscription = await SubscriptionService.toggleAutoRenew(req.params.id, Boolean(req.body.autoRenew));
+  response.ok(req, res, 200, subscription ? [subscription] : [], subscription ? 1 : 0);
+}));
+
+router.delete('/:id', signReqData, asyncHandler(async (req: AuthRequest, res: Response) => {
+  await assertOwnsSubscription(req.params.id, requireUser(req));
+  const subscription = await SubscriptionService.cancel(req.params.id, {
+    atPeriodEnd: Boolean(req.body.cancelAtPeriodEnd ?? req.query.cancelAtPeriodEnd),
+  });
+  response.ok(req, res, 200, subscription ? [subscription] : [], subscription ? 1 : 0);
+}));
 
 export default router;
