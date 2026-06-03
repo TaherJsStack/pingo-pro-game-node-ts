@@ -7,6 +7,7 @@ import { DeleteOperation } from '../interfaces/DeleteOperation';
 import { UpdateOperation } from '../interfaces/UpdateOperation';
 import { SendResponse } from './sendResponse';
 import { IRepository } from '../../repositories/interfaces/IRepository';
+import { buildUploadUrl } from '../../util/uploads';
 
 export abstract class CRUDController<T extends object> extends SendResponse
   implements CreateOperation<T>, ReadOperation<T>, UpdateOperation<T>, DeleteOperation<T> {
@@ -24,7 +25,7 @@ export abstract class CRUDController<T extends object> extends SendResponse
 
     try {
       if (req.file) {
-        (req.body as any)['logo'] = `${req.protocol}://${req.get('host')}/api/uploads/${req.file.filename}`;
+        (req.body as any)['logo'] = buildUploadUrl(req, req.file.filename);
       }
       const payload: any = { ...(req.body as any) };
 
@@ -87,7 +88,7 @@ export abstract class CRUDController<T extends object> extends SendResponse
         //   mimeType: req.file.mimetype,
         //   path: req.file.path,
         // };
-        req.body['logo'] = `${req.protocol}://${req.get('host')}/api/uploads/${req.file.filename}`;
+        req.body['logo'] = buildUploadUrl(req, req.file.filename);
       }
   
       // console.log('req.body -->', req.rawHeaders);
