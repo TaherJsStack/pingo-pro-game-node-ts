@@ -59,6 +59,14 @@ export class BaseRepository<T extends Record<string, any>> implements IRepositor
     return this.model.findByIdAndUpdate(id, data, { new: true });
   }
 
+  public async findOneAndUpdate(
+    filter: Record<string, any>,
+    update: Record<string, any>,
+    options?: Record<string, any>
+  ): Promise<any | null> {
+    return this.model.findOneAndUpdate(filter, update, { new: true, ...options });
+  }
+
   public async updateMany(
     filter: Record<string, any>,
     update: Record<string, any>,
