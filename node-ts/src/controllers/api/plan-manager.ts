@@ -1,13 +1,35 @@
 import { IPlan } from '../../types';
 import { planRepository } from '../../repositories/instances';
+import { CRUDController } from '../base/CRUDController';
+import { toMinor } from '../../util/money';
 
-class PlanManager {
-  async create(name: string, description: string, price: number, durationMonths: number): Promise<IPlan> {
-    return planRepository.create({ name, description, price, durationMonths } as any);
+class PlanManager extends CRUDController<IPlan> {
+  constructor() {
+    super(planRepository);
   }
 
-  async update(planId: string, name: string, description: string, price: number, durationMonths: number): Promise<IPlan | null> {
-    return await planRepository.updateById(planId, { name, description, price, durationMonths } as any);
+  async create(name: string, description: string, price: number, durationMonths: number, currency = 'EGP'): Promise<IPlan> {
+    return planRepository.create({
+      name,
+      description,
+      price,
+      durationMonths,
+      currency,
+      amountMinor: toMinor(price, currency),
+      billingIntervalMonths: durationMonths,
+    } as any);
+  }
+
+  async update(planId: string, name: string, description: string, price: number, durationMonths: number, currency = 'EGP'): Promise<IPlan | null> {
+    return await planRepository.updateById(planId, {
+      name,
+      description,
+      price,
+      durationMonths,
+      currency,
+      amountMinor: toMinor(price, currency),
+      billingIntervalMonths: durationMonths,
+    } as any);
   }
 
   async delete(planId: string): Promise<IPlan | null> {

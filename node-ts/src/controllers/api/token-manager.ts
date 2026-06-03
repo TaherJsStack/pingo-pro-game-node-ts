@@ -1,10 +1,9 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import dotenv from 'dotenv';
 import { blacklistedTokenRepository } from '../../repositories/instances';
-dotenv.config();
+import { env } from '../../config/env';
 
 export class TokenManager {
-  private secretKey: string = process.env.SECRET!;
+  private secretKey: string = env.secret;
   private expiresIn: string | number = '3d';
 
   constructor() {}

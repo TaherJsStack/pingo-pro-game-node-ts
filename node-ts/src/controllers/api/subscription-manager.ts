@@ -1,25 +1,23 @@
 import {ISubscription} from '../../types';
-import { subscriptionRepository } from '../../repositories/instances';
+import { planRepository, subscriptionRepository } from '../../repositories/instances';
 import { SubscriptionStatus } from '../../enums/subscription-status.enum';
+import SubscriptionService from '../../services/subscription.service';
+import { NotFoundError, ValidationError } from '../../errors/AppError';
 
 class SubscriptionManager {
   async createSubscription(userId: string, plan: string | null, trialDays: number = 0): Promise<ISubscription> {
-    const startDate = new Date();
-    const endDate = new Date();
     if (trialDays > 0) {
-      endDate.setDate(endDate.getDate() + trialDays); // Set trial period in days
-    } else {
-      endDate.setMonth(endDate.getMonth() + 12); // Regular subscription period of 12 months
+      if (!plan) {
+        throw new ValidationError('Plan is required to start a trial.');
+      }
+      const foundPlan = await planRepository.findById(plan);
+      if (!foundPlan) {
+        throw new NotFoundError('Plan not found.');
+      }
+      return SubscriptionService.startTrial(userId, foundPlan, trialDays);
     }
 
-    return subscriptionRepository.create({
-      userId,
-      plan: plan || null,
-      status: SubscriptionStatus.Active,
-      startDate,
-      endDate,
-      trial: trialDays > 0,
-    } as any);
+    throw new ValidationError('Paid subscriptions must be initiated through /payment/initiate.');
   }
 
   async updateSubscription(subscriptionId: string, plan: string | null): Promise<ISubscription | null> {
@@ -27,22 +25,15 @@ class SubscriptionManager {
   }
 
   async cancelSubscription(subscriptionId: string): Promise<ISubscription | null> {
-    return await subscriptionRepository.updateById(subscriptionId, { status: SubscriptionStatus.Canceled } as any);
+    return await SubscriptionService.cancel(subscriptionId);
   }
 
   async getSubscription(userId: string): Promise<ISubscription | null> {
-    return await subscriptionRepository.findOne({ userId, status: SubscriptionStatus.Active });
+    return await SubscriptionService.getSubscription(userId);
   }
 
   async renewSubscription(subscriptionId: string): Promise<ISubscription | null> {
-    const subscription = await subscriptionRepository.findById(subscriptionId);
-    if (subscription && subscription.status === SubscriptionStatus.Active) {
-      subscription.endDate.setMonth(subscription.endDate.getMonth() + 12);
-      return await subscriptionRepository.updateById(subscriptionId, {
-        endDate: subscription.endDate,
-      } as any);
-    }
-    return null;
+    throw new ValidationError('Subscription renewal is handled by the billing scheduler.');
   }
 
   async isTrialPeriodActive(subscriptionId: string): Promise<boolean> {
@@ -56,4 +47,3 @@ class SubscriptionManager {
 }
 
 export default SubscriptionManager;
-

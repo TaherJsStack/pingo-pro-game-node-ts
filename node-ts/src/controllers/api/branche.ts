@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { IBranche } from '../../types';
 import { CRUDController } from '../base/CRUDController';
 import { brancheRepository } from '../../repositories/instances';
+import { buildUploadUrl } from '../../util/uploads';
 
 
 export class BrancheController extends CRUDController<IBranche> {
@@ -13,7 +14,7 @@ export class BrancheController extends CRUDController<IBranche> {
   override createItem = async (req: Request, res: Response): Promise<void> => {
     try {
       if (req.file) {
-        (req.body as any)['logo'] = `${req.protocol}://${req.get('host')}/api/uploads/${req.file.filename}`;
+        (req.body as any)['logo'] = buildUploadUrl(req, req.file.filename);
       }
       const savedItem = await this.repository.create(req.body as any);
       // const totalData = await this.model.find().countDocuments();
