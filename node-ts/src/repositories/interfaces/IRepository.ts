@@ -20,6 +20,9 @@ export interface IRepository<T extends object> {
   countDocuments(filter?: Record<string, any>): Promise<number>;
   create(data: Partial<T>): Promise<any>;
   updateById(id: string, data: Partial<T>): Promise<any | null>;
+  findOneAndUpdate(filter: Record<string, any>, update: Record<string, any>, options?: Record<string, any>): Promise<any | null>;
   updateMany(filter: Record<string, any>, update: Record<string, any>, options?: Record<string, any>): Promise<any>;
+  updateOne(filter: Record<string, any>, update: Record<string, any>, options?: Record<string, any>): Promise<any>;
+  aggregate<TResult = any>(pipeline: any[]): Promise<TResult[]>;
   deleteById(id: string): Promise<any | null>;
 }
