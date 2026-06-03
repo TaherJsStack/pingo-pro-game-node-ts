@@ -1,14 +1,12 @@
 import mongoose, { ConnectOptions } from 'mongoose';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { env } from '../config/env';
 
 class Database {
   private connectionString: string;
   private options: ConnectOptions;
 
   constructor() {
-    this.connectionString = process.env.MONGODB_URL as string;
+    this.connectionString = env.mongodbUrl;
     this.options = {
       // useNewUrlParser: true,
       // useUnifiedTopology: true,
@@ -17,6 +15,9 @@ class Database {
 
   public async connect(): Promise<void> {
     try {
+      if (mongoose.connection.readyState === 1) {
+        return;
+      }
       await mongoose.connect(this.connectionString, this.options);
       console.log('MongoDB connected...');
     } catch (err) {
@@ -27,12 +28,19 @@ class Database {
 
   public async close(): Promise<void> {
     try {
+      if (mongoose.connection.readyState === 0) {
+        return;
+      }
       await mongoose.connection.close();
       console.log('MongoDB connection closed...');
     } catch (err) {
       console.error('Error closing the database connection:', (err as Error).message);
       throw err;
     }
+  }
+
+  public isConnected(): boolean {
+    return mongoose.connection.readyState === 1;
   }
 }
 
