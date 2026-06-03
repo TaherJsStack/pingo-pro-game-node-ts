@@ -2,57 +2,99 @@ import express, { Request, Response, NextFunction, Application } from 'express';
 import bodyParser from 'body-parser';
 import path from 'path';
 import cors from 'cors';
+import type { CorsOptions } from 'cors';
+import type { Server } from 'http';
 import Database from './src/DB/mongoDBConfig';
 import routerAPI from './src/router/api';
 import rootAPI from './src/router/api-admin';
+import webhookAPI from './src/router/api/webhook';
 import { config } from 'dotenv';
-import { init } from './socket';
 
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import swaggerOptions from './swagger';
 import { auditMiddleware } from './src/middleware/audit.middleware';
 import { errorHandler } from './src/middleware/errorHandler';
+import { env } from './src/config/env';
+import { startBillingScheduler, stopBillingScheduler } from './src/jobs/billing-scheduler';
+import { ensureUploadDirectory, getUploadPath } from './src/util/uploads';
 
 config();
 
 class App {
   public app: Application;
-  private port: string | number;
+  private server?: Server;
+  private port: number;
   private swaggerDocs = swaggerJsdoc(swaggerOptions);
 
   constructor() {
     this.app = express();
-    this.port = process.env.PORT || 4001;
+    this.port = env.port;
+    this.app.set('trust proxy', 1);
     this.initializeMiddlewares();
+    this.initializeHealthRoutes();
     this.initializeViews();
     this.initializeRoutes();
-    this.initializeDatabase();
-    // this.initializeSocket();
   }
 
   private initializeMiddlewares(): void {
-    this.app.use(cors());
+    const corsOptions: CorsOptions = {
+      origin: (origin, callback) => {
+        if (env.corsOrigins.includes('*') || !origin || env.corsOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+        callback(null, false);
+      },
+      methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: [
+        'Origin',
+        'X-Requested-With',
+        'Content-Type',
+        'Accept',
+        'Authorization',
+        'AppLanguage',
+        'Allowencrypt',
+        'cartId',
+        'favoriteId',
+        'Idempotency-Key',
+      ],
+    };
+
+    this.app.use(cors(corsOptions));
+
+    this.app.use("/api/v1/webhooks", webhookAPI);
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: false }));
-
-    this.app.use((req: Request, res: Response, next: NextFunction) => {
-      res.setHeader("Access-Control-Allow-Origin", "*");
-      res.setHeader(
-        "Access-Control-Allow-Headers",
-        "Origin, X-Requested-With, Content-Type, Accept, Authorization, AppLanguage, Allowencrypt, cartId, favoriteId, http://2.58.80.7:4001, 2.58.80.7:4001, 2.58.80.7"
-      );
-      res.setHeader(
-        "Access-Control-Allow-Methods",
-        "GET, POST, PATCH, PUT, DELETE, OPTIONS"
-      );
-      
-      next();
-    });
 
     this.app.use(async (req: Request, res: Response, next: NextFunction) => {
       // You can add your logic for setting the locale here
       next();
+    });
+  }
+
+  private initializeHealthRoutes(): void {
+    this.app.get('/healthz', (_req: Request, res: Response) => {
+      res.status(200).json({
+        status: 'ok',
+        service: 'pingo-pro-game-api',
+        uptime: process.uptime(),
+      });
+    });
+
+    this.app.get('/readyz', (_req: Request, res: Response) => {
+      const mongoConnected = Database.isConnected();
+      const ready = mongoConnected;
+
+      res.status(ready ? 200 : 503).json({
+        status: ready ? 'ready' : 'not_ready',
+        checks: {
+          config: 'loaded',
+          mongo: mongoConnected ? 'connected' : 'disconnected',
+          payments: env.paymentsEnabled ? 'enabled' : 'disabled',
+          billingCron: env.billingCronEnabled ? 'enabled' : 'disabled',
+        },
+      });
     });
   }
 
@@ -61,10 +103,12 @@ class App {
     this.app.set('views', 'views');
     this.app.use('/assets', express.static(path.join(__dirname, '../../assets')));
     this.app.use('**/public', express.static(path.join(__dirname, '../../public')));
-    this.app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(this.swaggerDocs));
+    if (env.swaggerEnabled) {
+      this.app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(this.swaggerDocs));
+    }
 
     // Serve static files (for accessing uploaded files)
-    this.app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
+    this.app.use('/api/uploads', express.static(getUploadPath()));
 
 
     // this.app.get('/', function (req, res) {
@@ -80,41 +124,40 @@ class App {
     this.app.use(errorHandler);
   }
 
-  private initializeDatabase(): void {
-    Database.connect();
-  }
+  public async start(): Promise<void> {
+    ensureUploadDirectory();
+    await Database.connect();
+    startBillingScheduler();
 
-  private initializeSocket(): void {
-    const server = this.app.listen(this.port, () => {
-      console.log(`Magic Happens On Port localhost:${this.port}`);
-    });
-
-    const io = init(server);
-    io.on('connection', socket => {
-      socket.emit('myId', socket.id);
-
-      socket.on('socketId:orders', (msg) => {
-        for (const element of msg.ordrsId) {
-          // Order.updateOne({ _id: element }, { $set: { 'socketId': msg.socketId } }).then(res => {
-          //     console.log('Order.update ---> ', res);
-          // });
-        }
-      });
-    });
-  }
-
-  public start(): void {
-        this.app.listen(this.port, () => {
+    await new Promise<void>((resolve, reject) => {
+      const server = this.app.listen(this.port, () => {
+        server.off('error', reject);
         console.log(`Server running on port ${this.port}`);
-        });
+        resolve();
+      });
+      server.once('error', reject);
+      this.server = server;
+    });
+  }
 
-        // Graceful shutdown
-        // process.on('SIGINT', async () => {
-        //   await Database.close();
-        //   process.exit(0);
-        // });
-        
+  public async stop(): Promise<void> {
+    stopBillingScheduler();
+
+    if (this.server) {
+      await new Promise<void>((resolve, reject) => {
+        this.server?.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+      this.server = undefined;
     }
+
+    await Database.close();
+  }
 }
 
 export default App;
