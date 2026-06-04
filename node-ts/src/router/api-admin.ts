@@ -9,6 +9,7 @@ import clientRouterAPI from './api-admin/client';
 import inboxRouterAPI from './api-admin/inbox';
 import auditRouterAPI from './api-admin/audit';
 import billingRouterAPI from './api-admin/billing';
+import paymentAdminRouterAPI from './api-admin/payment-admin';
 
 
 // Import middleware if needed
@@ -29,6 +30,8 @@ routerAPI.use("/clients",               clientRouterAPI);
 routerAPI.use("/inbox",                 inboxRouterAPI);
 routerAPI.use("/audit",                 auditRouterAPI);
 routerAPI.use("/billing",               billingRouterAPI);
+// Root-only payment operations (subscriptions / payments / payment-methods / webhook-events).
+routerAPI.use(paymentAdminRouterAPI);
 
 // Export the router
 export default routerAPI;
