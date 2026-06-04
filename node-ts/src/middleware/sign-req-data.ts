@@ -8,6 +8,8 @@ interface CustomRequest extends Request {
         role:         string;
         email:        string;
         permission:   string;
+        authType?:    string;
+        permissions?: any;
     };
   }
 
@@ -17,11 +19,13 @@ const authMiddleware = (req: CustomRequest, res: Response, next: NextFunction) =
             const token: string = req.headers.authorization.split(" ")[1];
             const decodedToken: any = jwt.verify(token, env.secret);
             // console.log('decodedToken -->', decodedToken);
-            req.authData = { 
-                id:         decodedToken._id, 
-                role:       decodedToken.role,
-                email:      decodedToken.email, 
-                permission: decodedToken.permission 
+            req.authData = {
+                id:          decodedToken._id,
+                role:        decodedToken.role,
+                email:       decodedToken.email,
+                permission:  decodedToken.permission,
+                authType:    decodedToken.authType,
+                permissions: decodedToken.permissions,
             }
         } else {
             // Handle the case where authorization header is missing
