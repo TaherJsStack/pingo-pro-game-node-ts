@@ -8,6 +8,8 @@ type PaypalMode = 'sandbox' | 'live';
 export interface PaymentsConfig {
   enabled: boolean;
   appBaseUrl: string;
+  /** Public URL of the Angular app, where providers redirect the customer back to. */
+  appReturnBaseUrl: string;
   defaultCurrency: string;
   paypal: {
     clientId: string;
@@ -45,9 +47,15 @@ export function loadPaymentsConfig(source: NodeJS.ProcessEnv | Record<string, st
   const missing: string[] = [];
   const enabled = parseBooleanValue(envValue(source, 'PAYMENTS_ENABLED'), env.paymentsEnabled);
 
+  // Where providers send the customer back to: the Angular app, NOT the API. Falls back to the
+  // first concrete CORS origin, then the API base URL.
+  const frontendOrigin = env.corsOrigins.find((origin) => origin && origin !== '*');
+  const appReturnBaseUrl = (envValue(source, 'APP_RETURN_BASE_URL') || frontendOrigin || env.appBaseUrl).replace(/\/+$/, '');
+
   const loaded: PaymentsConfig = {
     enabled,
     appBaseUrl: (envValue(source, 'APP_BASE_URL') || env.appBaseUrl).replace(/\/+$/, ''),
+    appReturnBaseUrl,
     defaultCurrency: envValue(source, 'DEFAULT_CURRENCY') || 'EGP',
     paypal: {
       clientId: enabled ? requireEnv(source, 'PAYPAL_CLIENT_ID', missing) : envValue(source, 'PAYPAL_CLIENT_ID'),
