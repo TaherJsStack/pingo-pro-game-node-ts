@@ -68,6 +68,7 @@ router.post('/subscribe', signReqData, asyncHandler(async (req: AuthRequest, res
     provider: req.body.provider as PaymentProvider,
     method: req.body.method as PaymentMethod,
     idempotencyKey: req.header('Idempotency-Key') ?? undefined,
+    walletPhone: req.body.walletPhone ?? undefined,
   });
 
   response.ok(req, res, 201, [checkout], 1);
