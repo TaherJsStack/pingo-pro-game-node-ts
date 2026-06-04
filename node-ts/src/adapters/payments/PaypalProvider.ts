@@ -11,6 +11,7 @@ import {
   VerifiedWebhook,
 } from '../../services/interfaces/IPaymentProvider';
 import { IPlan } from '../../models/interfaces/plan.interface';
+import { IPayment } from '../../models/interfaces/payment.interface';
 
 function rawBody(req: Request): string {
   if (Buffer.isBuffer(req.body)) {
@@ -99,6 +100,34 @@ export class PaypalProvider implements IPaymentProvider {
     return this.createSubscription(plan);
   }
 
+  async getPaymentStatus(payment: IPayment): Promise<PaymentStatus | null> {
+    this.assertEnabled();
+    // For PayPal the recurring object is the subscription id, stored as providerOrderId at initiate.
+    const subscriptionId = payment.providerOrderId;
+    if (!subscriptionId) {
+      return null;
+    }
+    const accessToken = await this.getAccessToken();
+    const response = await fetch(`${this.baseUrl}/v1/billing/subscriptions/${subscriptionId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!response.ok) {
+      return null;
+    }
+    const payload = await response.json();
+    const status = String(payload.status ?? '').toUpperCase();
+    if (status === 'ACTIVE') {
+      return PaymentStatus.Paid;
+    }
+    if (status === 'APPROVAL_PENDING' || status === 'APPROVED') {
+      return PaymentStatus.Pending;
+    }
+    if (status === 'CANCELLED' || status === 'EXPIRED' || status === 'SUSPENDED') {
+      return PaymentStatus.Canceled;
+    }
+    return null;
+  }
+
   async cancelProviderSubscription(providerSubscriptionId: string): Promise<void> {
     this.assertEnabled();
     const accessToken = await this.getAccessToken();
@@ -165,8 +194,10 @@ export class PaypalProvider implements IPaymentProvider {
       body: JSON.stringify({
         plan_id: paypalPlanId,
         application_context: {
-          return_url: `${paymentsConfig.appBaseUrl}/api/v1/payment/paypal/return`,
-          cancel_url: `${paymentsConfig.appBaseUrl}/api/v1/payment/paypal/cancel`,
+          // Land back on the Angular subscription page, which polls until the webhook activates
+          // the subscription. Activation never happens from this redirect itself.
+          return_url: `${paymentsConfig.appReturnBaseUrl}/subscription?checkout=return&provider=paypal`,
+          cancel_url: `${paymentsConfig.appReturnBaseUrl}/subscription?checkout=cancel&provider=paypal`,
           user_action: 'SUBSCRIBE_NOW',
         },
       }),

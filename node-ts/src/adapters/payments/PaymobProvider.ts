@@ -110,12 +110,18 @@ export class PaymobProvider implements IPaymentProvider {
     const paymentKey = await this.createPaymentKey(authToken, order.id, input);
 
     if (walletMethods(input.method)) {
+      const walletPhone = input.metadata?.phone;
+      if (!walletPhone) {
+        throw new ValidationError('A wallet phone number is required for Paymob wallet payments.');
+      }
+      const redirectUrl = await this.payWithWallet(paymentKey, walletPhone);
       return {
         provider: PaymentProvider.Paymob,
         providerOrderId: String(order.id),
-        redirectUrl: undefined,
+        redirectUrl,
+        // No paymentKey/token returned to the browser for wallet flows; the customer either
+        // follows the redirect or confirms on their phone while the page polls for the webhook.
         clientPayload: {
-          paymentKey,
           orderId: order.id,
           method: input.method,
         },
@@ -187,6 +193,24 @@ export class PaymobProvider implements IPaymentProvider {
     }
 
     return normalizePaymobWebhook(payload);
+  }
+
+  // Completes a mobile-wallet (Vodafone/Etisalat/Orange Cash) payment. Paymob returns a
+  // redirect/iframe URL the customer uses to authorize the wallet debit.
+  private async payWithWallet(paymentToken: string, phone: string): Promise<string | undefined> {
+    const response = await fetch(`${this.config.baseUrl}/acceptance/payments/pay`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: { identifier: phone, subtype: 'WALLET' },
+        payment_token: paymentToken,
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(`Paymob wallet payment failed: ${response.status}`);
+    }
+    return payload.redirect_url ?? payload.redirectUrl ?? payload.iframe_redirection_url ?? undefined;
   }
 
   private async getAuthToken(): Promise<string> {
