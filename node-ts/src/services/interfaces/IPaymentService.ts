@@ -9,6 +9,8 @@ export interface InitiatePaymentCommand {
   provider: PaymentProvider;
   method: PaymentMethod;
   idempotencyKey?: string;
+  /** Required for Paymob wallet methods (vodafone_cash / etisalat_cash / orange_cash). */
+  walletPhone?: string;
 }
 
 export interface RecordWebhookResult {
@@ -20,6 +22,7 @@ export interface IPaymentService {
   initiate(command: InitiatePaymentCommand): Promise<CheckoutSession & { paymentId: string }>;
   recordWebhook(provider: PaymentProvider, req: Request): Promise<RecordWebhookResult>;
   processWebhookEvent(eventId: string): Promise<void>;
+  replayWebhookEvent(eventId: string): Promise<void>;
   listUserPayments(userId: string): Promise<IPayment[]>;
   getPayment(paymentId: string, userId?: string): Promise<IPayment | null>;
 }

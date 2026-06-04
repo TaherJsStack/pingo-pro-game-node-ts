@@ -7,8 +7,9 @@ export type SubscriptionTransitionMap = Record<SubscriptionStatus, SubscriptionS
 
 export interface ISubscriptionService {
   activateOrRenew(userId: string, plan: IPlan, payment: IPayment): Promise<ISubscription | null>;
-  startTrial(userId: string, plan: IPlan, trialDays: number): Promise<ISubscription>;
+  startTrial(userId: string, plan: IPlan | null, trialDays: number): Promise<ISubscription>;
   cancel(subscriptionId: string, options?: { atPeriodEnd?: boolean }): Promise<ISubscription | null>;
+  markCanceledFromProvider(subscriptionId: string): Promise<ISubscription | null>;
   markPastDue(subscriptionId: string, reason?: string): Promise<ISubscription | null>;
   expire(subscriptionId: string): Promise<ISubscription | null>;
   toggleAutoRenew(subscriptionId: string, autoRenew: boolean): Promise<ISubscription | null>;
