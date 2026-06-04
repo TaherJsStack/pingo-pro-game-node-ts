@@ -23,6 +23,12 @@ import { CheckoutSession, NormalizedPaymentEvent } from './interfaces/IPaymentPr
 import { InitiatePaymentCommand, IPaymentService, RecordWebhookResult } from './interfaces/IPaymentService';
 import { paymentsConfig } from '../config/payments';
 
+const WALLET_METHODS: PaymentMethod[] = [
+  PaymentMethod.VodafoneCash,
+  PaymentMethod.EtisalatCash,
+  PaymentMethod.OrangeCash,
+];
+
 class PaymentService implements IPaymentService {
   constructor(
     private readonly payments: IRepository<IPayment> = paymentRepository,
@@ -36,6 +42,7 @@ class PaymentService implements IPaymentService {
 
   async initiate(command: InitiatePaymentCommand): Promise<CheckoutSession & { paymentId: string }> {
     this.assertPaymentsEnabled();
+    this.assertValidCommand(command);
 
     const plan = await this.plans.findById(command.planId);
     if (!plan) {
@@ -44,10 +51,19 @@ class PaymentService implements IPaymentService {
 
     this.assertProviderMethod(command.provider, command.method);
 
+    if (WALLET_METHODS.includes(command.method) && !command.walletPhone) {
+      throw new ValidationError('A wallet phone number is required for wallet payments.');
+    }
+
+    // Reuse a pending payment only when plan + provider + method (+ idempotency key) all match,
+    // so a Paymob-card checkout is never reused for a wallet or PayPal attempt.
     const existingPending = await this.payments.findOne({
       userId: command.userId,
       planId: command.planId,
+      provider: command.provider,
+      method: command.method,
       status: PaymentStatus.Pending,
+      ...(command.idempotencyKey ? { idempotencyKey: command.idempotencyKey } : {}),
     });
     if (existingPending?.providerOrderId && existingPending.rawCallback) {
       return {
@@ -67,7 +83,7 @@ class PaymentService implements IPaymentService {
       amountMinor,
       currency: plan.currency,
       status: PaymentStatus.Pending,
-      description: command.idempotencyKey ?? '',
+      idempotencyKey: command.idempotencyKey,
     } as any);
 
     const checkout = await this.providers.get(command.provider).initiateCheckout({
@@ -79,6 +95,7 @@ class PaymentService implements IPaymentService {
       provider: command.provider,
       method: command.method,
       plan,
+      metadata: command.walletPhone ? { phone: command.walletPhone } : undefined,
     });
 
     await this.payments.updateById(String(payment._id), {
@@ -150,6 +167,20 @@ class PaymentService implements IPaymentService {
     }
   }
 
+  // Root/admin-triggered re-processing of a previously failed webhook event. Idempotent:
+  // an already-processed event is a no-op; a failed one is reset and re-applied.
+  async replayWebhookEvent(eventId: string): Promise<void> {
+    const event = await this.webhookEvents.findById(eventId);
+    if (!event) {
+      throw new NotFoundError('Webhook event not found.');
+    }
+    if (event.status === 'processed') {
+      return;
+    }
+    await this.webhookEvents.updateById(eventId, { status: 'received', error: undefined } as any);
+    await this.processWebhookEvent(eventId);
+  }
+
   async listUserPayments(userId: string): Promise<IPayment[]> {
     return this.payments.find({ userId }, { sort: { createdAt: -1 } });
   }
@@ -196,6 +227,10 @@ class PaymentService implements IPaymentService {
     } else if (event.status === PaymentStatus.Failed) {
       if (payment.subscriptionId) {
         await this.subscriptionService.markPastDue(String(payment.subscriptionId), event.type);
+      }
+    } else if (event.status === PaymentStatus.Refunded || event.status === PaymentStatus.Canceled) {
+      if (payment.subscriptionId) {
+        await this.subscriptionService.markCanceledFromProvider(String(payment.subscriptionId));
       }
     }
 
@@ -271,6 +306,18 @@ class PaymentService implements IPaymentService {
       },
       { upsert: true }
     );
+  }
+
+  private assertValidCommand(command: InitiatePaymentCommand): void {
+    if (!command.planId) {
+      throw new ValidationError('planId is required.');
+    }
+    if (!Object.values(PaymentProvider).includes(command.provider)) {
+      throw new ValidationError('Unknown or missing payment provider.');
+    }
+    if (!Object.values(PaymentMethod).includes(command.method)) {
+      throw new ValidationError('Unknown or missing payment method.');
+    }
   }
 
   private assertProviderMethod(provider: PaymentProvider, method: PaymentMethod): void {

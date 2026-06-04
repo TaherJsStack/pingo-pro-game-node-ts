@@ -11,7 +11,7 @@ import { ISubscriptionService, SubscriptionTransitionMap } from './interfaces/IS
 
 export const subscriptionTransitions: SubscriptionTransitionMap = {
   [SubscriptionStatus.Inactive]: [SubscriptionStatus.PendingPayment, SubscriptionStatus.Trialing, SubscriptionStatus.Active],
-  [SubscriptionStatus.PendingPayment]: [SubscriptionStatus.Trialing, SubscriptionStatus.Active, SubscriptionStatus.Canceled],
+  [SubscriptionStatus.PendingPayment]: [SubscriptionStatus.Trialing, SubscriptionStatus.Active, SubscriptionStatus.PastDue, SubscriptionStatus.Canceled, SubscriptionStatus.Expired],
   [SubscriptionStatus.Trialing]: [SubscriptionStatus.Active, SubscriptionStatus.Expired, SubscriptionStatus.Canceled],
   [SubscriptionStatus.Active]: [SubscriptionStatus.PastDue, SubscriptionStatus.Canceled, SubscriptionStatus.Expired],
   [SubscriptionStatus.PastDue]: [SubscriptionStatus.Active, SubscriptionStatus.Expired, SubscriptionStatus.Canceled],
@@ -50,6 +50,13 @@ class SubscriptionService implements ISubscriptionService {
 
   async activateOrRenew(userId: string, plan: IPlan, payment: IPayment): Promise<ISubscription | null> {
     const existing = await this.findSubscriptionForPayment(userId, payment);
+
+    // A late or duplicate paid event must never revive a terminal subscription, nor
+    // silently create a second active one for a user who already canceled/expired.
+    if (existing && (existing.status === SubscriptionStatus.Canceled || existing.status === SubscriptionStatus.Expired)) {
+      return existing;
+    }
+
     const currentStatus = existing?.status ?? SubscriptionStatus.Inactive;
     assertSubscriptionTransition(currentStatus, SubscriptionStatus.Active);
 
@@ -74,7 +81,12 @@ class SubscriptionService implements ISubscriptionService {
       lastPaymentId: payment._id,
       failedAttempts: 0,
       gracePeriodEnd: undefined,
-      providerSubscriptionId: payment.providerTransactionId ?? existing?.providerSubscriptionId,
+      // For PayPal, the recurring object is the subscription id (stored as the payment's
+      // providerOrderId at initiate), NOT the per-transaction sale id — cancellation targets it.
+      providerSubscriptionId:
+        payment.provider === PaymentProvider.Paypal
+          ? payment.providerOrderId ?? existing?.providerSubscriptionId
+          : payment.providerTransactionId ?? existing?.providerSubscriptionId,
     };
 
     if (existing?._id) {
@@ -88,21 +100,23 @@ class SubscriptionService implements ISubscriptionService {
     return this.subscriptions.create(update as any);
   }
 
-  async startTrial(userId: string, plan: IPlan, trialDays: number): Promise<ISubscription> {
+  async startTrial(userId: string, plan: IPlan | null, trialDays: number): Promise<ISubscription> {
     const now = new Date();
     const endDate = new Date(now);
     endDate.setUTCDate(endDate.getUTCDate() + Math.max(trialDays, 1));
 
     return this.subscriptions.create({
       userId: new Types.ObjectId(userId),
-      plan: plan._id,
+      // Planless registration/system trials store plan = null and cannot auto-renew;
+      // they are ended by the billing expiry sweep when the trial window closes.
+      plan: plan?._id ?? null,
       status: SubscriptionStatus.Trialing,
       startDate: now,
       endDate,
       currentPeriodEnd: endDate,
       trial: true,
-      currency: plan.currency,
-      autoRenew: true,
+      currency: plan?.currency ?? 'EGP',
+      autoRenew: Boolean(plan),
       cancelAtPeriodEnd: false,
       nextBillingDate: endDate,
       failedAttempts: 0,
@@ -127,6 +141,24 @@ class SubscriptionService implements ISubscriptionService {
       } as any);
     }
 
+    assertSubscriptionTransition(subscription.status, SubscriptionStatus.Canceled);
+    return this.subscriptions.findOneAndUpdate(
+      { _id: subscriptionId, status: subscription.status },
+      { $set: { status: SubscriptionStatus.Canceled, autoRenew: false, cancelAtPeriodEnd: false } },
+      { new: true }
+    );
+  }
+
+  // Reflect a provider-side cancellation/refund locally. Idempotent, and never calls
+  // back out to the provider (the provider has already canceled/refunded).
+  async markCanceledFromProvider(subscriptionId: string): Promise<ISubscription | null> {
+    const subscription = await this.subscriptions.findById(subscriptionId);
+    if (!subscription) {
+      return null;
+    }
+    if (subscription.status === SubscriptionStatus.Canceled || subscription.status === SubscriptionStatus.Expired) {
+      return subscription;
+    }
     assertSubscriptionTransition(subscription.status, SubscriptionStatus.Canceled);
     return this.subscriptions.findOneAndUpdate(
       { _id: subscriptionId, status: subscription.status },

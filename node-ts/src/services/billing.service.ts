@@ -48,8 +48,32 @@ class BillingService implements IBillingService {
       for (const subscription of dueSubscriptions) {
         await this.processOneDueSubscription(subscription);
       }
+
+      // End planless/non-recurring trials and past-due grace periods that have lapsed.
+      await this.expireEndedSubscriptions(now);
     } finally {
       this.dueRunInFlight = false;
+    }
+  }
+
+  async expireEndedSubscriptions(now: Date = new Date()): Promise<void> {
+    // Planless / non-auto-renew trials whose trial window has closed.
+    const endedTrials = await this.subscriptions.find({
+      status: SubscriptionStatus.Trialing,
+      autoRenew: { $ne: true },
+      endDate: { $lte: now },
+    });
+    for (const subscription of endedTrials) {
+      await this.subscriptionService.expire(String(subscription._id));
+    }
+
+    // Past-due subscriptions that have exhausted their grace period.
+    const lapsedPastDue = await this.subscriptions.find({
+      status: SubscriptionStatus.PastDue,
+      gracePeriodEnd: { $lte: now },
+    });
+    for (const subscription of lapsedPastDue) {
+      await this.subscriptionService.expire(String(subscription._id));
     }
   }
 
@@ -59,23 +83,65 @@ class BillingService implements IBillingService {
     }
     this.reconcileRunInFlight = true;
     try {
-      const staleBefore = new Date(now.getTime() - 30 * 60 * 1000);
+      // Only inspect payments that have been pending a while; query the provider for the real
+      // status before failing, so a legitimate in-flight checkout (PayPal approval, wallet
+      // confirmation) is never failed just for being slow. Unknown status is only failed after
+      // a hard timeout as a safety net against perpetually-pending rows.
+      const queryAfter = new Date(now.getTime() - 30 * 60 * 1000);
+      const hardTimeout = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const stalePayments = await this.payments.find({
         status: PaymentStatus.Pending,
-        createdAt: { $lte: staleBefore },
+        createdAt: { $lte: queryAfter },
       });
 
       for (const payment of stalePayments) {
-        await this.payments.updateById(String(payment._id), {
-          status: PaymentStatus.Failed,
-          failureReason: 'Pending payment was not reconciled by webhook before timeout.',
-        } as any);
-        if (payment.subscriptionId) {
-          await this.subscriptionService.markPastDue(String(payment.subscriptionId), 'Payment reconciliation timed out.');
-        }
+        await this.reconcileOnePendingPayment(payment, hardTimeout);
       }
     } finally {
       this.reconcileRunInFlight = false;
+    }
+  }
+
+  private async reconcileOnePendingPayment(payment: IPayment, hardTimeout: Date): Promise<void> {
+    let providerStatus: PaymentStatus | null = null;
+    try {
+      const provider = this.providers.get(payment.provider as PaymentProvider);
+      providerStatus = provider.getPaymentStatus ? await provider.getPaymentStatus(payment) : null;
+    } catch (error: any) {
+      providerStatus = null;
+    }
+
+    if (providerStatus === PaymentStatus.Paid) {
+      await this.payments.updateById(String(payment._id), { status: PaymentStatus.Paid } as any);
+      const plan = payment.planId ? await this.plans.findById(String(payment.planId)) : null;
+      if (plan) {
+        await this.subscriptionService.activateOrRenew(String(payment.userId), plan, {
+          ...payment,
+          status: PaymentStatus.Paid,
+        });
+      }
+      return;
+    }
+
+    if (providerStatus === PaymentStatus.Failed || providerStatus === PaymentStatus.Canceled) {
+      await this.failPendingPayment(payment, 'Provider reported the payment as not completed.');
+      return;
+    }
+
+    // Unknown / still pending at the provider: only fail after the hard timeout.
+    const createdAt = payment.createdAt ?? new Date(0);
+    if (createdAt <= hardTimeout) {
+      await this.failPendingPayment(payment, 'Pending payment was not confirmed before the hard timeout.');
+    }
+  }
+
+  private async failPendingPayment(payment: IPayment, reason: string): Promise<void> {
+    await this.payments.updateById(String(payment._id), {
+      status: PaymentStatus.Failed,
+      failureReason: reason,
+    } as any);
+    if (payment.subscriptionId) {
+      await this.subscriptionService.markPastDue(String(payment.subscriptionId), reason);
     }
   }
 
