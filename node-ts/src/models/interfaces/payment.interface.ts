@@ -13,6 +13,7 @@ export interface IPayment extends BaseEntity, ActivityFields {
   providerOrderId?: string;
   providerTransactionId?: string;
   providerEventId?: string;
+  idempotencyKey?: string;
   rawCallback?: unknown;
   failureReason?: string;
   refundedAmountMinor?: number;

@@ -18,6 +18,7 @@ const paymentSchema: Schema<IPayment> = new Schema<IPayment>({
   providerOrderId: { type: String, trim: true },
   providerTransactionId: { type: String, trim: true },
   providerEventId: { type: String, trim: true, sparse: true, unique: true },
+  idempotencyKey: { type: String, trim: true },
   rawCallback: { type: Schema.Types.Mixed },
   failureReason: { type: String, trim: true },
   refundedAmountMinor: { type: Number, min: 0 },
@@ -28,5 +29,7 @@ const paymentSchema: Schema<IPayment> = new Schema<IPayment>({
 paymentSchema.index({ providerEventId: 1 }, { unique: true, sparse: true });
 paymentSchema.index({ userId: 1, status: 1 });
 paymentSchema.index({ providerOrderId: 1 });
+// Provider-aware idempotency: reuse a pending payment only for the same plan + provider + method + key.
+paymentSchema.index({ userId: 1, planId: 1, provider: 1, method: 1, idempotencyKey: 1, status: 1 });
 
 export default mongoose.model<IPayment>('Payment', paymentSchema);
