@@ -6,18 +6,20 @@ import { NotFoundError, ValidationError } from '../../errors/AppError';
 
 class SubscriptionManager {
   async createSubscription(userId: string, plan: string | null, trialDays: number = 0): Promise<ISubscription> {
-    if (trialDays > 0) {
-      if (!plan) {
-        throw new ValidationError('Plan is required to start a trial.');
-      }
-      const foundPlan = await planRepository.findById(plan);
-      if (!foundPlan) {
-        throw new NotFoundError('Plan not found.');
-      }
-      return SubscriptionService.startTrial(userId, foundPlan, trialDays);
+    if (trialDays <= 0) {
+      throw new ValidationError('Paid subscriptions must be initiated through /payment/initiate.');
     }
 
-    throw new ValidationError('Paid subscriptions must be initiated through /payment/initiate.');
+    // System/registration trials are allowed with no selected paid plan.
+    if (!plan) {
+      return SubscriptionService.startTrial(userId, null, trialDays);
+    }
+
+    const foundPlan = await planRepository.findById(plan);
+    if (!foundPlan) {
+      throw new NotFoundError('Plan not found.');
+    }
+    return SubscriptionService.startTrial(userId, foundPlan, trialDays);
   }
 
   async updateSubscription(subscriptionId: string, plan: string | null): Promise<ISubscription | null> {

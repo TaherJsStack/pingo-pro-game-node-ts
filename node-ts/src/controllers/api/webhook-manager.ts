@@ -21,7 +21,14 @@ class WebhookManager extends SendResponse {
     const result = await this.paymentService.recordWebhook(provider, req);
 
     if (result.stored && result.webhookEventId) {
-      void this.paymentService.processWebhookEvent(result.webhookEventId).catch(() => undefined);
+      const webhookEventId = result.webhookEventId;
+      // Fast-ACK pattern: store then process async. Log failures (with provider + event id) so a
+      // failed event can be found and replayed via the root replay endpoint — never swallow them.
+      void this.paymentService.processWebhookEvent(webhookEventId).catch((error: any) => {
+        console.error(
+          `[webhook] async processing failed: provider=${provider} webhookEventId=${webhookEventId} error=${error?.message ?? error}`
+        );
+      });
     }
 
     this.sendResponse(req, res, 200, [{ received: true, duplicate: !result.stored }], 1);

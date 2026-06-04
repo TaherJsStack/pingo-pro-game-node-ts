@@ -4,6 +4,7 @@ import { ValidationError } from '../../errors/AppError';
 import PaymentService from '../../services/payment.service';
 import { IPaymentService } from '../../services/interfaces/IPaymentService';
 import { SendResponse } from '../base/sendResponse';
+import { toPublicPayment } from '../../util/redact';
 
 interface AuthRequest extends Request {
   authData?: {
@@ -28,6 +29,7 @@ class PaymentManager extends SendResponse {
       provider: req.body.provider as PaymentProvider,
       method: req.body.method as PaymentMethod,
       idempotencyKey: req.header('Idempotency-Key') ?? undefined,
+      walletPhone: req.body.walletPhone ?? undefined,
     });
 
     this.sendResponse(req, res, 201, [checkout], 1);
@@ -40,7 +42,8 @@ class PaymentManager extends SendResponse {
     }
 
     const payments = await this.paymentService.listUserPayments(userId);
-    this.sendResponse(req, res, 200, payments, payments.length);
+    const publicPayments = payments.map(toPublicPayment);
+    this.sendResponse(req, res, 200, publicPayments, publicPayments.length);
   };
 
   getById = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -50,7 +53,7 @@ class PaymentManager extends SendResponse {
     }
 
     const payment = await this.paymentService.getPayment(req.params.id, userId);
-    this.sendResponse(req, res, 200, payment ? [payment] : [], payment ? 1 : 0);
+    this.sendResponse(req, res, 200, payment ? [toPublicPayment(payment)] : [], payment ? 1 : 0);
   };
 }
 
