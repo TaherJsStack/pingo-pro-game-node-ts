@@ -9,6 +9,7 @@ const { ObjectId } = require('mongoose').Types;
 interface CreateRequest extends Request {
   authData: {
     id: string;
+    tenantId?: string;
   };
   body: IInvoice;
 }
@@ -26,10 +27,21 @@ export class InvoiceController
       super(invoiceRepository);
     }
 
+  private getScope(req: Request) {
+    return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
+  }
+
 
   createNewInvoice = async (req: CreateRequest, res: Response) => {
     try{
-      const savedInvoice = await InvoiceService.createNewInvoice(req.body, req.authData.id);
+      const savedInvoice = await InvoiceService.createNewInvoice(
+        {
+          ...req.body,
+          clientRequestId: (req as any).idempotency?.key ?? (req.body as any).clientRequestId,
+        } as any,
+        req.authData.id,
+        req.authData.tenantId
+      );
       this.sendResponse(req, res, 200, [savedInvoice], savedInvoice.categories.length, 'Invoice created successfully');
     }catch(err){
       this.sendErrorResponse(req, res, err);
@@ -50,10 +62,11 @@ export class InvoiceController
       const items = await invoiceRepository.find(filter, {
         skip: (pageNo - 1) * pageSize,
         limit: pageSize,
+        scope: this.getScope(req),
       });
   
       // Count total number of items (for pagination)
-      const totalCount = await invoiceRepository.countDocuments(filter);
+      const totalCount = await invoiceRepository.countDocuments(filter, this.getScope(req));
   
       res.status(200).json({
         success: true,
@@ -78,7 +91,7 @@ export class InvoiceController
     try {
       // Update item by ID in database
       // req.body['updatedBy'] = new Types.ObjectId(req.authData.id);
-      const updatedItem = await invoiceRepository.updateById(_id, req.body as any);
+      const updatedItem = await invoiceRepository.updateById(_id, req.body as any, this.getScope(req));
       if (!updatedItem) {
         return res.status(404).json({ msg: 'Item not found' });
       }
@@ -135,7 +148,8 @@ export class InvoiceController
             activeState:  activeState,
             closedBy:     invoiceClosedBy
           },
-        }
+        },
+        { scope: this.getScope(req) }
       );
   
       // Check if update was successful
@@ -144,7 +158,7 @@ export class InvoiceController
       }
   
       // Retrieve the updated document
-      const updatedItem = await invoiceRepository.findById(documentId);
+      const updatedItem = await invoiceRepository.findById(documentId, this.getScope(req));
   
       // Ensure additional calculations are done
       if (updatedItem) {
@@ -198,11 +212,12 @@ export class InvoiceController
         },
         { 
           arrayFilters: [{ "elem.endTime": null }], // Filter to target categories with endTime as null
-          upsert: false // Ensure it doesn't insert a new document if no match is found
+          upsert: false, // Ensure it doesn't insert a new document if no match is found
+          scope: this.getScope(req),
         }
       );
 
-      let updatedItem = await invoiceRepository.findById(_id);
+      let updatedItem = await invoiceRepository.findById(_id, this.getScope(req));
       if (!updatedItem) {
         return res.status(404).json({ msg: 'Item not found' });
       }
@@ -242,7 +257,7 @@ export class InvoiceController
       };
   
       // Update item by ID in database
-      const updatedItem = await invoiceRepository.updateById(_id, updateQuery as any);
+      const updatedItem = await invoiceRepository.updateById(_id, updateQuery as any, this.getScope(req));
       if (!updatedItem) {
         return res.status(404).json({ msg: 'Item not found' });
       }
@@ -264,11 +279,12 @@ export class InvoiceController
   // --------------------------------------------------------------------------------------------------
   // --------------------------------------------------------------------------------------------------
   // --------------------------------------------------------------------------------------------------  
-  async setEndTimeToSessionsList(idsList: SessionsIdsList) {
+  async setEndTimeToSessionsList(idsList: SessionsIdsList, tenantId?: string) {
+    const scope = { tenantId, requireTenant: Boolean(tenantId) };
     console.log('1- idsList ----->', idsList);
     for (const sessionId of idsList.idsToDelete) {
       try {
-        const existingInvoice = await invoiceRepository.findOne({ sessionId });
+        const existingInvoice = await invoiceRepository.findOne({ sessionId }, scope);
         console.log('2- existingInvoice ----->', existingInvoice);
   
         if (existingInvoice) {
@@ -290,8 +306,8 @@ export class InvoiceController
                 arrayFilters: [{ 'elem.sessionId': sessionId }]
               };
   
-              await invoiceRepository.updateOne({ _id: existingInvoice._id }, updateQuery as any, options as any);
-              const updatedInvoice = await invoiceRepository.findById(existingInvoice._id.toString());
+              await invoiceRepository.updateOne({ _id: existingInvoice._id }, updateQuery as any, { ...(options as any), scope });
+              const updatedInvoice = await invoiceRepository.findById(existingInvoice._id.toString(), scope);
   
               if (updatedInvoice) {
                 await InvoiceService.syncInvoiceTotals(updatedInvoice);
@@ -326,9 +342,9 @@ export class InvoiceController
         totalInvoicesCreatedBy,
         sharedDevicesAdded,
         sharedDevicesClosed,
-      } = await InvoiceService.getInvoicesByEmployeeWithCounts(empId);
+      } = await InvoiceService.getInvoicesByEmployeeWithCounts(empId, (req as any).authData?.tenantId);
 
-      const clientAdded = await clientRepository.countDocuments({ createdBy: new ObjectId(empId) });
+      const clientAdded = await clientRepository.countDocuments({ createdBy: new ObjectId(empId) }, this.getScope(req));
 
       let percentages = {};
       // Ensure totalInvoices is not zero

@@ -12,6 +12,7 @@ const sessionService = new SessionService();
 interface CreateItemRequest extends Request {
   authData: {
     id: string;
+    tenantId?: string;
   };
   body: ISession;
 }
@@ -19,6 +20,7 @@ interface CreateItemRequest extends Request {
 interface EndSessionRequest extends Request {
   authData: {
     id: string;
+    tenantId?: string;
   };
   body: Partial<ISession> & {
     categoryId?: string;
@@ -31,10 +33,20 @@ interface EndSessionRequest extends Request {
 }
 
 export class SessionController {
+  private getScope(req: Request) {
+    return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
+  }
 
   createItem = async (req: CreateItemRequest, res: Response) => {
     try {
-      const savedItem = await sessionService.createItem(req.body, req.authData.id);
+      const savedItem = await sessionService.createItem(
+        {
+          ...req.body,
+          clientRequestId: (req as any).idempotency?.key ?? (req.body as any).clientRequestId,
+        } as any,
+        req.authData.id,
+        req.authData.tenantId
+      );
       const responseStatus = savedItem?.activeState ? 201 : 200;
 
       res.status(responseStatus).json({
@@ -60,14 +72,14 @@ export class SessionController {
     // let filter = JSON.parse(req.query.Filter);
     let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
     // console.log('sessions filter --->', filter);
-    let { ownerId, brancheId } = filter;
+    let { brancheId } = filter;
 
     const pageSize = req.query.PageSize && +req.query.PageSize > 0 ? req.query.PageSize : 15;
     const pageNo = req.query.PageNo && +req.query.PageNo > 0 ? req.query.PageNo : 1;
 
     try {
       // Fetch all items from database
-      const items = await sessionRepository.find({ brancheId }, { sort: { createdAt: -1, activeState: 1 } });
+      const items = await sessionRepository.find({ brancheId }, { sort: { createdAt: -1, activeState: 1 }, scope: this.getScope(req) });
       res.status(201).json({
         success: true,
         errors: [],
@@ -97,10 +109,11 @@ export class SessionController {
       const items = await sessionRepository.find(filter, {
         skip: (page - 1) * limit,
         limit,
+        scope: this.getScope(req),
       });
 
       // Count total number of items (for pagination)
-      const totalCount = await sessionRepository.countDocuments(filter);
+      const totalCount = await sessionRepository.countDocuments(filter, this.getScope(req));
 
       res.status(200).json({
         success: true,
@@ -123,7 +136,7 @@ export class SessionController {
   getItemById = async (req: Request, res: Response) => {
     try {
       // Fetch item by ID from database
-      const item = await sessionRepository.findById(req.params.id);
+      const item = await sessionRepository.findById(req.params.id, this.getScope(req));
       if (!item) {
         return res.status(404).json({ msg: 'Item not found' });
       }
@@ -143,7 +156,7 @@ export class SessionController {
   updateItem = async (req: Request, res: Response) => {
     try {
       // Update item by ID in database
-      const updatedItem = await sessionRepository.updateById(req.params.id, req.body as any);
+      const updatedItem = await sessionRepository.updateById(req.params.id, req.body as any, this.getScope(req));
       if (!updatedItem) {
         return res.status(404).json({ msg: 'Item not found' });
       }
@@ -162,7 +175,7 @@ export class SessionController {
 
   endSession = async (req: EndSessionRequest, res: Response) => {
     try {
-      const result = await sessionService.endSession(req.params.id, req.body, req.authData.id);
+      const result = await sessionService.endSession(req.params.id, req.body, req.authData.id, req.authData.tenantId);
 
       res.status(200).json({
         success: true,
@@ -186,7 +199,7 @@ export class SessionController {
   deleteItem = async (req: Request, res: Response) => {
     try {
       // Delete item by ID from database
-      const deletedItem = await sessionRepository.deleteById(req.params.id);
+      const deletedItem = await sessionRepository.deleteById(req.params.id, this.getScope(req));
       if (!deletedItem) {
         return res.status(404).json({ msg: 'Item not found' });
       }
@@ -206,7 +219,7 @@ export class SessionController {
   deleteSessionItem = async (req: Request, res: Response) => {
     try {
       // Delete item by ID from database
-      const deletedItem = await sessionRepository.deleteById(req.params.id);
+      const deletedItem = await sessionRepository.deleteById(req.params.id, this.getScope(req));
       if (!deletedItem) {
         return res.status(404).json({ msg: 'Item not found' });
       }
@@ -229,7 +242,7 @@ export class SessionController {
       // console.log('deleteAllReletedToBill req.params', req.params);
 
       let ids = req.params.id.split(',');
-      let deletedList = await sessionRepository.deleteManyByIds(ids);
+      let deletedList = await sessionRepository.deleteManyByIds(ids, this.getScope(req));
 
       res.status(201).json({
         success: true,

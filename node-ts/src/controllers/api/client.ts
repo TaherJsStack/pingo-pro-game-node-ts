@@ -9,13 +9,17 @@ export class ClientController extends CRUDController<IClient> {
     super(clientRepository);
   }
 
+  private getScope(req: Request) {
+    return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
+  }
+
   checkPhone = async (req: Request, res: Response) => {
     // console.log('checkPhone req.params ---> ', req.params);
     let { phone } = req.params;
     // let { activeState, ...otherFilters } = req.query; // Assuming additional filters are sent via query params
     
     let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
-    let {ownerId, brancheId} = filter;
+    let { brancheId } = filter;
     // console.log('filter---> ', filter);
     // const filter2 = this.parseFilter(req.query.Filter);
 
@@ -29,7 +33,7 @@ export class ClientController extends CRUDController<IClient> {
 
       // console.log('checkPhone query ---> ', query);
       // Use regular expression to filter phone numbers that contain the provided string
-      let users: IClient[] = await this.repository.find(query);
+      let users: IClient[] = await this.repository.find(query, { scope: this.getScope(req) });
       // console.log('checkPhone users ---> ', users);
 
       if (users) {
@@ -68,9 +72,10 @@ export class ClientController extends CRUDController<IClient> {
       const items = await this.repository.find(filter, {
         skip: (pageNo - 1) * pageSize,
         limit: pageSize,
+        scope: this.getScope(req),
       });
   
-      const totalCount = await this.repository.countDocuments(filter);
+      const totalCount = await this.repository.countDocuments(filter, this.getScope(req));
   
       res.status(200).json({
         success: true,

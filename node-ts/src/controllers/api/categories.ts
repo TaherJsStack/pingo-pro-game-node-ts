@@ -17,6 +17,11 @@ export class CategoryController extends CRUDController<ICategory> {
   constructor() {
     super(categoryRepository);
   }
+
+  private getScope(req: Request) {
+    return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
+  }
+
   // Update - PUT request handler
   updateCategoryStopCategoresReletedToBillByIdsList = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -33,7 +38,8 @@ export class CategoryController extends CRUDController<ICategory> {
       // Update multiple categories by IDs in the database
       const updatedItems = await this.repository.updateMany(
         { _id: { $in: objectIds } },
-        { $set: { bookState: false } }
+        { $set: { bookState: false } },
+        { scope: this.getScope(req) }
       );
   
   

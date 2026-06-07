@@ -5,6 +5,7 @@ import ShiftModel from '../../models/shift';
 import SessionModel from '../../models/session';
 import { KpiPeriod } from '../../enums/kpi-period.enum';
 import { ShiftStatus } from '../../enums/shift-status.enum';
+import AnalyticsService from '../../services/analytics.service';
 const { ObjectId } = require('mongoose').Types;
 
 interface Filter {
@@ -15,8 +16,18 @@ interface Filter {
   activeState: boolean;
 }
 
+interface AuthenticatedRequest extends Request {
+  authData?: {
+    tenantId?: string;
+  };
+}
+
 export class StatisticsController {
-  getGroupedInvoicesByClosedBy = async (req: Request, res: Response) => {
+  private getTenantMatch(req: AuthenticatedRequest) {
+    return req.authData?.tenantId ? { tenantId: new ObjectId(req.authData.tenantId) } : {};
+  }
+
+  getGroupedInvoicesByClosedBy = async (req: AuthenticatedRequest, res: Response) => {
     // let filter: Filter = JSON.parse(req.query.Filter);
 
     let filterObg = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
@@ -31,6 +42,7 @@ export class StatisticsController {
 
         {
           $match: {
+            ...this.getTenantMatch(req),
             createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
             brancheId: new ObjectId(brancheId),
             activeState,
@@ -94,7 +106,7 @@ export class StatisticsController {
       });
     }
   }
-  getGroupedInvoicesByClosedByMemberId = async (req: Request, res: Response) => {
+  getGroupedInvoicesByClosedByMemberId = async (req: AuthenticatedRequest, res: Response) => {
     // let filter: Filter = JSON.parse(req.query.Filter);
     let _id = req.params.id;
     let filterObg = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : req.query.Filter;
@@ -109,6 +121,7 @@ export class StatisticsController {
       const invoices = await invoiceRepository.aggregate([
         {
           $match: {
+            ...this.getTenantMatch(req),
             // createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
             brancheId: new ObjectId(brancheId),
             activeState,
@@ -217,7 +230,7 @@ export class StatisticsController {
     }
   }
 
-  getTopCustomers = async (req: Request, res: Response) => {
+  getTopCustomers = async (req: AuthenticatedRequest, res: Response) => {
     try {
       const filterObg = typeof req.query.Filter === 'string'
         ? JSON.parse(req.query.Filter)
@@ -239,6 +252,7 @@ export class StatisticsController {
 
       const matchStage: any = {
         clientId: { $ne: null },
+        ...this.getTenantMatch(req),
       };
 
       if (brancheId) {
@@ -301,7 +315,7 @@ export class StatisticsController {
     }
   }
 
-  getKpiSummary = async (req: Request, res: Response) => {
+  getKpiSummary = async (req: AuthenticatedRequest, res: Response) => {
     try {
       const filterObg = typeof req.query.Filter === 'string'
         ? JSON.parse(req.query.Filter)
@@ -314,104 +328,20 @@ export class StatisticsController {
       const allowedPeriods: KpiPeriod[] = Object.values(KpiPeriod);
       const requested = innerFilter.period || filterObg.period || KpiPeriod.Day;
       const period: KpiPeriod = allowedPeriods.includes(requested) ? requested : KpiPeriod.Day;
-
-      const branchMatch: any = brancheId ? { brancheId: new ObjectId(brancheId) } : {};
-
-      // Revenue + invoice count bucketed by period (closed invoices only)
-      const revenueByPeriod = await invoiceRepository.aggregate([
-        { $match: { ...branchMatch, activeState: false, createdAt: { $gte: startDate, $lte: endDate } } },
-        { $group: { _id: { $dateTrunc: { date: '$createdAt', unit: period } }, total: { $sum: '$total' }, count: { $sum: 1 } } },
-        { $sort: { _id: 1 } },
-        { $project: { _id: 0, period: '$_id', total: { $round: ['$total', 2] }, count: 1 } },
-      ]);
-
-      // Worked hours bucketed by period (from closed shifts)
-      const workedHoursByPeriod = await ShiftModel.aggregate([
-        { $match: { ...branchMatch, status: ShiftStatus.Closed, openedAt: { $gte: startDate, $lte: endDate } } },
-        { $group: { _id: { $dateTrunc: { date: '$openedAt', unit: period } }, workedMinutes: { $sum: '$workedMinutes' } } },
-        { $sort: { _id: 1 } },
-        { $project: { _id: 0, period: '$_id', total: { $round: [{ $divide: ['$workedMinutes', 60] }, 2] }, count: '$workedMinutes' } },
-      ]);
-
-      // Sessions started bucketed by period
-      const sessionsStartedByPeriod = await SessionModel.aggregate([
-        { $match: { ...branchMatch, createdAt: { $gte: startDate, $lte: endDate } } },
-        { $group: { _id: { $dateTrunc: { date: '$createdAt', unit: period } }, count: { $sum: 1 } } },
-        { $sort: { _id: 1 } },
-        { $project: { _id: 0, period: '$_id', count: 1 } },
-      ]);
-
-      // Sessions ended bucketed by period (a device "ends" when its category gets an endTime)
-      const sessionsEndedByPeriod = await SessionModel.aggregate([
-        { $match: { ...branchMatch } },
-        { $unwind: '$categories' },
-        { $match: { 'categories.endTime': { $gte: startDate, $lte: endDate } } },
-        { $group: { _id: { $dateTrunc: { date: '$categories.endTime', unit: period } }, count: { $sum: 1 } } },
-        { $sort: { _id: 1 } },
-        { $project: { _id: 0, period: '$_id', count: 1 } },
-      ]);
-
-      // Worked hours + activity per employee (from closed shifts)
-      const workedHoursByEmployee = await ShiftModel.aggregate([
-        { $match: { ...branchMatch, status: ShiftStatus.Closed, openedAt: { $gte: startDate, $lte: endDate } } },
-        {
-          $group: {
-            _id: '$employeeId',
-            workedMinutes: { $sum: '$workedMinutes' },
-            invoicesTotal: { $sum: '$invoicesTotal' },
-            sessionsStarted: { $sum: '$sessionsStarted' },
-            sessionsEnded: { $sum: '$sessionsEnded' },
-            shiftsCount: { $sum: 1 },
-          },
-        },
-        { $lookup: { from: 'auths', localField: '_id', foreignField: '_id', as: 'employee' } },
-        { $unwind: { path: '$employee', preserveNullAndEmptyArrays: true } },
-        {
-          $project: {
-            _id: 0,
-            employeeId: '$_id',
-            workedMinutes: 1,
-            workedHours: { $round: [{ $divide: ['$workedMinutes', 60] }, 2] },
-            invoicesTotal: { $round: ['$invoicesTotal', 2] },
-            sessionsStarted: 1,
-            sessionsEnded: 1,
-            shiftsCount: 1,
-            firstName: '$employee.firstName',
-            lastName: '$employee.lastName',
-          },
-        },
-        { $sort: { workedMinutes: -1 } },
-      ]);
-
-      const totalRevenue = revenueByPeriod.reduce((sum: number, r: any) => sum + (r.total || 0), 0);
-      const totalWorkedMinutes = workedHoursByEmployee.reduce((sum: number, e: any) => sum + (e.workedMinutes || 0), 0);
-      const totalSessionsStarted = sessionsStartedByPeriod.reduce((sum: number, s: any) => sum + (s.count || 0), 0);
-      const totalSessionsEnded = sessionsEndedByPeriod.reduce((sum: number, s: any) => sum + (s.count || 0), 0);
+      const summary = await AnalyticsService.getTenantKpiSummary({
+        tenantId: req.authData?.tenantId,
+        brancheId: brancheId ? String(brancheId) : undefined,
+        startDate,
+        endDate,
+        period,
+      });
 
       res.status(200).json({
         success: true,
         errors: [],
         status: 200,
         message: '',
-        data: [
-          {
-            period,
-            startDate,
-            endDate,
-            totals: {
-              revenue: Math.round(totalRevenue * 100) / 100,
-              workedHours: Math.round((totalWorkedMinutes / 60) * 100) / 100,
-              workedMinutes: totalWorkedMinutes,
-              sessionsStarted: totalSessionsStarted,
-              sessionsEnded: totalSessionsEnded,
-            },
-            revenueByPeriod,
-            workedHoursByPeriod,
-            sessionsStartedByPeriod,
-            sessionsEndedByPeriod,
-            workedHoursByEmployee,
-          },
-        ],
+        data: [summary],
       });
     } catch (error) {
       console.error('Error fetching KPI summary:', error);

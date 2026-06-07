@@ -147,6 +147,7 @@ export class AuthController extends SendResponse {
                     _id: fetchedData._id.toString(),
                     email: fetchedData.email,
                     name: fetchedData.lastName + ' ' + fetchedData.firstName,
+                    tenantId: fetchedData.tenantId?.toString?.() ?? fetchedData.tenantId,
                     role: fetchedData.role,
                     permission: fetchedData.permission,
                     permissions: fetchedData.permissions,

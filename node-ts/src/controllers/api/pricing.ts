@@ -11,6 +11,10 @@ export class PricingController extends CRUDController<IPricing> {
     super(pricingRepository);
   }
 
+  private getScope(req: Request) {
+    return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
+  }
+
   // Update - PUT request handler
   updateCategoryStopCategoresReletedToBillByIdsList = async (req: Request, res: Response): Promise<void> => {
     debugger;
@@ -28,7 +32,8 @@ export class PricingController extends CRUDController<IPricing> {
       // Update multiple categories by IDs in the database
       const updatedItems = await this.repository.updateMany(
         { _id: { $in: objectIds } },
-        { $set: { bookState: false } }
+        { $set: { bookState: false } },
+        { scope: this.getScope(req) }
       );
 
       if (updatedItems) {
