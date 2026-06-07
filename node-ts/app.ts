@@ -17,7 +17,9 @@ import { auditMiddleware } from './src/middleware/audit.middleware';
 import { errorHandler } from './src/middleware/errorHandler';
 import { env } from './src/config/env';
 import { startBillingScheduler, stopBillingScheduler } from './src/jobs/billing-scheduler';
+import { startNotificationDispatcher, stopNotificationDispatcher } from './src/jobs/notification-dispatcher';
 import { ensureUploadDirectory, getUploadPath } from './src/util/uploads';
+import { closeSocket, initializeSocket } from './socket';
 
 config();
 
@@ -128,9 +130,11 @@ class App {
     ensureUploadDirectory();
     await Database.connect();
     startBillingScheduler();
+    startNotificationDispatcher();
 
     await new Promise<void>((resolve, reject) => {
       const server = this.app.listen(this.port, () => {
+        initializeSocket(server);
         server.off('error', reject);
         console.log(`Server running on port ${this.port}`);
         resolve();
@@ -142,6 +146,8 @@ class App {
 
   public async stop(): Promise<void> {
     stopBillingScheduler();
+    stopNotificationDispatcher();
+    await closeSocket().catch(() => undefined);
 
     if (this.server) {
       await new Promise<void>((resolve, reject) => {
