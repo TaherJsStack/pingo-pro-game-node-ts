@@ -1,39 +1,32 @@
-const ZERO_DECIMAL_CURRENCIES = new Set([
-  'BIF',
-  'CLP',
-  'DJF',
-  'GNF',
-  'JPY',
-  'KMF',
-  'KRW',
-  'MGA',
-  'PYG',
-  'RWF',
-  'UGX',
-  'VND',
-  'VUV',
-  'XAF',
-  'XOF',
-  'XPF',
-]);
-
-function currencyFactor(currency = 'EGP'): number {
-  return ZERO_DECIMAL_CURRENCIES.has(currency.toUpperCase()) ? 1 : 100;
-}
-
-export function toMinor(amount: number | string, currency = 'EGP'): number {
-  const numericAmount = typeof amount === 'string' ? Number(amount) : amount;
-  if (!Number.isFinite(numericAmount)) {
-    throw new Error('Invalid money amount');
+export function roundMoney(value: number | string | null | undefined, precision = 2): number {
+  const normalized = Number(value ?? 0);
+  if (!Number.isFinite(normalized)) {
+    return 0;
   }
 
-  return Math.round(numericAmount * currencyFactor(currency));
+  return Number(normalized.toFixed(precision));
 }
 
-export function fromMinor(amountMinor: number, currency = 'EGP'): number {
-  if (!Number.isInteger(amountMinor)) {
-    throw new Error('Minor money amount must be an integer');
+export function sumMoney(values: Array<number | string | null | undefined>): number {
+  return roundMoney(values.reduce<number>((total, value) => total + Number(value ?? 0), 0));
+}
+
+export function toMinor(amount: number | string | null | undefined, currency = 'EGP'): number {
+  const normalized = Number(amount ?? 0);
+  if (!Number.isFinite(normalized)) {
+    return 0;
   }
 
-  return amountMinor / currencyFactor(currency);
+  const scale = currency.toUpperCase() === 'EGP' ? 100 : 1;
+  return Math.round(normalized * scale);
+}
+
+export function fromMinor(amountMinor: number | string | null | undefined, currency = 'EGP'): number {
+  const normalized = Number(amountMinor ?? 0);
+  if (!Number.isFinite(normalized)) {
+    return 0;
+  }
+
+  const scale = currency.toUpperCase() === 'EGP' ? 100 : 1;
+  return roundMoney(normalized / scale);
 }
