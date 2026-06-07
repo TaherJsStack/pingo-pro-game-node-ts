@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 import { Request, Response } from 'express';
 import { SendResponse } from '../base/sendResponse';
 import Invoice from '../../models/invoice';
+import AnalyticsService from '../../services/analytics.service';
+import { KpiPeriod } from '../../enums/kpi-period.enum';
 // import { SendResponse } from '../api/base/sendResponse';
 
 export class StatisticsController extends SendResponse{
@@ -186,6 +188,34 @@ export class StatisticsController extends SendResponse{
         message: '',
         data: [],
       });
+    }
+  }
+
+  async getPlatformKpiSummary(req: Request, res: Response) {
+    try {
+      const filterObg = typeof req.query.Filter === 'string'
+        ? JSON.parse(req.query.Filter)
+        : ((req.query.Filter as any) || {});
+
+      const innerFilter = filterObg.filter || filterObg;
+      const brancheId = filterObg.brancheId || innerFilter.brancheId;
+      const startDate = innerFilter.startDate ? new Date(innerFilter.startDate) : new Date(0);
+      const endDate = innerFilter.endDate ? new Date(innerFilter.endDate) : new Date();
+      const allowedPeriods: KpiPeriod[] = Object.values(KpiPeriod);
+      const requested = innerFilter.period || filterObg.period || KpiPeriod.Day;
+      const period: KpiPeriod = allowedPeriods.includes(requested) ? requested : KpiPeriod.Day;
+
+      const summary = await AnalyticsService.getTenantKpiSummary({
+        brancheId: brancheId ? String(brancheId) : undefined,
+        startDate,
+        endDate,
+        period,
+      });
+
+      this.sendResponse(req, res, 200, [summary], 1);
+    } catch (error) {
+      console.error('Error fetching platform KPI summary:', error);
+      this.sendErrorResponse(req, res, error);
     }
   }
 }
