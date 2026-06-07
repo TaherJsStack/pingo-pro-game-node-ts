@@ -16,4 +16,5 @@ export type { IPlan } from '../models/interfaces/plan.interface';
 export type { IPricing } from '../models/interfaces/pricing.interface';
 export type { ISession } from '../models/interfaces/session.interface';
 export type { ISubscription } from '../models/interfaces/subscription.interface';
+export type { ITenant } from '../models/interfaces/tenant.interface';
 export type { IWebhookEvent } from '../models/interfaces/webhook-event.interface';
