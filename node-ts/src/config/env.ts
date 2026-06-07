@@ -14,6 +14,7 @@ export interface AppEnv {
   appBaseUrl: string;
   corsOrigins: string[];
   uploadPath: string;
+  redisUrl: string;
   paymentsEnabled: boolean;
   billingCronEnabled: boolean;
   swaggerEnabled: boolean;
@@ -84,6 +85,7 @@ export function loadEnv(source: EnvSource = process.env): AppEnv {
     appBaseUrl,
     corsOrigins: parseOrigins(envValue(source, 'CORS_ORIGINS')),
     uploadPath: resolveConfiguredPath(envValue(source, 'UPLOAD_PATH')),
+    redisUrl: envValue(source, 'REDIS_URL'),
     paymentsEnabled: parseBooleanValue(envValue(source, 'PAYMENTS_ENABLED'), false),
     billingCronEnabled: parseBooleanValue(envValue(source, 'ENABLE_BILLING_CRON'), false),
     swaggerEnabled: parseBooleanValue(envValue(source, 'SWAGGER_ENABLED'), !isProduction),
