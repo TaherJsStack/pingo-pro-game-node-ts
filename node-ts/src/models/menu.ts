@@ -5,6 +5,7 @@ import { uniquePerBranch } from './plugins/unique-per-branch.plugin';
 
 const MenuSchema: Schema<IMenu> = new Schema<IMenu>({
   ownerId:      { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
+  tenantId:     { type: Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
   brancheId:    { type: Schema.Types.ObjectId, ref: 'Branche', required: true },
   createdBy:    { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
   name:         { type: String, required: true },
@@ -26,5 +27,6 @@ MenuSchema.plugin(uniquePerBranch, {
 });
 
 MenuSchema.plugin(uniqueValidator);
+MenuSchema.index({ tenantId: 1, brancheId: 1, name: 1 }, { unique: true });
 
 export default mongoose.model<IMenu>('Menu', MenuSchema);

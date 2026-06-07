@@ -4,6 +4,7 @@ import { uniquePerBranch } from './plugins/unique-per-branch.plugin';
 
 const clientSchema: Schema<IClient> = new Schema<IClient>({
   ownerId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
+  tenantId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
   createdBy:   { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
   brancheId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },
   name:        { type: String, required: true },
@@ -22,5 +23,6 @@ clientSchema.plugin(uniquePerBranch, {
   scope: 'brancheId',
   message: 'Client must be unique for brancheId combination',
 });
+clientSchema.index({ tenantId: 1, brancheId: 1, phone: 1 }, { unique: true });
 
 export default mongoose.model<IClient>('Client', clientSchema);

@@ -9,6 +9,7 @@ const subscriptionSchema: Schema<ISubscription> = new Schema<ISubscription>({
     description: { type: String, default: '' },
 
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
+    tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
     plan: { type: mongoose.Schema.Types.ObjectId, ref: 'Plan', default: null },
     status: { type: String, enum: Object.values(SubscriptionStatus), default: SubscriptionStatus.Inactive },
     startDate: { type: Date, required: true },

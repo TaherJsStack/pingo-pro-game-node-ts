@@ -7,6 +7,8 @@ type ShiftModel = Model<IShift>;
 const shiftSchema: Schema<IShift, ShiftModel> = new Schema<IShift, ShiftModel>(
   {
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
+    tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
+    clientRequestId: { type: String, trim: true, index: true },
     brancheId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },
     openedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
     openedAt: { type: Date, default: Date.now },
@@ -24,6 +26,19 @@ const shiftSchema: Schema<IShift, ShiftModel> = new Schema<IShift, ShiftModel>(
   },
   {
     timestamps: true,
+  }
+);
+
+shiftSchema.index({ tenantId: 1, brancheId: 1, openedAt: -1 });
+shiftSchema.index({ tenantId: 1, status: 1, openedAt: -1 });
+shiftSchema.index({ tenantId: 1, employeeId: 1, status: 1, openedAt: -1 });
+shiftSchema.index(
+  { tenantId: 1, clientRequestId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      clientRequestId: { $exists: true, $type: 'string' },
+    },
   }
 );
 

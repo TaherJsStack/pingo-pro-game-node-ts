@@ -18,6 +18,7 @@ const authSchema: Schema<IAuth> = new Schema<IAuth>({
     createdAt:   { type: Date, default: Date.now },
     description: { type: String, default: '' },
     authType:    { type: String, enum: Object.values(AuthType), default: AuthType.Owner },
+    tenantId:    { type: Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
     brancheId:   { type: Schema.Types.ObjectId, ref: 'Branche' },
     permissions: {  type: [
         {
@@ -35,6 +36,7 @@ const authSchema: Schema<IAuth> = new Schema<IAuth>({
 
 
 authSchema.plugin(uniqueValidator);
+authSchema.index({ tenantId: 1, role: 1, authType: 1 });
 
 const Auth = mongoose.model<IAuth>('Auth', authSchema);
 

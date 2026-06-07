@@ -7,6 +7,8 @@ type InvoiceMenuModel = Model<IInvoiceMenu, {}, IInvoiceMenuMethods>;
 
 const invoiceMenuSchema: Schema<IInvoiceMenu, InvoiceMenuModel, IInvoiceMenuMethods> = new Schema<IInvoiceMenu, InvoiceMenuModel, IInvoiceMenuMethods>({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
+  tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
+  clientRequestId: { type: String, trim: true, index: true },
   closedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth' },
   brancheId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },
   client: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: true },
@@ -18,6 +20,16 @@ const invoiceMenuSchema: Schema<IInvoiceMenu, InvoiceMenuModel, IInvoiceMenuMeth
 }, {
   timestamps: true
 });
+invoiceMenuSchema.index({ tenantId: 1, brancheId: 1, createdAt: -1 });
+invoiceMenuSchema.index(
+  { tenantId: 1, clientRequestId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      clientRequestId: { $exists: true, $type: 'string' },
+    },
+  }
+);
 
 invoiceMenuSchema.methods.updateTotal = async function (): Promise<number> {
   try {

@@ -8,6 +8,8 @@ export const sessionCategorySchema: Schema<ISessionCategory> = new Schema<ISessi
     closedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', default: null },
     type: { type: String, default: 'open', required: true },
     Sessiontype: { type: String, default: 'open', required: true },
+    pricingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pricing', default: null },
+    pricingMode: { type: String, default: 'hourly' },
     price: { type: Number, required: true },
     startTime: { type: Date, required: true },
     endTime: { type: Date },

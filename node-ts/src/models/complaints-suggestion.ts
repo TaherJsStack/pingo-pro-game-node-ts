@@ -4,6 +4,7 @@ import { IComplaintsSuggestion } from './interfaces/complaints-suggestion.interf
 import { optionalEmailValidator } from './helpers/validators';
 
 const complaintsSuggestionSchema: Schema<IComplaintsSuggestion> = new Schema<IComplaintsSuggestion>({
+    tenantId:     { type: Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
     brancheId:    { type: Schema.Types.ObjectId, ref: 'Branche', required: true },
     createdBy:    { type: Schema.Types.ObjectId, ref: 'Auth', required: true },
     name:         { type: String, default: '' },
@@ -17,8 +18,7 @@ const complaintsSuggestionSchema: Schema<IComplaintsSuggestion> = new Schema<ICo
 }, {
     timestamps: true
 });
-
-
+complaintsSuggestionSchema.index({ tenantId: 1, brancheId: 1, createdAt: -1 });
 
 const ComplaintsSuggestion = mongoose.model<IComplaintsSuggestion>('ComplaintsSuggestion', complaintsSuggestionSchema);
 
