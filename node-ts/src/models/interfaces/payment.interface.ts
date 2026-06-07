@@ -3,6 +3,7 @@ import { ActivityFields, BaseEntity, ObjectId } from './common.interface';
 
 export interface IPayment extends BaseEntity, ActivityFields {
   userId: ObjectId;
+  tenantId?: ObjectId | null;
   subscriptionId?: ObjectId | null;
   planId?: ObjectId | null;
   provider: PaymentProvider;

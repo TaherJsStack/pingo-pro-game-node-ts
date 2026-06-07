@@ -4,6 +4,8 @@ import { IMenuItems } from './invoice.interface';
 
 export interface ISession extends BaseEntity, ActivityFields {
   createdBy: ObjectId;
+  tenantId?: ObjectId | null;
+  clientRequestId?: string;
   brancheId?: ObjectId;
   clientId?: ObjectId;
   shiftId?: ObjectId | null;

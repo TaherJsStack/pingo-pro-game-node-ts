@@ -3,6 +3,8 @@ import { ActivityFields, BaseEntity, ModelDocument, ObjectId } from './common.in
 
 export interface IInvoiceMenu extends BaseEntity, ActivityFields {
   createdBy: ObjectId;
+  tenantId?: ObjectId | null;
+  clientRequestId?: string;
   closedBy?: ObjectId | null;
   brancheId: ObjectId;
   client: ObjectId;

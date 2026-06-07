@@ -6,6 +6,8 @@ export type IMenuItems = IMenuItem;
 
 export interface IInvoice extends BaseEntity, ActivityFields {
   createdBy: ObjectId;
+  tenantId?: ObjectId | null;
+  clientRequestId?: string;
   closedBy: ObjectId | null;
   brancheId: ObjectId;
   sessionId: ObjectId | null;

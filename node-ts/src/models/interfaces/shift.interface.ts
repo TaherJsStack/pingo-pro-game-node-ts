@@ -5,6 +5,8 @@ export { ShiftStatus };
 
 export interface IShift extends BaseEntity, ActivityFields {
   employeeId: ObjectId;
+  tenantId?: ObjectId | null;
+  clientRequestId?: string;
   brancheId: ObjectId;
   openedBy: ObjectId;
   openedAt: Date;

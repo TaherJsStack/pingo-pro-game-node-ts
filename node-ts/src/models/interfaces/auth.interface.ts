@@ -4,6 +4,7 @@ import { AuthType } from '../../enums/auth-type.enum';
 
 export interface IAuth extends BaseEntity, ActivityFields {
   brancheId?: ObjectId;
+  tenantId?: ObjectId | null;
   username: string;
   firstName: string;
   lastName: string;

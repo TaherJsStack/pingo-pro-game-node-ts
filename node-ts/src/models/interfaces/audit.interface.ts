@@ -1,6 +1,7 @@
 import { BaseEntity, ObjectId } from './common.interface';
 
 export interface IAudit extends BaseEntity {
+  tenantId?: ObjectId | null;
   action: string;
   method: string;
   baseUrl: string;

@@ -4,6 +4,7 @@ import { PaymentMethod, PaymentProvider } from '../../enums';
 
 export interface ISubscription extends BaseEntity, ActivityFields {
   userId: ObjectId;
+  tenantId?: ObjectId | null;
   plan?: ObjectId | null;
   status: SubscriptionStatus;
   startDate: Date;
