@@ -6,7 +6,7 @@ import { ReadOperation } from '../interfaces/ReadOperation';
 import { DeleteOperation } from '../interfaces/DeleteOperation';
 import { UpdateOperation } from '../interfaces/UpdateOperation';
 import { SendResponse } from './sendResponse';
-import { IRepository } from '../../repositories/interfaces/IRepository';
+import { IRepository, RepositoryScope } from '../../repositories/interfaces/IRepository';
 import { buildUploadUrl } from '../../util/uploads';
 
 export abstract class CRUDController<T extends object> extends SendResponse
@@ -17,6 +17,18 @@ export abstract class CRUDController<T extends object> extends SendResponse
   constructor(repository: IRepository<T>) {
     super();
     this.repository = repository;
+  }
+
+  protected getRequestScope(req: Request, requireTenant = true): RepositoryScope | undefined {
+    const authData = (req as any).authData;
+    if (!authData) {
+      return undefined;
+    }
+
+    return {
+      tenantId: authData.tenantId,
+      requireTenant,
+    };
   }
 
   public createItem = async (req: CreateItemRequest<T>, res: Response): Promise<void> => {
@@ -33,9 +45,13 @@ export abstract class CRUDController<T extends object> extends SendResponse
         payload.ownerId = new ObjectId(req.authData.id);
         payload.createdBy = new ObjectId(req.authData.id);
       }
+      if (req.authData?.tenantId) {
+        payload.tenantId = new ObjectId(req.authData.tenantId);
+      }
 
-      const savedItem = await this.repository.create(payload);
-      const totalData = await this.repository.countDocuments();
+      const scope = this.getRequestScope(req);
+      const savedItem = await this.repository.create(payload, scope);
+      const totalData = await this.repository.countDocuments({}, scope);
       this.sendResponse(req, res, 201, [savedItem], totalData);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
@@ -50,7 +66,7 @@ export abstract class CRUDController<T extends object> extends SendResponse
       const filter = this.parseFilter(req.query.Filter);
       const page = filter['pageNo'] || 1;
       const pageSize = filter['pageSize'] || 10;
-      const { items, totalData } = await this.repository.paginate(filter, page, pageSize);
+      const { items, totalData } = await this.repository.paginate(filter, page, pageSize, this.getRequestScope(req));
 
       this.sendResponse(req, res, 200, items, totalData);
     } catch (err: any) {
@@ -60,7 +76,7 @@ export abstract class CRUDController<T extends object> extends SendResponse
 
   public getItemById = async (req: Request, res: Response): Promise<void> => {
     try {
-      const item = await this.repository.findById(req.params.id);
+      const item = await this.repository.findById(req.params.id, this.getRequestScope(req));
       if (!item) {
         res.status(404).json({ msg: 'Item not found' });
         return;
@@ -95,7 +111,7 @@ export abstract class CRUDController<T extends object> extends SendResponse
       // console.log('req.body -->', req.body, fileData);
 
       (req.body as any)._id = req.params.id;
-      const updatedItem = await this.repository.updateById(req.params.id, req.body as any);
+      const updatedItem = await this.repository.updateById(req.params.id, req.body as any, this.getRequestScope(req));
       if (!updatedItem) {
        res.status(404).json({ msg: 'Item not found' });
        return;
@@ -121,10 +137,11 @@ export abstract class CRUDController<T extends object> extends SendResponse
         return;
       }
 
-      const updatePromises = updates.map((item) => this.repository.updateById(item._id, { stock: item.stock } as any));
+      const scope = this.getRequestScope(req);
+      const updatePromises = updates.map((item) => this.repository.updateById(item._id, { stock: item.stock } as any, scope));
 
       await Promise.all(updatePromises);
-      let updatedItems = await this.repository.find({ _id: { $in: ids } });
+      let updatedItems = await this.repository.find({ _id: { $in: ids } }, { scope });
       this.sendResponse(req, res, 200, updatedItems);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
@@ -133,12 +150,13 @@ export abstract class CRUDController<T extends object> extends SendResponse
 
   public deleteItem = async (req: Request, res: Response): Promise<void> => {
     try {
-      const deletedItem = await this.repository.deleteById(req.params.id);
+      const scope = this.getRequestScope(req);
+      const deletedItem = await this.repository.deleteById(req.params.id, scope);
       if (!deletedItem) {
        res.status(404).json({ msg: 'Item not found' });
        return;
       }
-      const totalData = await this.repository.countDocuments();
+      const totalData = await this.repository.countDocuments({}, scope);
       this.sendResponse(req, res, 200, [deletedItem], totalData);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
