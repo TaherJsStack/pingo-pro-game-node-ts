@@ -1,6 +1,7 @@
 import { Model, Types } from 'mongoose';
 import { IInvoice } from '../models/interfaces/invoice.interface';
 import { BaseRepository } from './BaseRepository';
+import { RepositoryScope } from './interfaces/IRepository';
 
 const { ObjectId } = Types;
 
@@ -9,7 +10,7 @@ export class InvoiceRepository extends BaseRepository<IInvoice> {
     super(model);
   }
 
-  public async getInvoicesByEmployeeWithCounts(empId: string): Promise<{
+  public async getInvoicesByEmployeeWithCounts(empId: string, scope?: RepositoryScope): Promise<{
     invoices: any[];
     treeInvoices: any[];
     totalInvoices: number;
@@ -38,7 +39,7 @@ export class InvoiceRepository extends BaseRepository<IInvoice> {
       {
         $sort: { '_id.date': -1 },
       },
-    ]);
+    ], scope);
 
     const treeInvoices = await this.aggregate([
       {
@@ -151,13 +152,13 @@ export class InvoiceRepository extends BaseRepository<IInvoice> {
           },
         },
       },
-    ]);
+    ], scope);
 
-    const totalInvoices = await this.countDocuments();
-    const totalInvoicesClosedBy = await this.countDocuments({ closedBy: employeeId });
-    const totalInvoicesCreatedBy = await this.countDocuments({ createdBy: employeeId });
-    const sharedDevicesAdded = await this.countDocuments({ 'categories.createdBy': employeeId });
-    const sharedDevicesClosed = await this.countDocuments({ 'categories.closedBy': employeeId });
+    const totalInvoices = await this.countDocuments({}, scope);
+    const totalInvoicesClosedBy = await this.countDocuments({ closedBy: employeeId }, scope);
+    const totalInvoicesCreatedBy = await this.countDocuments({ createdBy: employeeId }, scope);
+    const sharedDevicesAdded = await this.countDocuments({ 'categories.createdBy': employeeId }, scope);
+    const sharedDevicesClosed = await this.countDocuments({ 'categories.closedBy': employeeId }, scope);
 
     return {
       invoices,

@@ -8,10 +8,10 @@ export class AuthRepository extends BaseRepository<IAuth> {
   }
 
   public async findByEmail(email: string): Promise<IAuth | null> {
-    return this.findOne({ email });
+    return this.findOne({ email }, { bypassTenant: true });
   }
 
   public async findByPhone(phone: string): Promise<IAuth | null> {
-    return this.findOne({ phone });
+    return this.findOne({ phone }, { bypassTenant: true });
   }
 }
