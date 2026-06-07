@@ -1,6 +1,7 @@
 import express, { Request, Response, Router } from 'express';
 import { check, validationResult } from 'express-validator';
 import signReqData from '../../middleware/sign-req-data';
+import { idempotencyMiddleware } from '../../middleware/idempotency';
 import { ShiftController } from '../../controllers/api/shift';
 
 const router: Router = express.Router();
@@ -10,6 +11,7 @@ router.post(
   '/open',
   signReqData,
   [check('brancheId').notEmpty().withMessage('brancheId is required')],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -19,7 +21,7 @@ router.post(
   }
 );
 
-router.put('/close/:id', signReqData, async (req: Request, res: Response) => {
+router.put('/close/:id', signReqData, idempotencyMiddleware, async (req: Request, res: Response) => {
   await shiftController.closeShift(req as any, res);
 });
 

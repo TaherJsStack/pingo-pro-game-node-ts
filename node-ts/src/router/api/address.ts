@@ -23,15 +23,16 @@ router.post( '', signReqData,
 // Route: PUT /items/:id (Update item)
 router.put(
   '/member/:id',
+  signReqData,
   async (req: Request, res: Response) => {
     
     await addressController.updateItem(req, res);
   }
 );
 
-router.get("",        addressController.getAllItems);
+router.get("", signReqData, addressController.getAllItems);
 
-router.delete('/:id', addressController.deleteItem)
+router.delete('/:id', signReqData, addressController.deleteItem)
 
 
 export default router;

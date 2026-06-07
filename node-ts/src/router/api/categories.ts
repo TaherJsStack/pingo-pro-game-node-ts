@@ -35,7 +35,11 @@ router.post(
     }
 
     const { category, brancheId } = req.body;
-    const isCategory = await CategoryModel.findOne({ category, brancheId });
+    const isCategory = await CategoryModel.findOne({
+      category,
+      brancheId,
+      ...(req as any).authData?.tenantId ? { tenantId: (req as any).authData.tenantId } : {},
+    });
 
     if (isCategory) {
       return res.status(400).json({ errors: [{ path: 'category', msg: 'category is already exists' }] });
@@ -49,6 +53,7 @@ router.post(
 // Route: PUT /items/:id (Update item)
 router.put(
   '/:id',
+  signReqData,
   [
     // Validation rules using express-validator
     check('branche').optional().notEmpty().withMessage('branche is required'),
@@ -72,6 +77,7 @@ router.put(
 // Route: PUT /updateCategoryStopCategoresReletedToBillByIdsList/:id (Stop all related categories)
 router.put(
   '/updateCategoryStopCategoresReletedToBillByIdsList/:id',
+  signReqData,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -85,15 +91,15 @@ router.put(
 );
 
 // Route: GET /items (Get all items)
-router.get('', categoryController.getAllItems);
+router.get('', signReqData, categoryController.getAllItems);
 
 // Route: GET /items/pagination (Get all items with pagination)
 // router.get('/pagination', categoryController.getAllItemsPagination);
 
 // Route: GET /items/:id (Get item by ID)
-router.get('/:id', categoryController.getItemById);
+router.get('/:id', signReqData, categoryController.getItemById);
 
 // Route: DELETE /items/:id (Delete item)
-router.delete('/:id', categoryController.deleteItem);
+router.delete('/:id', signReqData, categoryController.deleteItem);
 
 export default router;

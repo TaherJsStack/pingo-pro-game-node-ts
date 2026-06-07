@@ -26,6 +26,7 @@ router.post(
     check('title').notEmpty().withMessage('category is required'),
     check('price').notEmpty().withMessage('price is required'),
     check('type').notEmpty().withMessage('type is required'),
+    check('deviceType').notEmpty().withMessage('deviceType is required'),
   ],
   async (req: Request, res: Response) => {
     // Check for validation errors
@@ -33,9 +34,14 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-
-    const { title, brancheId } = req.body;
-    const isTitle = await Pricing.findOne({ title , brancheId});
+    const { title, brancheId, deviceType, type } = req.body;
+    const isTitle = await Pricing.findOne({
+      title,
+      brancheId,
+      deviceType,
+      type,
+      ...(req as any).authData?.tenantId ? { tenantId: (req as any).authData.tenantId } : {},
+    });
 
     if (isTitle) {
       return res.status(400).json({ errors: [{ path: 'title', msg: 'title is already exists' }] });
@@ -49,13 +55,14 @@ router.post(
 // Route: PUT /items/:id (Update item)
 router.put(
   '/:id',
+  signReqData,
   [
     // Validation rules using express-validator
-    check('branche').optional().notEmpty().withMessage('branche is required'),
-    check('address')
-      .optional()
-      .notEmpty()
-      .withMessage('address is required')
+    check('brancheId').notEmpty().withMessage('brancheId is required'),
+    check('title').notEmpty().withMessage('title is required'),
+    check('price').notEmpty().withMessage('price is required'),
+    check('type').notEmpty().withMessage('type is required'),
+    check('deviceType').notEmpty().withMessage('deviceType is required'),
   ],
   async (req: Request, res: Response) => {
     // Check for validation errors
@@ -72,6 +79,7 @@ router.put(
 // Route: PUT /items/:id (Update item)
 router.put(
   '/updateCategoryStopCategoresReletedToBillByIdsList/:id',
+  signReqData,
   // [
   //   // Validation rules using express-validator
   //   check('branche').optional().notEmpty().withMessage('branche is required'),
@@ -93,8 +101,8 @@ router.put(
 );
 
 // Other routes for GET (Read) and DELETE operations...
-router.get("",        pricingController.getAllItems);
+router.get("", signReqData, pricingController.getAllItems);
 
-router.delete('/:id', pricingController.deleteItem)
+router.delete('/:id', signReqData, pricingController.deleteItem)
 
 export default router;

@@ -3,6 +3,7 @@ import { check, validationResult } from 'express-validator';
 import {InvoiceController} from '../../controllers/api/invoice';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
+import { idempotencyMiddleware } from '../../middleware/idempotency';
 import { IInvoice } from '../../models/interfaces/invoice.interface';
 
 const router: Router = express.Router();
@@ -23,6 +24,7 @@ router.post( '', signReqData,
     // check('categoryId').notEmpty().withMessage('category is required'),
     // check('clientId').notEmpty().withMessage('client Id is required'),
   ],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -43,6 +45,7 @@ router.put(
     // Validation rules using express-validator
     check('branche').optional().notEmpty().withMessage('branche is required'),
   ],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -63,6 +66,7 @@ router.put(
     // Validation rules using express-validator
     check('branche').optional().notEmpty().withMessage('branche is required'),
   ],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -87,6 +91,7 @@ router.put(
       .notEmpty()
       .withMessage('address is required')
   ],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -102,6 +107,7 @@ router.put(
 // Route: PUT /items/:id (Update item)
 router.put(
   '/updateMenuItems/:id',
+  signReqData,
   [
     // Validation rules using express-validator
     check('branche').optional().notEmpty().withMessage('branche is required'),
@@ -110,6 +116,7 @@ router.put(
       .notEmpty()
       .withMessage('address is required')
   ],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -125,6 +132,7 @@ router.put(
 // Route: PUT /items/:id (Update item)
 router.put(
   '/:id',
+  signReqData,
   [
     // Validation rules using express-validator
     check('branche').optional().notEmpty().withMessage('branche is required'),
@@ -133,6 +141,7 @@ router.put(
       .notEmpty()
       .withMessage('address is required')
   ],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -147,10 +156,11 @@ router.put(
 
 
 // Other routes for GET (Read) and DELETE operations...
-router.get("",  invoiceController.getAllItems);
+router.get("", signReqData, invoiceController.getAllItems);
 
 router.get(
   '/getInvoicesByEmployeeWithCountsasync/:id',
+  signReqData,
   invoiceController.getInvoicesByEmployeeWithCountsasync);
 
 export default router;

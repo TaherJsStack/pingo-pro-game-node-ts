@@ -2,6 +2,8 @@ import express, { Router, Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
+import { createPlanGate } from '../../middleware/plan-gate';
+import { idempotencyMiddleware } from '../../middleware/idempotency';
 import { SessionController } from '../../controllers/api/session';
 import { ISession } from '../../models/interfaces/session.interface';
 
@@ -20,12 +22,16 @@ interface CreateItemRequest extends Request {
 router.post(
   '',
   signReqData,
+  createPlanGate({
+    getRequestedUnits: (req) => (Array.isArray((req as any).body?.categories) ? (req as any).body.categories.length : 1),
+  }),
   [
     // Validation rules using express-validator
     check('brancheId').notEmpty().withMessage('brancheId is required'),
     check('categories').notEmpty().withMessage('categories is required'),
     check('clientId').optional({ nullable: true, checkFalsy: true }),
   ],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -41,12 +47,14 @@ router.post(
 // Route: PUT /items/:id (Update item)
 router.put(
   '/:id',
+  signReqData,
   [
     // Validation rules using express-validator
     check('brancheId').notEmpty().withMessage('brancheId is required'),
     check('categoryId').notEmpty().withMessage('categoryId is required'),
     check('clientId').notEmpty().withMessage('clientId is required'),
   ],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -67,6 +75,7 @@ router.put(
     check('categoryId').optional().notEmpty().withMessage('categoryId is required'),
     check('categoriesIds').optional().isArray({ min: 1 }).withMessage('categoriesIds must be a non-empty array'),
   ],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -80,10 +89,10 @@ router.put(
 );
 
 // Other routes for GET (Read) and DELETE operations...
-router.get("",  sessionController.getAllItems);
+router.get("", signReqData, sessionController.getAllItems);
 
-router.delete('/:id', sessionController.deleteItem)
-router.delete('/deleteSessionItem/:id/:endIn', sessionController.deleteSessionItem)
-router.delete('/deleteAllReletedToBill/:id/:endIn', sessionController.deleteAllReletedToBill)
+router.delete('/:id', signReqData, idempotencyMiddleware, sessionController.deleteItem)
+router.delete('/deleteSessionItem/:id/:endIn', signReqData, idempotencyMiddleware, sessionController.deleteSessionItem)
+router.delete('/deleteAllReletedToBill/:id/:endIn', signReqData, idempotencyMiddleware, sessionController.deleteAllReletedToBill)
 
 export default router;

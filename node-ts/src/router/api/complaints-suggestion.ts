@@ -39,6 +39,7 @@ router.post(
 // Route: PUT /items/:id (Update item)
 router.put(
   '/:id',
+  signReqData,
   [
     // Validation rules using express-validator
     check('branche').optional().notEmpty().withMessage('branche is required'),
@@ -60,8 +61,8 @@ router.put(
 );
 
 // Other routes for GET (Read) and DELETE operations...
-router.get("",  controller.getAllItems);
+router.get("", signReqData, controller.getAllItems);
 
-router.get("/getBranche/:id",  controller.getItemById);
+router.get("/getBranche/:id", signReqData, controller.getItemById);
 
 export default router;

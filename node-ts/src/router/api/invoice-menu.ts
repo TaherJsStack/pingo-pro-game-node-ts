@@ -3,6 +3,7 @@ import { check, validationResult } from 'express-validator';
 import  {InvoiceMenuController} from '../../controllers/api/invoice-menu';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
+import { idempotencyMiddleware } from '../../middleware/idempotency';
 import { IInvoiceMenu } from '../../models/interfaces/invoice-menu.interface';
 
 const router: Router = express.Router();
@@ -24,6 +25,7 @@ router.post(
     check('brancheId').notEmpty().withMessage('brancheId is required'),
     check('client').notEmpty().withMessage('price is required'),
   ],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -39,6 +41,7 @@ router.post(
 // Route: PUT /items/:id (Update item)
 router.put(
   '/:id',
+  signReqData,
   [
     // Validation rules using express-validator
     check('branche').optional().notEmpty().withMessage('branche is required'),
@@ -47,6 +50,7 @@ router.put(
       .notEmpty()
       .withMessage('address is required')
   ],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -62,6 +66,7 @@ router.put(
 // Route: PUT /items/:id (Update item)
 router.put(
   '/updateMenuItems/:id',
+  signReqData,
   [
     // Validation rules using express-validator
     check('branche').optional().notEmpty().withMessage('branche is required'),
@@ -70,6 +75,7 @@ router.put(
       .notEmpty()
       .withMessage('address is required')
   ],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -94,6 +100,7 @@ router.put(
       .notEmpty()
       .withMessage('address is required')
   ],
+  idempotencyMiddleware,
   async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -107,8 +114,8 @@ router.put(
 );
 
 // Other routes for GET (Read) and DELETE operations...
-router.get("",        invoiceMenuController.getAllItems);
+router.get("", signReqData, invoiceMenuController.getAllItems);
 
-router.delete('/:id', invoiceMenuController.deleteItem)
+router.delete('/:id', signReqData, invoiceMenuController.deleteItem)
 
 export default router;

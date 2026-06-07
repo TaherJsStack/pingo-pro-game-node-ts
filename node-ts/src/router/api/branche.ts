@@ -43,6 +43,7 @@ router.post(
 router.put(
   '/:id',
   upload.single('logo'),
+  signReqData,
   [
     // Validation rules using express-validator
     check('branche').optional().notEmpty().withMessage('branche is required'),
@@ -64,8 +65,8 @@ router.put(
 );
 
 // Other routes for GET (Read) and DELETE operations...
-router.get("",  brancheController.getAllItems);
+router.get("", signReqData, brancheController.getAllItems);
 
-router.get("/getBranche/:id",  brancheController.getItemById);
+router.get("/getBranche/:id", signReqData, brancheController.getItemById);
 
 export default router;

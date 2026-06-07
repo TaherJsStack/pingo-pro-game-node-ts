@@ -34,7 +34,11 @@ router.post(
     }
     
     const { name, brancheId } = req.body;
-    const isName = await MenuModel.findOne({ name, brancheId });
+    const isName = await MenuModel.findOne({
+      name,
+      brancheId,
+      ...(req as any).authData?.tenantId ? { tenantId: (req as any).authData.tenantId } : {},
+    });
 
     if (isName) {
       return res.status(400).json({ errors: [{ path: 'name', msg: 'Name is already exists' }] });
@@ -48,6 +52,7 @@ router.post(
 // Route: PUT /items/:id (Update item)
 router.put(
   '/updateMenuItemsStockCount',
+  signReqData,
   // [
   //   // Validation rules using express-validator
   //   // check('branche').optional().notEmpty().withMessage('branche is required'),
@@ -73,6 +78,7 @@ router.put(
 // Route: PUT /items/:id (Update item)
 router.put(
   '/:id',
+  signReqData,
   [
     // Validation rules using express-validator
     check('branche').optional().notEmpty().withMessage('branche is required'),
@@ -94,9 +100,9 @@ router.put(
 );
 
 // Other routes for GET (Read) and DELETE operations...
-router.get("",        menuController.getAllItems);
+router.get("", signReqData, menuController.getAllItems);
 
-router.delete('/:id', menuController.deleteItem)
+router.delete('/:id', signReqData, menuController.deleteItem)
 
 
 export default router;
