@@ -5,6 +5,7 @@ import { env } from '../config/env';
 interface CustomRequest extends Request {
     authData?: {
         id:           string;
+        tenantId?:    string;
         role:         string;
         email:        string;
         permission:   string;
@@ -21,6 +22,7 @@ const authMiddleware = (req: CustomRequest, res: Response, next: NextFunction) =
             // console.log('decodedToken -->', decodedToken);
             req.authData = {
                 id:          decodedToken._id,
+                tenantId:    decodedToken.tenantId,
                 role:        decodedToken.role,
                 email:       decodedToken.email,
                 permission:  decodedToken.permission,
