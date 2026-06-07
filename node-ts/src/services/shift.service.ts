@@ -4,58 +4,169 @@ import InvoiceModel from '../models/invoice';
 import SessionModel from '../models/session';
 import { shiftRepository } from '../repositories/instances';
 import { ShiftStatus } from '../enums/shift-status.enum';
+import AnalyticsService from './analytics.service';
+import { ConflictError } from '../errors/AppError';
+import RealtimeService from './realtime.service';
+import { RealtimeEvent } from '../enums';
+import NotificationService from './notification.service';
 
 class ShiftService {
-  async getCurrentShift(employeeId: string, brancheId: string): Promise<any> {
-    return shiftRepository.findOne({
+  async getCurrentShift(employeeId: string, brancheId: string, tenantId?: string): Promise<any> {
+    const filter: Record<string, any> = {
       employeeId: new Types.ObjectId(employeeId),
       brancheId: new Types.ObjectId(brancheId),
       status: ShiftStatus.Open,
       activeState: true,
-    } as any);
-  }
+    };
 
-  async openShift(payload: { employeeId: string; brancheId: string; openingCash?: number; openedBy: string }): Promise<any> {
-    const currentShift = await this.getCurrentShift(payload.employeeId, payload.brancheId);
-    if (currentShift) {
-      throw new Error('Employee already has an open shift in this branch.');
+    if (tenantId) {
+      filter.tenantId = new Types.ObjectId(tenantId);
     }
 
-    return shiftRepository.create({
+    return shiftRepository.findOne(filter as any);
+  }
+
+  async openShift(payload: { employeeId: string; tenantId?: string; brancheId: string; openingCash?: number; openedBy: string; clientRequestId?: string }): Promise<any> {
+    const clientRequestId = (payload as any).clientRequestId ? String((payload as any).clientRequestId) : undefined;
+    const scope = { tenantId: payload.tenantId, requireTenant: true };
+    if (clientRequestId) {
+      const existingShift = await shiftRepository.findOne({ clientRequestId }, scope);
+      if (existingShift) {
+        return existingShift;
+      }
+    }
+
+    const currentShift = await this.getCurrentShift(payload.employeeId, payload.brancheId, payload.tenantId);
+    if (currentShift) {
+      throw new ConflictError('Employee already has an open shift in this branch.', 'SHIFT_ALREADY_OPEN');
+    }
+
+    const shiftPayload = {
       employeeId: new Types.ObjectId(payload.employeeId),
+      tenantId: payload.tenantId ? new Types.ObjectId(payload.tenantId) : null,
       brancheId: new Types.ObjectId(payload.brancheId),
       openedBy: new Types.ObjectId(payload.openedBy),
       openedAt: new Date(),
       openingCash: Number(payload.openingCash ?? 0),
       status: ShiftStatus.Open,
       activeState: true,
-    } as any);
+      clientRequestId,
+    } as any;
+
+    if (clientRequestId) {
+      const result = await shiftRepository.upsertByClientRequestId(shiftPayload, {
+        tenantId: payload.tenantId,
+        requireTenant: true,
+      });
+      if (result.created && payload.tenantId) {
+        await AnalyticsService.recordEvent({
+          tenantId: payload.tenantId,
+          brancheId: payload.brancheId,
+          shiftId: String(result.item._id),
+          deviceType: 'shift',
+          eventType: 'shift_opened',
+          amount: 0,
+          occurredAt: new Date(result.item.openedAt ?? new Date()),
+          metadata: {
+            openingCash: Number(payload.openingCash ?? 0),
+            employeeId: payload.employeeId,
+          },
+        });
+        RealtimeService.emitToTenant(payload.tenantId, RealtimeEvent.ShiftOpened, {
+          tenantId: payload.tenantId,
+          brancheId: payload.brancheId,
+          shiftId: String(result.item._id),
+          employeeId: payload.employeeId,
+          openingCash: Number(payload.openingCash ?? 0),
+          status: ShiftStatus.Open,
+        });
+        void NotificationService.queueShiftOpened({
+          tenantId: payload.tenantId,
+          shiftId: String(result.item._id),
+          openingCash: Number(payload.openingCash ?? 0),
+        }).catch((error) => {
+          console.warn('Failed to queue shift opened notification', error);
+        });
+      }
+      return result.item;
+    }
+
+    const shift = await shiftRepository.create(shiftPayload, { tenantId: payload.tenantId, requireTenant: true });
+
+    if (payload.tenantId) {
+      await AnalyticsService.recordEvent({
+        tenantId: payload.tenantId,
+        brancheId: payload.brancheId,
+        shiftId: String(shift._id),
+        deviceType: 'shift',
+        eventType: 'shift_opened',
+        amount: 0,
+        occurredAt: new Date(shift.openedAt ?? new Date()),
+        metadata: {
+          openingCash: Number(payload.openingCash ?? 0),
+          employeeId: payload.employeeId,
+        },
+      });
+      RealtimeService.emitToTenant(payload.tenantId, RealtimeEvent.ShiftOpened, {
+        tenantId: payload.tenantId,
+        brancheId: payload.brancheId,
+        shiftId: String(shift._id),
+        employeeId: payload.employeeId,
+        openingCash: Number(payload.openingCash ?? 0),
+        status: ShiftStatus.Open,
+      });
+      void NotificationService.queueShiftOpened({
+        tenantId: payload.tenantId,
+        shiftId: String(shift._id),
+        openingCash: Number(payload.openingCash ?? 0),
+      }).catch((error) => {
+        console.warn('Failed to queue shift opened notification', error);
+      });
+    }
+
+    return shift;
   }
 
-  async closeShift(shiftId: string, payload: { closingCash?: number }): Promise<any> {
-    const shift = await shiftRepository.findById(shiftId);
+  async closeShift(shiftId: string, payload: { closingCash?: number }, tenantId?: string): Promise<any> {
+    const scope = { tenantId, requireTenant: true };
+    const shift = await shiftRepository.findById(shiftId, scope);
     if (!shift) throw new Error('Shift not found.');
-    if (shift.status === ShiftStatus.Closed) throw new Error('Shift is already closed.');
+    if (shift.status === ShiftStatus.Closed) {
+      throw new ConflictError('Shift is already closed.', 'SHIFT_ALREADY_CLOSED');
+    }
 
     const openedAt = new Date(shift.openedAt);
     const closedAt = new Date();
     const workedMinutes = Math.max(0, Math.round((closedAt.getTime() - openedAt.getTime()) / 60000));
 
+    const invoiceMatch: Record<string, any> = { shiftId: new Types.ObjectId(shiftId), activeState: false };
+    if (tenantId) {
+      invoiceMatch.tenantId = new Types.ObjectId(tenantId);
+    }
+
     const invoiceSummary = await InvoiceModel.aggregate([
-      { $match: { shiftId: new Types.ObjectId(shiftId), activeState: false } },
+      { $match: invoiceMatch },
       { $group: { _id: null, invoicesTotal: { $sum: '$total' } } },
     ]);
 
-    const sessionsStarted = await SessionModel.countDocuments({
+    const sessionsStartedFilter: Record<string, any> = {
       shiftId: new Types.ObjectId(shiftId),
       createdAt: { $gte: openedAt, $lte: closedAt },
-    } as any);
+    };
+    if (tenantId) {
+      sessionsStartedFilter.tenantId = new Types.ObjectId(tenantId);
+    }
+    const sessionsStarted = await SessionModel.countDocuments(sessionsStartedFilter as any);
 
-    const sessionsEnded = await SessionModel.countDocuments({
+    const sessionsEndedFilter: Record<string, any> = {
       shiftId: new Types.ObjectId(shiftId),
       activeState: false,
       updatedAt: { $gte: openedAt, $lte: closedAt },
-    } as any);
+    };
+    if (tenantId) {
+      sessionsEndedFilter.tenantId = new Types.ObjectId(tenantId);
+    }
+    const sessionsEnded = await SessionModel.countDocuments(sessionsEndedFilter as any);
 
     const updatedShift = await shiftRepository.updateById(shiftId, {
       closedAt,
@@ -65,23 +176,65 @@ class ShiftService {
       invoicesTotal: Number(invoiceSummary?.[0]?.invoicesTotal ?? 0),
       sessionsStarted,
       sessionsEnded,
-    } as any);
+    } as any, scope);
+
+    if (tenantId) {
+      await AnalyticsService.recordEvent({
+        tenantId,
+        brancheId: String(shift.brancheId),
+        shiftId,
+        deviceType: 'shift',
+        eventType: 'shift_closed',
+        amount: Number(updatedShift?.invoicesTotal ?? 0),
+        occurredAt: closedAt,
+        metadata: {
+          workedMinutes,
+          sessionsStarted,
+          sessionsEnded,
+          closingCash: Number(payload.closingCash ?? 0),
+        },
+      });
+      RealtimeService.emitToTenant(tenantId, RealtimeEvent.ShiftClosed, {
+        tenantId,
+        brancheId: String(shift.brancheId),
+        shiftId,
+        closingCash: Number(payload.closingCash ?? 0),
+        workedMinutes,
+        invoicesTotal: Number(updatedShift?.invoicesTotal ?? 0),
+        status: ShiftStatus.Closed,
+      });
+      void NotificationService.queueShiftClosed({
+        tenantId,
+        shiftId,
+        total: Number(updatedShift?.invoicesTotal ?? 0),
+        workedMinutes,
+        closingCash: Number(payload.closingCash ?? 0),
+      }).catch((error) => {
+        console.warn('Failed to queue shift closed notification', error);
+      });
+    }
 
     return updatedShift;
   }
 
-  async getDailySummary(brancheId: string, date?: string): Promise<any> {
+  async getDailySummary(brancheId: string, date?: string, tenantId?: string): Promise<any> {
     const targetDate = date ? new Date(date) : new Date();
     const startDate = new Date(targetDate);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(targetDate);
     endDate.setHours(23, 59, 59, 999);
 
-    const shifts = await ShiftModel.find({
+    const shiftFilter: Record<string, any> = {
       brancheId: new Types.ObjectId(brancheId),
       openedAt: { $gte: startDate, $lte: endDate },
       activeState: true,
-    } as any).lean();
+    };
+
+    if (tenantId) {
+      shiftFilter.tenantId = new Types.ObjectId(tenantId);
+    }
+
+    const shifts = await ShiftModel.find(shiftFilter as any).lean();
 
     const summary = shifts.reduce(
       (acc, shift: any) => {

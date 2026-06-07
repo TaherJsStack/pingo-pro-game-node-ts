@@ -4,6 +4,7 @@ import Address from '../models/address';
 import Inbox from '../models/inbox';
 import Branche from '../models/branche';
 import Subscription from '../models/subscription';
+import Tenant from '../models/tenant';
 import { BaseRepository } from '../repositories/BaseRepository';
 import { AuthRepository } from '../repositories/AuthRepository';
 import { generateBcryptHash } from '../util/jwtUtil';
@@ -20,6 +21,7 @@ export class AuthService implements IAuthService {
   private readonly inboxRepository = new BaseRepository<any>(Inbox);
   private readonly brancheRepository = new BaseRepository<any>(Branche);
   private readonly subscriptionRepository = new BaseRepository<any>(Subscription);
+  private readonly tenantRepository = new BaseRepository<any>(Tenant);
   private readonly subscriptionManager = new SubscriptionManager();
   private readonly tokenManager = new TokenManager();
 
@@ -27,6 +29,7 @@ export class AuthService implements IAuthService {
     const bcryptHash = await generateBcryptHash(payload.password, 10);
     const savedUser = await this.authRepository.create(payload);
     let savedBranche: any = null;
+    let savedTenant: any = null;
     let subscriptionData: any = null;
     const createdInboxIds: string[] = [];
     try {
@@ -39,14 +42,35 @@ export class AuthService implements IAuthService {
         payload?.club?.name ||
         payload?.club ||
         fallbackBranchName;
+      const tenantName =
+        payload?.club?.name ||
+        payload?.club?.branche ||
+        payload?.club ||
+        payload?.username ||
+        payload?.email ||
+        'Pingo Tenant';
+      const tenantSlugBase = String(tenantName)
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      savedTenant = await this.tenantRepository.create({
+        ownerId: savedUser._id,
+        name: tenantName,
+        slug: `${tenantSlugBase || 'tenant'}-${savedUser._id.toString().slice(-6)}`,
+      });
+      await this.authRepository.updateById(savedUser._id.toString(), { tenantId: savedTenant._id });
+      savedUser.tenantId = savedTenant._id;
       savedBranche = await this.brancheRepository.create({
         ownerId: savedUser._id,
+        tenantId: savedTenant._id,
         branche: branchName,
       });
       await this.authRepository.updateById(savedUser._id.toString(), { brancheId: savedBranche._id });
       savedUser.brancheId = savedBranche._id;
       const welcomeMessage = await this.inboxRepository.create({
         ownerId: savedUser._id,
+        tenantId: savedTenant._id,
         title: 'Welcome to pingo',
         type: InboxType.Welcome,
         context: 'Your account is ready.',
@@ -55,9 +79,14 @@ export class AuthService implements IAuthService {
       createdInboxIds.push(welcomeMessage._id.toString());
       const trialDays = 20;
       subscriptionData = await this.subscriptionManager.createSubscription(savedUser._id.toString(), null, trialDays);
+      if (subscriptionData?._id) {
+        await this.subscriptionRepository.updateById(subscriptionData._id.toString(), { tenantId: savedTenant._id });
+        subscriptionData.tenantId = savedTenant._id;
+      }
       const trialEndDate = new Date(subscriptionData.endDate);
       const trialMessage = await this.inboxRepository.create({
         ownerId: savedUser._id,
+        tenantId: savedTenant._id,
         title: 'Free trial activated',
         type: InboxType.System,
         context: `Your free trial is active until ${trialEndDate.toISOString().split('T')[0]}.`,
@@ -68,6 +97,7 @@ export class AuthService implements IAuthService {
         _id: savedUser._id.toString(),
         email: savedUser.email,
         name: `${savedUser.lastName} ${savedUser.firstName}`,
+        tenantId: savedTenant._id.toString(),
         role: savedUser.role,
         permission: savedUser.permission,
       });
@@ -81,6 +111,9 @@ export class AuthService implements IAuthService {
       }
       if (savedBranche?._id) {
         await this.brancheRepository.deleteById(savedBranche._id.toString());
+      }
+      if (savedTenant?._id) {
+        await this.tenantRepository.deleteById(savedTenant._id.toString());
       }
       await this.authRepository.deleteById(savedUser._id.toString());
       throw new AppError('new user not added !!!');
