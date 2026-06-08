@@ -18,4 +18,7 @@ const inboxSchema: Schema<IInbox> = new Schema<IInbox>({
     timestamps: true
 });
 
+// Enables the shared table-container search (searchKeyword -> $text) on the inbox list.
+inboxSchema.index({ title: 'text', context: 'text' });
+
 export default mongoose.model<IInbox>('Inbox', inboxSchema);
