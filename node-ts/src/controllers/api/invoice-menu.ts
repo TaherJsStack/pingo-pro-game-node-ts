@@ -15,6 +15,11 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
   constructor() {
     super(invoiceMenuRepository);
   }
+
+  private getScope(req: Request) {
+    return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
+  }
+
   // Create - POST request handler
   createItem = async (req: CreateItemRequest, res: Response): Promise<void> => {
     try {
@@ -22,7 +27,7 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
       const savedItem = await this.repository.create({
         ...(req.body as any),
         createdBy: new ObjectId(req.authData.id),
-      } as any);
+      } as any, this.getScope(req));
 
       (savedItem as any).updateTotal?.()
         .then((total: any) => {
@@ -58,9 +63,9 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
     try {
       req.body.closedBy = new ObjectId(req.authData.id);
       req.body.activeState = false;
-  
+
       // Update item by ID in database
-      const updatedItem = await this.repository.updateById(req.params.id, req.body as any);
+      const updatedItem = await this.repository.updateById(req.params.id, req.body as any, this.getScope(req));
       if (!updatedItem) {
         res.status(404).json({ msg: 'Item not found' });
         return;
@@ -92,7 +97,7 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
   updateMenuItems = async (req: Request, res: Response): Promise<void> => {
     try {
       // Update item by ID in database
-      const updatedItem = await this.repository.updateById(req.params.id, req.body as any);
+      const updatedItem = await this.repository.updateById(req.params.id, req.body as any, this.getScope(req));
       if (!updatedItem) {
         res.status(404).json({ msg: 'Item not found' });
         return;
