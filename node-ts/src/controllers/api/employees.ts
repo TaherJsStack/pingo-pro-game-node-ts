@@ -1,5 +1,6 @@
 import { IAuth } from '../../types';
 import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 import { generateBcryptHash } from '../../util/jwtUtil';
 import { CRUDController } from '../base/CRUDController';
 import { authRepository, passwordRepository } from '../../repositories/instances';
@@ -8,6 +9,10 @@ import { authRepository, passwordRepository } from '../../repositories/instances
 export class EmployeesController extends CRUDController<IAuth> {
     constructor() {
         super(authRepository);
+    }
+
+    private getScope(req: Request) {
+        return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
     }
 
     checkEmail = (req: Request, res: Response, next: NextFunction): void => {
@@ -34,28 +39,40 @@ export class EmployeesController extends CRUDController<IAuth> {
 
     updatePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 
-        let bcryptHash = await generateBcryptHash(req.body.password, 10);
+        try {
+            // Only allow resetting the password of a user that belongs to the caller's tenant.
+            const target = await authRepository.findOne({ _id: req.body.id }, this.getScope(req));
+            if (!target) {
+                res.status(404).json({ message: 'user not found', status: 404 });
+                return;
+            }
 
-        passwordRepository.updateMany({ userId: req.body.id }, { password: bcryptHash })
-            .then((saved: any) => {
-                res.status(200).json({
-                    message: "updated password successfully",
-                    status: 200
-                });
-            })
-            .catch((err: Error) => {
-                res.status(500).json({
-                    message: err + ' update password ',
-                    status: 500
-                });
+            const bcryptHash = await generateBcryptHash(req.body.password, 10);
+            await passwordRepository.updateMany({ userId: req.body.id }, { password: bcryptHash });
+            res.status(200).json({
+                message: "updated password successfully",
+                status: 200
             });
+        } catch (err: any) {
+            res.status(500).json({
+                message: err + ' update password ',
+                status: 500
+            });
+        }
     }
 
     saveAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 
         let bcryptHash = await generateBcryptHash(req.body.password, 10)
         let password = await bcryptHash;
-        authRepository.create(req.body as any)
+        const authData = (req as any).authData;
+        const payload: any = { ...(req.body as any) };
+        if (authData?.id) {
+            payload.ownerId = new Types.ObjectId(authData.id);
+        }
+        // Pass the tenant scope so the new employee is stamped with the creator's tenantId
+        // (BaseRepository.create injects scope.tenantId into the payload).
+        authRepository.create(payload, this.getScope(req))
             .then(async (saved: any) => {
 
                 let savedPassword = await saveNewPassword(saved._id, password)
@@ -89,7 +106,7 @@ export class EmployeesController extends CRUDController<IAuth> {
     updateOne = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 
         try {
-            const updatedItem = await authRepository.updateById(req.params.id, req.body as any);
+            const updatedItem = await authRepository.updateById(req.params.id, req.body as any, this.getScope(req));
             if (!updatedItem) {
                 res.status(404).json({ msg: 'Item not found' });
                 return;
@@ -109,7 +126,7 @@ export class EmployeesController extends CRUDController<IAuth> {
     }
 
     getById = (req: Request, res: Response, next: NextFunction): void => {
-        authRepository.findOne({ _id: req.params.authId })
+        authRepository.findOne({ _id: req.params.authId }, this.getScope(req))
             .then((member: any) => {
 
                 if (member == null) {
@@ -130,7 +147,7 @@ export class EmployeesController extends CRUDController<IAuth> {
     }
 
     deleteOne = (req: Request, res: Response, next: NextFunction): void => {
-        authRepository.deleteById(req.params.id)
+        authRepository.deleteById(req.params.id, this.getScope(req))
             .then((admin: any) => {
                 res.status(200).json({
                     admin: admin,

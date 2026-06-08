@@ -41,16 +41,16 @@ employeesRouter.post(
     }
   );
 
-employeesRouter.put("/member/:id", updateOne);
+employeesRouter.put("/member/:id", signReqData, updateOne);
 
-employeesRouter.put("/updatePassword", updatePassword);
+employeesRouter.put("/updatePassword", signReqData, updatePassword);
 
-employeesRouter.get("/", getAllItems);
+employeesRouter.get("/", signReqData, getAllItems);
 
 employeesRouter.get("/checkEmail/:email", checkEmail);
 
-employeesRouter.get("/getById/:authId", getById);
+employeesRouter.get("/getById/:authId", signReqData, getById);
 
-employeesRouter.delete("/:id", deleteOne);
+employeesRouter.delete("/:id", signReqData, deleteOne);
 
 export default employeesRouter;
