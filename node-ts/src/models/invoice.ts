@@ -1,7 +1,7 @@
 import mongoose, { Model, Schema } from 'mongoose';
 import { IInvoice } from './interfaces/invoice.interface';
 import { menuItemSchema } from './schemas/menu-item.schema';
-import { sessionCategorySchema } from './schemas/session-category.schema';
+import { sessionDeviceSchema } from './schemas/session-device.schema';
 
 type InvoiceModel = Model<IInvoice>;
 
@@ -22,10 +22,10 @@ const invoiceSchema: Schema<IInvoice, InvoiceModel> = new Schema<IInvoice, Invoi
     createdAt: { type: Date, default: Date.now },
     description: { type: String, default: '' },
     total: { type: Number, default: 0 },
-    categoriesTotal: { type: Number, default: 0 },
+    devicesTotal: { type: Number, default: 0 },
     menuItemsTotal: { type: Number, default: 0 },
     invoiceNo: { type: Number, default: 0 },
-    categories: [sessionCategorySchema],
+    devices: [sessionDeviceSchema],
     menuItems: [menuItemSchema],
   },
   {
