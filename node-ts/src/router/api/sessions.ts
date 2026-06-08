@@ -23,12 +23,12 @@ router.post(
   '',
   signReqData,
   createPlanGate({
-    getRequestedUnits: (req) => (Array.isArray((req as any).body?.categories) ? (req as any).body.categories.length : 1),
+    getRequestedUnits: (req) => (Array.isArray((req as any).body?.devices) ? (req as any).body.devices.length : 1),
   }),
   [
     // Validation rules using express-validator
     check('brancheId').notEmpty().withMessage('brancheId is required'),
-    check('categories').notEmpty().withMessage('categories is required'),
+    check('devices').notEmpty().withMessage('devices is required'),
     check('clientId').optional({ nullable: true, checkFalsy: true }),
   ],
   idempotencyMiddleware,
@@ -38,7 +38,7 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     // Call controller method to create item
     await sessionController.createItem(req as CreateItemRequest, res);
   }
@@ -51,7 +51,7 @@ router.put(
   [
     // Validation rules using express-validator
     check('brancheId').notEmpty().withMessage('brancheId is required'),
-    check('categoryId').notEmpty().withMessage('categoryId is required'),
+    check('deviceId').notEmpty().withMessage('deviceId is required'),
     check('clientId').notEmpty().withMessage('clientId is required'),
   ],
   idempotencyMiddleware,
@@ -72,8 +72,8 @@ router.put(
   signReqData,
   [
     // Validation rules using express-validator
-    check('categoryId').optional().notEmpty().withMessage('categoryId is required'),
-    check('categoriesIds').optional().isArray({ min: 1 }).withMessage('categoriesIds must be a non-empty array'),
+    check('deviceId').optional().notEmpty().withMessage('deviceId is required'),
+    check('devicesIds').optional().isArray({ min: 1 }).withMessage('devicesIds must be a non-empty array'),
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
