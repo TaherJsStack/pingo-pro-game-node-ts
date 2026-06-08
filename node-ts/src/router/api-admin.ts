@@ -11,14 +11,16 @@ import auditRouterAPI from './api-admin/audit';
 import billingRouterAPI from './api-admin/billing';
 import paymentAdminRouterAPI from './api-admin/payment-admin';
 
-
-// Import middleware if needed
-// import signReqData from '../middleware/sign-req-data';
+import signReqData from '../middleware/sign-req-data';
+import rootAuthGuard from '../middleware/root-auth.guard';
 
 const routerAPI = express();
 
-// Use middleware if needed
-// routerAPI.use(signReqData);
+// Every /api/root/v1 route is root/admin-only. Enforce authentication + root authorization
+// once here so legacy read routers (auths, clients, audit, ...) can never leak cross-tenant
+// data to unauthenticated or non-root callers. Individual routers may re-apply the same guard
+// (idempotent and harmless).
+routerAPI.use(signReqData, rootAuthGuard);
 
 // Define routes
 routerAPI.use("/statistics",            statisticsRouterAPI);
