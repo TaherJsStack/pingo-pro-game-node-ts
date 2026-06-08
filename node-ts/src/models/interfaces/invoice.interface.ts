@@ -1,4 +1,4 @@
-import { ICategories } from './categories.interface';
+import { IDevices } from './devices.interface';
 import { IMenuItem } from './menu-item.interface';
 import { ActivityFields, BaseEntity, ModelDocument, ObjectId } from './common.interface';
 
@@ -16,9 +16,9 @@ export interface IInvoice extends BaseEntity, ActivityFields {
   name: string;
   phone: string;
   total: number;
-  categoriesTotal: number;
+  devicesTotal: number;
   menuItemsTotal: number;
-  categories: ICategories[];
+  devices: IDevices[];
   menuItems: IMenuItem[];
   invoiceNo: number;
 }

@@ -1,4 +1,4 @@
-import { ICategories } from './categories.interface';
+import { IDevices } from './devices.interface';
 import { ActivityFields, BaseEntity, ObjectId } from './common.interface';
 import { IMenuItems } from './invoice.interface';
 
@@ -16,9 +16,9 @@ export interface ISession extends BaseEntity, ActivityFields {
   estimationInHours: number;
   estimationInMinutes: number;
   total: number;
-  categoriesTotal: number;
+  devicesTotal: number;
   menuItemsTotal: number;
   Sessiontype: string;
-  categories: ICategories[];
+  devices: IDevices[];
   menuItems: IMenuItems[];
 }
