@@ -24,7 +24,14 @@ interface AuthenticatedRequest extends Request {
 
 export class StatisticsController {
   private getTenantMatch(req: AuthenticatedRequest) {
-    return req.authData?.tenantId ? { tenantId: new ObjectId(req.authData.tenantId) } : {};
+    // Owner-facing statistics must always be tenant-scoped. Refuse (rather than aggregate
+    // across every tenant) when the caller's token carries no tenantId. Cross-tenant platform
+    // stats live in controllers/root-api/statistics.ts behind rootAuthGuard.
+    const tenantId = req.authData?.tenantId;
+    if (!tenantId) {
+      throw new Error('Tenant scope is required for statistics.');
+    }
+    return { tenantId: new ObjectId(tenantId) };
   }
 
   getGroupedInvoicesByClosedBy = async (req: AuthenticatedRequest, res: Response) => {
@@ -317,6 +324,12 @@ export class StatisticsController {
 
   getKpiSummary = async (req: AuthenticatedRequest, res: Response) => {
     try {
+      const tenantId = req.authData?.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ success: false, errors: ['Tenant scope is required.'], status: 400, message: '', data: [] });
+        return;
+      }
+
       const filterObg = typeof req.query.Filter === 'string'
         ? JSON.parse(req.query.Filter)
         : ((req.query.Filter as any) || {});
@@ -329,7 +342,7 @@ export class StatisticsController {
       const requested = innerFilter.period || filterObg.period || KpiPeriod.Day;
       const period: KpiPeriod = allowedPeriods.includes(requested) ? requested : KpiPeriod.Day;
       const summary = await AnalyticsService.getTenantKpiSummary({
-        tenantId: req.authData?.tenantId,
+        tenantId,
         brancheId: brancheId ? String(brancheId) : undefined,
         startDate,
         endDate,
