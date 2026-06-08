@@ -12,6 +12,10 @@ const authService = new AuthService();
 
 export class AuthController extends SendResponse {
 
+    private getScope(req: Request) {
+        return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
+    }
+
     checkPhone = async (req: Request, res: Response, next: NextFunction) => {
         // console.log('checkPhone req.params ---> ', req.params)
         try {
@@ -107,7 +111,7 @@ export class AuthController extends SendResponse {
     updateOne = async (req: Request, res: Response, next: NextFunction) => {
         // console.log('Auth updateOne', req.body);
         try {
-            const updatedItem = await authRepository.updateById(req.params.id, req.body as any);
+            const updatedItem = await authRepository.updateById(req.params.id, req.body as any, this.getScope(req));
             if (!updatedItem) {
                 res.status(404).json({ msg: 'Item not found' });
                 return;
@@ -177,15 +181,17 @@ export class AuthController extends SendResponse {
         const filter = JSON.parse(req.query.filter as string);
         const listType = req.query.listType as string;
 
+        const scope = this.getScope(req);
         let fetchedList: IAuth[] = [];
         authRepository.find(filter, {
             sort: { createdAt: -1 },
             skip: pageSize * (pageNo - 1),
             limit: pageSize,
+            scope,
         })
             .then((documents: IAuth[]) => {
                 fetchedList = documents;
-                return authRepository.countDocuments();
+                return authRepository.countDocuments({}, scope);
             })
             .then((count: number) => {
 
@@ -210,7 +216,7 @@ export class AuthController extends SendResponse {
     };
 
     getById = (req: Request, res: Response, next: NextFunction) => {
-        authRepository.findOne({ _id: req.params.authId })
+        authRepository.findOne({ _id: req.params.authId }, this.getScope(req))
             .then((member: IAuth | any) => {
                 if (member == null) {
                     throw new Error('user no data found { statusCode: 404 }');
@@ -232,7 +238,7 @@ export class AuthController extends SendResponse {
     };
 
     deleteOne = (req: Request, res: Response, next: NextFunction) => {
-        authRepository.deleteById(req.params.id)
+        authRepository.deleteById(req.params.id, this.getScope(req))
             .then((admin: IAuth | any) => {
                 res.status(200).json({
                     message: "deleted successfully",
