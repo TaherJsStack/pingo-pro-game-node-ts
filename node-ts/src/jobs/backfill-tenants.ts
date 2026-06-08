@@ -2,10 +2,9 @@ import mongoose, { Model } from 'mongoose';
 import { env } from '../config/env';
 import Database from '../DB/mongoDBConfig';
 import Branche from '../models/branche';
-import Category from '../models/category';
+import Device from '../models/device';
 import Client from '../models/client';
 import Menu from '../models/menu';
-import Pricing from '../models/pricing';
 import Session from '../models/session';
 import Invoice from '../models/invoice';
 import InvoiceMenu from '../models/invoice-menu';
@@ -37,10 +36,9 @@ export interface TenantBackfillReport {
 }
 
 const BRANCHED_MODELS: Array<{ model: TenantScopedModel; name: string }> = [
-  { model: Category, name: 'Category' },
+  { model: Device, name: 'Device' },
   { model: Client, name: 'Client' },
   { model: Menu, name: 'Menu' },
-  { model: Pricing, name: 'Pricing' },
   { model: Session, name: 'Session' },
   { model: Invoice, name: 'Invoice' },
   { model: InvoiceMenu, name: 'InvoiceMenu' },
