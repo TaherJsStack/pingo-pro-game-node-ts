@@ -4,15 +4,15 @@ import { env } from '../config/env';
 
 interface CustomRequest extends Request {
     authData?: {
-        id:           string;
-        tenantId?:    string;
-        role:         string;
-        email:        string;
-        permission:   string;
-        authType?:    string;
+        id: string;
+        tenantId?: string;
+        role: string;
+        email: string;
+        permission: string;
+        authType?: string;
         permissions?: any;
     };
-  }
+}
 
 const authMiddleware = (req: CustomRequest, res: Response, next: NextFunction) => {
     try {
@@ -21,12 +21,12 @@ const authMiddleware = (req: CustomRequest, res: Response, next: NextFunction) =
             const decodedToken: any = jwt.verify(token, env.secret);
             // console.log('decodedToken -->', decodedToken);
             req.authData = {
-                id:          decodedToken._id,
-                tenantId:    decodedToken.tenantId,
-                role:        decodedToken.role,
-                email:       decodedToken.email,
-                permission:  decodedToken.permission,
-                authType:    decodedToken.authType,
+                id: decodedToken._id,
+                tenantId: decodedToken.tenantId,
+                role: decodedToken.role,
+                email: decodedToken.email,
+                permission: decodedToken.permission,
+                authType: decodedToken.authType,
                 permissions: decodedToken.permissions,
             }
         } else {
@@ -37,7 +37,7 @@ const authMiddleware = (req: CustomRequest, res: Response, next: NextFunction) =
         next();
     } catch (e) {
         res.status(401).json({
-            message: 'middleware ::: '+ e
+            message: 'middleware ::: ' + e
         })
     }
 }

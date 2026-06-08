@@ -45,8 +45,8 @@ function resolveRequestedUnits(req: GateRequest, getRequestedUnits?: PlanGateOpt
   if (getRequestedUnits) {
     return Math.max(Number(getRequestedUnits(req)) || 0, 0);
   }
-  if (Array.isArray(req.body?.categories)) {
-    return req.body.categories.length;
+  if (Array.isArray(req.body?.devices)) {
+    return req.body.devices.length;
   }
   return 1;
 }
@@ -93,7 +93,7 @@ export function createPlanGate(options: PlanGateOptions = {}) {
           if (!session?.activeState) {
             return total;
           }
-          return total + (Array.isArray(session.categories) ? session.categories.filter((category: any) => !category.endTime).length : 0);
+          return total + (Array.isArray(session.devices) ? session.devices.filter((device: any) => !device.endTime).length : 0);
         }, 0);
 
         if (activeDevices + requestedUnits > deviceLimit) {
