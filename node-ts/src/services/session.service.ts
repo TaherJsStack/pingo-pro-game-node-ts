@@ -1,7 +1,6 @@
 import { Types } from 'mongoose';
-import CategoryModel from '../models/category';
+import DeviceModel from '../models/device';
 import ClientModel from '../models/client';
-import PricingModel from '../models/pricing';
 import SessionModel from '../models/session';
 import InvoiceModel from '../models/invoice';
 import { BaseRepository } from '../repositories/BaseRepository';
@@ -13,22 +12,21 @@ import { ISessionService } from './interfaces/ISessionService';
 import { NotFoundError, ValidationError } from '../errors/AppError';
 import ShiftService from './shift.service';
 import AnalyticsService from './analytics.service';
-import { roundMoney } from '../util/money';
+import { deviceCharge } from '../util/money';
 import RealtimeService from './realtime.service';
 import { RealtimeEvent } from '../enums';
 
 export class SessionService implements ISessionService {
-  private readonly categoryRepository = new BaseRepository<any>(CategoryModel);
+  private readonly deviceRepository = new BaseRepository<any>(DeviceModel);
   private readonly clientRepository = new BaseRepository<any>(ClientModel);
-  private readonly pricingRepository = new BaseRepository<any>(PricingModel);
   private readonly sessionRepository = new SessionRepository(SessionModel);
   private readonly invoiceRepository = new InvoiceRepository(InvoiceModel);
 
-  private normalizeCategoryIds(body: any): string[] {
-    const idsFromCategories = Array.isArray(body.categories)
-      ? body.categories.map((category: any) => String(category?.categoryId ?? '')).filter(Boolean)
+  private normalizeDeviceIds(body: any): string[] {
+    const idsFromDevices = Array.isArray(body.devices)
+      ? body.devices.map((device: any) => String(device?.deviceId ?? '')).filter(Boolean)
       : [];
-    const requestedIds = (body.categoriesIds ?? (body.categoryId ? [body.categoryId] : idsFromCategories)) as Array<string | number>;
+    const requestedIds = (body.devicesIds ?? (body.deviceId ? [body.deviceId] : idsFromDevices)) as Array<string | number>;
     return [...new Set(requestedIds.map((id) => String(id)).filter(Boolean))];
   }
 
@@ -43,15 +41,8 @@ export class SessionService implements ISessionService {
     return parsedPrice > 0 ? parsedPrice : Number(fallbackPrice ?? 0);
   }
 
-  private calculateDeviceRevenue(category: any): number {
-    if (!category.startTime || !category.endTime) {
-      return 0;
-    }
-
-    const startTime = category.startTime instanceof Date ? category.startTime : new Date(category.startTime);
-    const endTime = category.endTime instanceof Date ? category.endTime : new Date(category.endTime);
-    const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-    return roundMoney(durationHours * Number(category.price ?? 0));
+  private calculateDeviceRevenue(device: any): number {
+    return deviceCharge(device);
   }
 
   private async emitSessionAnalytics(
@@ -73,14 +64,14 @@ export class SessionService implements ISessionService {
     };
 
     await Promise.all(
-      (session.categories ?? []).map((category: any) =>
+      (session.devices ?? []).map((device: any) =>
         AnalyticsService.recordEvent({
           ...basePayload,
-          deviceType: String(category.type ?? 'room'),
+          deviceType: String(device.type ?? 'room'),
           eventType,
           amount: 0,
           metadata: {
-            categoryId: String(category.categoryId),
+            deviceId: String(device.deviceId),
             createdBy: authUserId,
           },
         })
@@ -88,36 +79,10 @@ export class SessionService implements ISessionService {
     );
   }
 
-  private async resolvePricingPolicy(
-    brancheId: string | Types.ObjectId,
-    deviceType: string,
-    tenantId?: string
-  ): Promise<{ pricingId: any; pricingMode: string; price: number }> {
-    const scope = { tenantId, requireTenant: true };
-    for (const mode of ['vip', 'package', 'hourly']) {
-      const pricing = await this.pricingRepository.findOne(
-        {
-          brancheId: new Types.ObjectId(String(brancheId)),
-          deviceType,
-          type: mode,
-          activeState: true,
-        },
-        scope
-      );
-      if (pricing) {
-        return {
-          pricingId: pricing._id,
-          pricingMode: pricing.type ?? mode,
-          price: Number(pricing.price ?? 0),
-        };
-      }
-    }
-
-    return {
-      pricingId: null,
-      pricingMode: 'hourly',
-      price: 0,
-    };
+  private async resolveDevicePrice(deviceId: any, scope: any): Promise<number> {
+    if (!deviceId) return 0;
+    const device = await this.deviceRepository.findById(String(deviceId), scope);
+    return Number(device?.price ?? 0);
   }
 
   async createItem(body: ISession, authUserId: string, tenantId?: string): Promise<any> {
@@ -126,22 +91,20 @@ export class SessionService implements ISessionService {
     const currentShift = body.brancheId
       ? await ShiftService.getCurrentShift(authUserId, String(body.brancheId), tenantId)
       : null;
-    const incomingCategories = Array.isArray(body.categories) ? body.categories : [];
+    const incomingDevices = Array.isArray(body.devices) ? body.devices : [];
     const clientRequestId = (body as any).clientRequestId ? String((body as any).clientRequestId) : undefined;
-    const categories = await Promise.all(
-      incomingCategories.map(async (device: any) => {
+    const devices = await Promise.all(
+      incomingDevices.map(async (device: any) => {
         const deviceType = String(device.type ?? 'room');
-        const pricing = await this.resolvePricingPolicy(body.brancheId as any, deviceType, tenantId);
+        const devicePrice = await this.resolveDevicePrice(device.deviceId, scope);
         return {
           ...device,
           createdBy,
           closedBy: device.closedBy ?? null,
           type: deviceType,
           Sessiontype: device.Sessiontype ?? 'open',
-          pricingId: device.pricingId ?? pricing.pricingId,
-          pricingMode: device.pricingMode ?? pricing.pricingMode,
           startTime: device.startTime ?? new Date(),
-          price: this.resolvePriceValue(device.price, pricing.price),
+          price: this.resolvePriceValue(device.price, devicePrice),
           estimationInHours: Number(device.estimationInHours ?? 0),
           estimationInMinutes: Number(device.estimationInMinutes ?? 0),
         };
@@ -155,7 +118,7 @@ export class SessionService implements ISessionService {
           createdBy,
           tenantId: tenantId ? new Types.ObjectId(tenantId) : null,
           activeState: true,
-          categories,
+          devices,
           shiftId: currentShift?._id ?? null,
           clientRequestId,
         } as any,
@@ -188,7 +151,7 @@ export class SessionService implements ISessionService {
       ? await this.sessionRepository.findActiveSessionByClientAndBranch(body.clientId, body.brancheId, scope)
       : null;
     if (existingSession) {
-      existingSession.categories.push(...categories);
+      existingSession.devices.push(...devices);
       return existingSession.save();
     }
 
@@ -197,7 +160,7 @@ export class SessionService implements ISessionService {
       createdBy,
       tenantId: tenantId ? new Types.ObjectId(tenantId) : null,
       activeState: true,
-      categories,
+      devices,
       shiftId: currentShift?._id ?? null,
     } as any, scope);
 
@@ -225,44 +188,42 @@ export class SessionService implements ISessionService {
     const session = await this.sessionRepository.findById(sessionId, scope);
     if (!session) throw new NotFoundError('Session not found');
 
-    const requestedCategoryIds = this.normalizeCategoryIds(body);
-    if (!requestedCategoryIds.length) throw new ValidationError('At least one categoryId is required to end a session.');
+    const requestedDeviceIds = this.normalizeDeviceIds(body);
+    if (!requestedDeviceIds.length) throw new ValidationError('At least one deviceId is required to end a session.');
 
     const parsedEndTime = body.endTime ? new Date(body.endTime) : new Date();
     if (Number.isNaN(parsedEndTime.getTime())) throw new ValidationError('Invalid endTime value.');
 
     const closedBy = new Types.ObjectId(authUserId);
-    const matchedCategoryIds = new Set<string>();
-    for (const category of session.categories as any[]) {
-      const categoryId = String(category.categoryId);
-      if (!requestedCategoryIds.includes(categoryId)) continue;
-      matchedCategoryIds.add(categoryId);
-      if (!category.endTime) {
-        const pricing = await this.resolvePricingPolicy(session.brancheId, String(category.type ?? 'room'), tenantId);
-        category.endTime = parsedEndTime;
-        category.closedBy = closedBy;
-        category.pricingId = category.pricingId ?? pricing.pricingId;
-        category.pricingMode = category.pricingMode ?? pricing.pricingMode;
-        category.price = this.resolvePriceValue(category.price, pricing.price);
+    const matchedDeviceIds = new Set<string>();
+    for (const device of session.devices as any[]) {
+      const deviceId = String(device.deviceId);
+      if (!requestedDeviceIds.includes(deviceId)) continue;
+      matchedDeviceIds.add(deviceId);
+      if (!device.endTime) {
+        const devicePrice = await this.resolveDevicePrice(device.deviceId, scope);
+        device.endTime = parsedEndTime;
+        device.closedBy = closedBy;
+        device.price = this.resolvePriceValue(device.price, devicePrice);
       }
     }
-    if (!matchedCategoryIds.size) {
-      throw new ValidationError('No matching session categories were found for the provided categoriesIds list.');
+    if (!matchedDeviceIds.size) {
+      throw new ValidationError('No matching session devices were found for the provided devicesIds list.');
     }
 
     if (body.description?.trim()) session.description = body.description.trim();
     await Promise.all([
-      ...matchedCategoryIds,
-    ].map((categoryId) =>
-      this.categoryRepository.updateOne(
-        { _id: new Types.ObjectId(categoryId) },
+      ...matchedDeviceIds,
+    ].map((deviceId) =>
+      this.deviceRepository.updateOne(
+        { _id: new Types.ObjectId(deviceId) },
         { $set: { bookState: false } },
         { scope }
       )
     ));
 
-    const allCategoriesEnded = (session.categories as any[]).every((category) => !!category.endTime);
-    if (allCategoriesEnded) session.activeState = false;
+    const allDevicesEnded = (session.devices as any[]).every((device) => !!device.endTime);
+    if (allDevicesEnded) session.activeState = false;
     const savedSession = await session.save();
 
     await this.emitSessionAnalytics(savedSession, 'session_closed', authUserId, tenantId);
@@ -286,20 +247,19 @@ export class SessionService implements ISessionService {
 
     if (tenantId || (session as any).tenantId) {
       await Promise.all(
-        (session.categories as any[]).map((category) =>
+        (session.devices as any[]).map((device) =>
           AnalyticsService.recordEvent({
             tenantId: tenantId ?? String((session as any).tenantId),
             brancheId: String(session.brancheId),
             shiftId: (session as any).shiftId ? String((session as any).shiftId) : null,
             sessionId: String(session._id),
             invoiceId: null,
-            deviceType: String(category.type ?? 'room'),
+            deviceType: String(device.type ?? 'room'),
             eventType: 'device_utilization',
-            amount: this.calculateDeviceRevenue(category),
-            occurredAt: this.toInvoiceDate(category.endTime) ?? parsedEndTime,
+            amount: this.calculateDeviceRevenue(device),
+            occurredAt: this.toInvoiceDate(device.endTime) ?? parsedEndTime,
             metadata: {
-              categoryId: String(category.categoryId),
-              pricingMode: category.pricingMode ?? 'hourly',
+              deviceId: String(device.deviceId),
             },
           })
         )
@@ -307,7 +267,7 @@ export class SessionService implements ISessionService {
     }
 
     let createdBill = null;
-    if (allCategoriesEnded) {
+    if (allDevicesEnded) {
       const existingInvoice = await this.invoiceRepository.findOne({ sessionId: session._id }, scope);
       if (existingInvoice) {
         createdBill = existingInvoice;
@@ -320,6 +280,7 @@ export class SessionService implements ISessionService {
         }
         const client = session.clientId ? await this.clientRepository.findById(session.clientId, scope) : null;
         const invoiceNo = await InvoiceService.allocateInvoiceNo(tenantId, session.brancheId);
+        try {
         createdBill = await this.invoiceRepository.create({
           sessionId: session._id,
           tenantId: tenantId ? new Types.ObjectId(tenantId) : (session as any).tenantId ?? null,
@@ -333,19 +294,18 @@ export class SessionService implements ISessionService {
           activeState: false,
           description: body.description ?? session.description ?? '',
           invoiceNo,
-          categories: session.categories.map((category: any) => ({
-            categoryId: category.categoryId,
-            createdBy: category.createdBy ?? new Types.ObjectId(authUserId),
-            closedBy: category.closedBy ?? closedBy,
-            type: category.type ?? 'open',
-            pricingId: category.pricingId ?? null,
-            pricingMode: category.pricingMode ?? 'hourly',
-            price: Number(category.price ?? 0),
-            startTime: this.toInvoiceDate(category.startTime) ?? new Date(),
-            endTime: this.toInvoiceDate(category.endTime),
-            estimationTime: category.estimationTime ?? '',
-            estimationInHours: Number(category.estimationInHours ?? 0),
-            estimationInMinutes: Number(category.estimationInMinutes ?? 0),
+          devices: session.devices.map((device: any) => ({
+            deviceId: device.deviceId,
+            createdBy: device.createdBy ?? new Types.ObjectId(authUserId),
+            closedBy: device.closedBy ?? closedBy,
+            type: device.type ?? 'room',
+            Sessiontype: device.Sessiontype ?? 'open',
+            price: Number(device.price ?? 0),
+            startTime: this.toInvoiceDate(device.startTime) ?? new Date(),
+            endTime: this.toInvoiceDate(device.endTime),
+            estimationTime: device.estimationTime ?? '',
+            estimationInHours: Number(device.estimationInHours ?? 0),
+            estimationInMinutes: Number(device.estimationInMinutes ?? 0),
           })),
           menuItems: Array.isArray(session.menuItems)
             ? session.menuItems.map((item: any) => ({
@@ -357,6 +317,10 @@ export class SessionService implements ISessionService {
               }))
             : [],
         } as any, scope);
+        } catch (error) {
+          await InvoiceService.releaseInvoiceNo(tenantId, session.brancheId, invoiceNo);
+          throw error;
+        }
         await InvoiceService.syncInvoiceTotals(createdBill);
       }
     }
@@ -364,7 +328,7 @@ export class SessionService implements ISessionService {
     return {
       session: savedSession,
       bill: createdBill,
-      message: createdBill ? 'Session ended and bill created successfully.' : 'Session categories ended successfully.',
+      message: createdBill ? 'Session ended and bill created successfully.' : 'Session devices ended successfully.',
     };
   }
 }

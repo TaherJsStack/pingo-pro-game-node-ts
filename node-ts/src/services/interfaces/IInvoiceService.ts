@@ -1,7 +1,7 @@
 import { IInvoice } from '../../models/interfaces/invoice.interface';
 
 export interface IInvoiceService {
-  calculateCategoriesTotal(categories: any[]): number;
+  calculateDevicesTotal(devices: any[]): number;
   calculateMenuItemsTotal(menuItems: any[]): number;
   syncInvoiceTotals(invoice: any): Promise<void>;
   createNewInvoice(payload: Partial<IInvoice>, authUserId: string): Promise<any>;

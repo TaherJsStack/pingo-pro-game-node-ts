@@ -36,7 +36,7 @@ interface RevenueByShiftBucket {
   openedAt: Date | null;
   closedAt: Date | null;
   total: number;
-  categoriesTotal: number;
+  devicesTotal: number;
   menuItemsTotal: number;
   invoicesCount: number;
 }
@@ -44,7 +44,7 @@ interface RevenueByShiftBucket {
 interface RevenueByDeviceBucket {
   deviceType: string;
   total: number;
-  categoriesCount: number;
+  devicesCount: number;
   invoicesCount: number;
 }
 
@@ -67,7 +67,7 @@ export interface AnalyticsKpiSummary {
   endDate: Date;
   totals: {
     revenue: number;
-    categoriesRevenue: number;
+    devicesRevenue: number;
     menuItemsRevenue: number;
     workedHours: number;
     workedMinutes: number;
@@ -300,7 +300,7 @@ class AnalyticsService {
           $group: {
             _id: { $dateTrunc: { date: '$createdAt', unit: period } },
             total: { $sum: '$total' },
-            categoriesTotal: { $sum: '$categoriesTotal' },
+            devicesTotal: { $sum: '$devicesTotal' },
             menuItemsTotal: { $sum: '$menuItemsTotal' },
             count: { $sum: 1 },
           },
@@ -311,7 +311,7 @@ class AnalyticsService {
             _id: 0,
             period: '$_id',
             total: { $round: ['$total', 2] },
-            categoriesTotal: { $round: ['$categoriesTotal', 2] },
+            devicesTotal: { $round: ['$devicesTotal', 2] },
             menuItemsTotal: { $round: ['$menuItemsTotal', 2] },
             count: 1,
           },
@@ -323,7 +323,7 @@ class AnalyticsService {
           $group: {
             _id: '$shiftId',
             total: { $sum: '$total' },
-            categoriesTotal: { $sum: '$categoriesTotal' },
+            devicesTotal: { $sum: '$devicesTotal' },
             menuItemsTotal: { $sum: '$menuItemsTotal' },
             invoicesCount: { $sum: 1 },
           },
@@ -352,7 +352,7 @@ class AnalyticsService {
             openedAt: { $ifNull: ['$shift.openedAt', null] },
             closedAt: { $ifNull: ['$shift.closedAt', null] },
             total: { $round: ['$total', 2] },
-            categoriesTotal: { $round: ['$categoriesTotal', 2] },
+            devicesTotal: { $round: ['$devicesTotal', 2] },
             menuItemsTotal: { $round: ['$menuItemsTotal', 2] },
             invoicesCount: 1,
           },
@@ -360,28 +360,28 @@ class AnalyticsService {
       ]),
       InvoiceModel.aggregate([
         { $match: invoiceMatch },
-        { $unwind: '$categories' },
+        { $unwind: '$devices' },
         {
           $match: {
-            'categories.endTime': { $ne: null },
+            'devices.endTime': { $ne: null },
           },
         },
         {
           $addFields: {
-            categoryHours: this.durationExpression('$categories.startTime', '$categories.endTime'),
-            categoryRevenue: {
+            deviceHours: this.durationExpression('$devices.startTime', '$devices.endTime'),
+            deviceRevenue: {
               $multiply: [
-                this.durationExpression('$categories.startTime', '$categories.endTime'),
-                '$categories.price',
+                this.durationExpression('$devices.startTime', '$devices.endTime'),
+                '$devices.price',
               ],
             },
           },
         },
         {
           $group: {
-            _id: { $ifNull: ['$categories.type', 'unknown'] },
-            total: { $sum: '$categoryRevenue' },
-            categoriesCount: { $sum: 1 },
+            _id: { $ifNull: ['$devices.type', 'unknown'] },
+            total: { $sum: '$deviceRevenue' },
+            devicesCount: { $sum: 1 },
             invoicesCount: { $addToSet: '$_id' },
           },
         },
@@ -390,7 +390,7 @@ class AnalyticsService {
             _id: 0,
             deviceType: '$_id',
             total: { $round: ['$total', 2] },
-            categoriesCount: 1,
+            devicesCount: 1,
             invoicesCount: { $size: '$invoicesCount' },
           },
         },
@@ -432,19 +432,19 @@ class AnalyticsService {
       ]),
       InvoiceModel.aggregate([
         { $match: invoiceMatch },
-        { $unwind: '$categories' },
+        { $unwind: '$devices' },
         {
           $match: {
-            'categories.endTime': { $ne: null },
+            'devices.endTime': { $ne: null },
           },
         },
         {
           $addFields: {
-            categoryHours: this.durationExpression('$categories.startTime', '$categories.endTime'),
-            categoryRevenue: {
+            deviceHours: this.durationExpression('$devices.startTime', '$devices.endTime'),
+            deviceRevenue: {
               $multiply: [
-                this.durationExpression('$categories.startTime', '$categories.endTime'),
-                '$categories.price',
+                this.durationExpression('$devices.startTime', '$devices.endTime'),
+                '$devices.price',
               ],
             },
           },
@@ -453,11 +453,11 @@ class AnalyticsService {
           $group: {
             _id: {
               $hour: {
-                date: '$categories.endTime',
+                date: '$devices.endTime',
               },
             },
             total: { $sum: 1 },
-            revenue: { $sum: '$categoryRevenue' },
+            revenue: { $sum: '$deviceRevenue' },
           },
         },
         {
@@ -478,13 +478,13 @@ class AnalyticsService {
       ]),
       SessionModel.aggregate([
         { $match: { ...match, activeState: false } },
-        { $unwind: '$categories' },
+        { $unwind: '$devices' },
         {
           $match: {
-            'categories.endTime': { $gte: request.startDate, $lte: request.endDate },
+            'devices.endTime': { $gte: request.startDate, $lte: request.endDate },
           },
         },
-        { $group: { _id: { $dateTrunc: { date: '$categories.endTime', unit: period } }, count: { $sum: 1 } } },
+        { $group: { _id: { $dateTrunc: { date: '$devices.endTime', unit: period } }, count: { $sum: 1 } } },
         { $sort: { _id: 1 } },
         { $project: { _id: 0, period: '$_id', count: 1 } },
       ]),
@@ -535,7 +535,7 @@ class AnalyticsService {
 
     const totals = {
       revenue: roundMoney(revenueByPeriod.reduce((sum, bucket) => sum + Number(bucket.total ?? 0), 0)),
-      categoriesRevenue: roundMoney(revenueByPeriod.reduce((sum, bucket) => sum + Number((bucket as any).categoriesTotal ?? 0), 0)),
+      devicesRevenue: roundMoney(revenueByPeriod.reduce((sum, bucket) => sum + Number((bucket as any).devicesTotal ?? 0), 0)),
       menuItemsRevenue: roundMoney(revenueByPeriod.reduce((sum, bucket) => sum + Number((bucket as any).menuItemsTotal ?? 0), 0)),
       workedHours: roundMoney(workedHoursByPeriod.reduce((sum, bucket) => sum + Number(bucket.total ?? 0), 0)),
       workedMinutes: workedHoursByEmployee.reduce((sum, employee) => sum + Number(employee.workedMinutes ?? 0), 0),

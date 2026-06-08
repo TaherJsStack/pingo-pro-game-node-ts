@@ -3,12 +3,12 @@ import CounterModel from '../models/counter';
 import InvoiceModel from '../models/invoice';
 import { IInvoice } from '../models/interfaces/invoice.interface';
 import { IMenuItem } from '../models/interfaces/menu-item.interface';
-import { ISessionCategory } from '../models/interfaces/session-category.interface';
+import { ISessionDevice } from '../models/interfaces/session-device.interface';
 import { IInvoiceService } from './interfaces/IInvoiceService';
 import { InvoiceRepository } from '../repositories/InvoiceRepository';
 import AnalyticsService from './analytics.service';
 import ShiftService from './shift.service';
-import { roundMoney } from '../util/money';
+import { deviceCharge, roundMoney, sumMoney } from '../util/money';
 import RealtimeService from './realtime.service';
 import { RealtimeEvent } from '../enums';
 import NotificationService from './notification.service';
@@ -17,15 +17,8 @@ import SettingsModel from '../models/settings';
 class InvoiceService implements IInvoiceService {
   private readonly invoiceRepository = new InvoiceRepository(InvoiceModel);
 
-  private calculateCategoryRevenue(category: ISessionCategory): number {
-    if (!category.startTime || !category.endTime) {
-      return 0;
-    }
-
-    const startTime = category.startTime instanceof Date ? category.startTime : new Date(category.startTime);
-    const endTime = category.endTime instanceof Date ? category.endTime : new Date(category.endTime);
-    const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-    return roundMoney(durationHours * Number(category.price ?? 0));
+  private calculateDeviceRevenue(device: ISessionDevice): number {
+    return deviceCharge(device);
   }
 
   private async emitInvoiceAnalytics(invoice: IInvoice): Promise<void> {
@@ -38,20 +31,19 @@ class InvoiceService implements IInvoiceService {
     const shiftId = invoice.shiftId ? String(invoice.shiftId) : null;
 
     await Promise.all([
-      ...invoice.categories.map((category) =>
+      ...invoice.devices.map((device) =>
         AnalyticsService.recordEvent({
           tenantId,
           brancheId,
           shiftId,
           invoiceId: String(invoice._id),
           sessionId: invoice.sessionId ? String(invoice.sessionId) : null,
-          deviceType: String(category.type ?? 'room'),
-          eventType: 'invoice_category_revenue',
-          amount: this.calculateCategoryRevenue(category as ISessionCategory),
-          occurredAt: category.endTime ? new Date(category.endTime) : new Date(),
+          deviceType: String(device.type ?? 'room'),
+          eventType: 'invoice_device_revenue',
+          amount: this.calculateDeviceRevenue(device as ISessionDevice),
+          occurredAt: device.endTime ? new Date(device.endTime) : new Date(),
           metadata: {
-            pricingMode: category.pricingMode ?? 'hourly',
-            pricingId: category.pricingId ? String(category.pricingId) : null,
+            deviceId: String(device.deviceId),
           },
         })
       ),
@@ -136,43 +128,59 @@ class InvoiceService implements IInvoiceService {
     return counter.sequence;
   }
 
-  calculateCategoriesTotal(categories: ISessionCategory[]): number {
-    return categories.reduce((total, category) => {
-      if (!category.startTime || !category.endTime) {
-        return total;
-      }
+  /**
+   * Compensating rollback when an invoice fails to persist after its number was allocated.
+   * Without DB transactions (this deployment is not a replica set) a failed create would
+   * otherwise burn the number and leave a gap. The guard `sequence: allocatedNo` makes the
+   * decrement a no-op if any concurrent allocation already advanced the counter, so we never
+   * hand the same number to two requests. Best-effort: it never throws.
+   */
+  async releaseInvoiceNo(tenantId: string, brancheId: string | Types.ObjectId, allocatedNo: number): Promise<void> {
+    if (!tenantId || !allocatedNo) {
+      return;
+    }
 
-      const startTime = category.startTime instanceof Date ? category.startTime : new Date(category.startTime);
-      const endTime = category.endTime instanceof Date ? category.endTime : new Date(category.endTime);
-      const durationMs = endTime.getTime() - startTime.getTime();
-      const durationHours = durationMs / (1000 * 60 * 60);
+    try {
+      await CounterModel.updateOne(
+        {
+          tenantId: new Types.ObjectId(tenantId),
+          brancheId: new Types.ObjectId(String(brancheId)),
+          scope: 'invoice',
+          sequence: allocatedNo,
+        },
+        { $inc: { sequence: -1 } }
+      ).exec();
+    } catch (error) {
+      console.warn('Failed to release invoice number', error);
+    }
+  }
 
-      return total + durationHours * Number(category.price ?? 0);
-    }, 0);
+  calculateDevicesTotal(devices: ISessionDevice[]): number {
+    return sumMoney(devices.map((device) => deviceCharge(device)));
   }
 
   calculateMenuItemsTotal(menuItems: IMenuItem[]): number {
-    return menuItems.reduce((acc, item) => acc + Number(item.quantity ?? 0) * Number(item.price ?? 0), 0);
+    return sumMoney(menuItems.map((item) => Number(item.quantity ?? 0) * Number(item.price ?? 0)));
   }
 
-  calculateInvoiceTotals(invoice: Pick<IInvoice, 'categories' | 'menuItems'>) {
-    const categoriesTotal = this.calculateCategoriesTotal(invoice.categories as ISessionCategory[]);
+  calculateInvoiceTotals(invoice: Pick<IInvoice, 'devices' | 'menuItems'>) {
+    const devicesTotal = this.calculateDevicesTotal(invoice.devices as ISessionDevice[]);
     const menuItemsTotal = this.calculateMenuItemsTotal(invoice.menuItems as IMenuItem[]);
 
     return {
-      categoriesTotal,
+      devicesTotal,
       menuItemsTotal,
-      total: categoriesTotal + menuItemsTotal,
+      total: sumMoney([devicesTotal, menuItemsTotal]),
     };
   }
 
   async syncInvoiceTotals(
-    invoice: Pick<IInvoice, 'categories' | 'menuItems' | 'categoriesTotal' | 'menuItemsTotal' | 'total'> & {
+    invoice: Pick<IInvoice, 'devices' | 'menuItems' | 'devicesTotal' | 'menuItemsTotal' | 'total'> & {
       save: () => Promise<unknown>;
     }
   ): Promise<void> {
-    const { categoriesTotal, menuItemsTotal, total } = this.calculateInvoiceTotals(invoice);
-    invoice.categoriesTotal = categoriesTotal;
+    const { devicesTotal, menuItemsTotal, total } = this.calculateInvoiceTotals(invoice);
+    invoice.devicesTotal = devicesTotal;
     invoice.menuItemsTotal = menuItemsTotal;
     invoice.total = total;
     await invoice.save();
@@ -186,7 +194,7 @@ class InvoiceService implements IInvoiceService {
         sessionId: realtimeInvoice.sessionId ? String(realtimeInvoice.sessionId) : null,
         shiftId: realtimeInvoice.shiftId ? String(realtimeInvoice.shiftId) : null,
         total,
-        categoriesTotal,
+        devicesTotal,
         menuItemsTotal,
       });
     }
@@ -206,10 +214,10 @@ class InvoiceService implements IInvoiceService {
     const currentShift = payload.brancheId
       ? await ShiftService.getCurrentShift(authUserId, String(payload.brancheId), tenantId)
       : null;
-    const categories = Array.isArray(payload.categories) ? payload.categories : [];
+    const devices = Array.isArray(payload.devices) ? payload.devices : [];
 
-    if (categories[0]) {
-      (categories[0] as any).createdBy = createdBy;
+    if (devices[0]) {
+      (devices[0] as any).createdBy = createdBy;
     }
 
     if (clientRequestId) {
@@ -225,11 +233,17 @@ class InvoiceService implements IInvoiceService {
         tenantId: tenantId ? new Types.ObjectId(tenantId) : null,
         shiftId: currentShift?._id ?? null,
         invoiceNo,
-        categories,
+        devices,
         clientRequestId,
       } as any;
 
-      const result = await this.invoiceRepository.upsertByClientRequestId(invoicePayload, scope);
+      let result;
+      try {
+        result = await this.invoiceRepository.upsertByClientRequestId(invoicePayload, scope);
+      } catch (error) {
+        await this.releaseInvoiceNo(tenantId, payload.brancheId as Types.ObjectId, invoiceNo);
+        throw error;
+      }
       if (result.created) {
         await this.syncInvoiceTotals(result.item);
         await this.emitInvoiceAnalytics(result.item);
@@ -244,11 +258,17 @@ class InvoiceService implements IInvoiceService {
       tenantId: tenantId ? new Types.ObjectId(tenantId) : null,
       shiftId: currentShift?._id ?? null,
       invoiceNo,
-      categories,
+      devices,
       clientRequestId,
     } as any;
 
-    const invoice = await this.invoiceRepository.create(invoicePayload, scope);
+    let invoice;
+    try {
+      invoice = await this.invoiceRepository.create(invoicePayload, scope);
+    } catch (error) {
+      await this.releaseInvoiceNo(tenantId, payload.brancheId as Types.ObjectId, invoiceNo);
+      throw error;
+    }
 
     await this.syncInvoiceTotals(invoice);
     await this.emitInvoiceAnalytics(invoice);
