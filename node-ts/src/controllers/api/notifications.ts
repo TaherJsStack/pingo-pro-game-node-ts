@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { Types } from 'mongoose';
 import { SendResponse } from '../base/sendResponse';
 import NotificationOutboxModel from '../../models/notification-outbox';
-import inbox from '../../models/inbox';
 
 export class NotificationsController extends SendResponse {
   async getOutboxHistory(req: Request, res: Response): Promise<void> {
@@ -30,14 +29,13 @@ export class NotificationsController extends SendResponse {
       }
 
       const [items, totalData] = await Promise.all([
-        // NotificationOutboxModel.find(filter)
-        inbox.find(filter)
+        NotificationOutboxModel.find(filter)
           .sort({ createdAt: -1 })
           .skip((page - 1) * pageSize)
           .limit(pageSize)
           .lean()
           .exec(),
-        inbox.countDocuments(filter),
+        NotificationOutboxModel.countDocuments(filter),
       ]);
 
       // console.log("totalData --------->", totalData)

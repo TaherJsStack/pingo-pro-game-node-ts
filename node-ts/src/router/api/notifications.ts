@@ -5,10 +5,6 @@ import notificationsController from '../../controllers/api/notifications';
 const router: Router = express.Router();
 
 router.get('/outbox', signReqData, async (req: Request, res: Response) => {
-
-  console.log("----------------------------------------")
-
-
   await notificationsController.getOutboxHistory(req, res);
 });
 
