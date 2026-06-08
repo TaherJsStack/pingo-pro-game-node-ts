@@ -9,10 +9,6 @@ export class DeviceController extends CRUDController<IDevice> {
     super(deviceRepository);
   }
 
-  // private getScope(req: Request) {
-  //   return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
-  // }
-
   // Free the bookState for every device tied to a closed bill.
   updateDeviceStopCategoresReletedToBillByIdsList = async (req: Request, res: Response): Promise<void> => {
     try {
