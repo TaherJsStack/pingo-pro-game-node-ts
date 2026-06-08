@@ -157,8 +157,8 @@ export class InvoiceRepository extends BaseRepository<IInvoice> {
     const totalInvoices = await this.countDocuments({}, scope);
     const totalInvoicesClosedBy = await this.countDocuments({ closedBy: employeeId }, scope);
     const totalInvoicesCreatedBy = await this.countDocuments({ createdBy: employeeId }, scope);
-    const sharedDevicesAdded = await this.countDocuments({ 'categories.createdBy': employeeId }, scope);
-    const sharedDevicesClosed = await this.countDocuments({ 'categories.closedBy': employeeId }, scope);
+    const sharedDevicesAdded = await this.countDocuments({ 'devices.createdBy': employeeId }, scope);
+    const sharedDevicesClosed = await this.countDocuments({ 'devices.closedBy': employeeId }, scope);
 
     return {
       invoices,
