@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Category from '../../src/models/category';
+import Device from '../../src/models/device';
 import Client from '../../src/models/client';
 import Menu from '../../src/models/menu';
 
@@ -30,28 +30,28 @@ describe('Per-branch uniqueness hooks characterization', () => {
     ).rejects.toThrow('Menu must be unique for brancheId combination');
   });
 
-  it('Category rejects duplicate category for the same brancheId', async () => {
+  it('Device rejects duplicate name for the same brancheId', async () => {
     const brancheId = createId();
 
-    await Category.create({
+    await Device.create({
       ownerId: createId(),
       createdBy: createId(),
       brancheId,
-      category: 'VIP Room',
+      name: 'VIP Room',
       type: 'open',
       price: 50,
     });
 
     await expect(
-      Category.create({
+      Device.create({
         ownerId: createId(),
         createdBy: createId(),
         brancheId,
-        category: 'VIP Room',
+        name: 'VIP Room',
         type: 'open',
         price: 60,
       })
-    ).rejects.toThrow('Category must be unique for brancheId combination');
+    ).rejects.toThrow('Device name must be unique for brancheId combination');
   });
 
   it('Client rejects duplicate phone for the same brancheId', async () => {

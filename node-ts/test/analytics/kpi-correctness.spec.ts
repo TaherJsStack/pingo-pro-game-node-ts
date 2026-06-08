@@ -67,13 +67,11 @@ describe('analytics KPI correctness', () => {
     } as any);
 
     const roomCategory = {
-      categoryId: createId(),
+      deviceId: createId(),
       createdBy: owner._id,
       closedBy: owner._id,
       type: 'room',
       Sessiontype: 'open',
-      pricingId: null,
-      pricingMode: 'hourly',
       price: 50,
       startTime: new Date('2025-01-01T09:00:00.000Z'),
       endTime: new Date('2025-01-01T11:00:00.000Z'),
@@ -83,13 +81,11 @@ describe('analytics KPI correctness', () => {
     };
 
     const computerCategory = {
-      categoryId: createId(),
+      deviceId: createId(),
       createdBy: owner._id,
       closedBy: owner._id,
       type: 'computer',
       Sessiontype: 'open',
-      pricingId: null,
-      pricingMode: 'package',
       price: 140,
       startTime: new Date('2025-01-01T11:30:00.000Z'),
       endTime: new Date('2025-01-01T12:30:00.000Z'),
@@ -108,9 +104,9 @@ describe('analytics KPI correctness', () => {
       createdAt: new Date('2025-01-01T09:00:00.000Z'),
       description: '',
       total: 300,
-      categoriesTotal: 240,
+      devicesTotal: 240,
       menuItemsTotal: 60,
-      categories: [roomCategory, computerCategory],
+      devices: [roomCategory, computerCategory],
       menuItems: [
         {
           itemID: createId(),
@@ -136,10 +132,10 @@ describe('analytics KPI correctness', () => {
       createdAt: new Date('2025-01-01T12:30:00.000Z'),
       description: '',
       total: 300,
-      categoriesTotal: 240,
+      devicesTotal: 240,
       menuItemsTotal: 60,
       invoiceNo: 1,
-      categories: [roomCategory, computerCategory],
+      devices: [roomCategory, computerCategory],
       menuItems: [
         {
           itemID: createId(),
@@ -160,7 +156,7 @@ describe('analytics KPI correctness', () => {
     });
 
     expect(summary.totals.revenue).toBe(300);
-    expect(summary.totals.categoriesRevenue).toBe(240);
+    expect(summary.totals.devicesRevenue).toBe(240);
     expect(summary.totals.menuItemsRevenue).toBe(60);
     expect(summary.totals.workedHours).toBe(3);
     expect(summary.totals.sessionsStarted).toBe(1);

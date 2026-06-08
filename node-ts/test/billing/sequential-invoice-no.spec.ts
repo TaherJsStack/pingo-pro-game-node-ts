@@ -48,9 +48,9 @@ describe('billing sequential invoice numbers', () => {
     const { owner, tenant, branche } = await seedScope();
     const basePayload = {
       brancheId: branche._id,
-      categories: [
+      devices: [
         {
-          categoryId: createId(),
+          deviceId: createId(),
           type: 'room',
           Sessiontype: 'open',
           price: 0,

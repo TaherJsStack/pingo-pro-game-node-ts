@@ -59,9 +59,9 @@ describe('client request id upsert', () => {
         activeState: true,
         description: 'first session',
         total: 0,
-        categoriesTotal: 0,
+        devicesTotal: 0,
         menuItemsTotal: 0,
-        categories: [],
+        devices: [],
         menuItems: [],
       } as any,
       scope
@@ -78,9 +78,9 @@ describe('client request id upsert', () => {
         activeState: true,
         description: 'updated session',
         total: 0,
-        categoriesTotal: 0,
+        devicesTotal: 0,
         menuItemsTotal: 0,
-        categories: [],
+        devices: [],
         menuItems: [],
       } as any,
       scope

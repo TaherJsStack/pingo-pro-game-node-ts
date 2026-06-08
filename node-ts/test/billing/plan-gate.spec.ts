@@ -82,12 +82,12 @@ describe('billing plan gate', () => {
       brancheId: branche._id,
       activeState: true,
       description: '',
-      categoriesTotal: 0,
+      devicesTotal: 0,
       menuItemsTotal: 0,
       total: 0,
-      categories: [
+      devices: [
         {
-          categoryId: createId(),
+          deviceId: createId(),
           createdBy: owner._id,
           closedBy: null,
           type: 'room',
@@ -127,7 +127,7 @@ describe('billing plan gate', () => {
     const { res, next } = await invokeGate(
       {
         authData: { id: String(owner._id), tenantId: String(tenant._id) },
-        body: { brancheId: String(branche._id), categories: [{ categoryId: createId() }] },
+        body: { brancheId: String(branche._id), devices: [{ deviceId: createId() }] },
       },
       gate
     );
@@ -149,7 +149,7 @@ describe('billing plan gate', () => {
     const { res, next } = await invokeGate(
       {
         authData: { id: String(owner._id), tenantId: String(tenant._id) },
-        body: { brancheId: String(branche._id), categories: [{ categoryId: createId() }] },
+        body: { brancheId: String(branche._id), devices: [{ deviceId: createId() }] },
       },
       gate
     );
@@ -173,7 +173,7 @@ describe('billing plan gate', () => {
     const { res, next } = await invokeGate(
       {
         authData: { id: String(tenantB.owner._id), tenantId: String(tenantB.tenant._id) },
-        body: { brancheId: String(tenantB.branche._id), categories: [{ categoryId: createId() }] },
+        body: { brancheId: String(tenantB.branche._id), devices: [{ deviceId: createId() }] },
       },
       gate
     );

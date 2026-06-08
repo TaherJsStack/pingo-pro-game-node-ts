@@ -67,13 +67,11 @@ describe('analytics tenant isolation', () => {
     } as any);
 
     const baseCategory = {
-      categoryId: createId(),
+      deviceId: createId(),
       createdBy: owner._id,
       closedBy: owner._id,
       type: 'room',
       Sessiontype: 'open',
-      pricingId: null,
-      pricingMode: 'hourly',
       price: revenue / 2,
       startTime: new Date('2025-01-01T08:00:00.000Z'),
       endTime: new Date('2025-01-01T10:00:00.000Z'),
@@ -92,9 +90,9 @@ describe('analytics tenant isolation', () => {
       createdAt: new Date('2025-01-01T08:00:00.000Z'),
       description: '',
       total: revenue,
-      categoriesTotal: revenue,
+      devicesTotal: revenue,
       menuItemsTotal: 0,
-      categories: [baseCategory],
+      devices: [baseCategory],
       menuItems: [],
     } as any);
 
@@ -112,10 +110,10 @@ describe('analytics tenant isolation', () => {
       createdAt: new Date('2025-01-01T10:00:00.000Z'),
       description: '',
       total: revenue,
-      categoriesTotal: revenue,
+      devicesTotal: revenue,
       menuItemsTotal: 0,
       invoiceNo: revenue,
-      categories: [baseCategory],
+      devices: [baseCategory],
       menuItems: [],
     } as any);
 

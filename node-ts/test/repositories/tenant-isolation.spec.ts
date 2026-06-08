@@ -50,9 +50,9 @@ describe('tenant repository isolation', () => {
       activeState: true,
       description: '',
       total: 0,
-      categoriesTotal: 0,
+      devicesTotal: 0,
       menuItemsTotal: 0,
-      categories: [],
+      devices: [],
       menuItems: [],
     } as any);
 

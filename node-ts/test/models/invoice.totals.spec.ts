@@ -5,13 +5,13 @@ import InvoiceService from '../../src/services/invoice.service';
 describe('Invoice model totals characterization', () => {
   const createId = () => new mongoose.Types.ObjectId();
 
-  it('calculateCategoriesTotal computes duration * price and persists categoriesTotal', async () => {
+  it('calculateDevicesTotal computes duration * price and persists devicesTotal', async () => {
     const invoice = await Invoice.create({
       createdBy: createId(),
       brancheId: createId(),
-      categories: [
+      devices: [
         {
-          categoryId: createId(),
+          deviceId: createId(),
           type: 'open',
           Sessiontype: 'open',
           price: 40,
@@ -22,20 +22,20 @@ describe('Invoice model totals characterization', () => {
       menuItems: [],
     });
 
-    const total = InvoiceService.calculateCategoriesTotal(invoice.categories as any);
+    const total = InvoiceService.calculateDevicesTotal(invoice.devices as any);
     expect(total).toBeCloseTo(100);
 
     await InvoiceService.syncInvoiceTotals(invoice as any);
 
     const persisted = await Invoice.findById(invoice._id).orFail();
-    expect(persisted.categoriesTotal).toBeCloseTo(100);
+    expect(persisted.devicesTotal).toBeCloseTo(100);
   });
 
   it('calculateMenuItemsTotal computes quantity * price and persists menuItemsTotal', async () => {
     const invoice = await Invoice.create({
       createdBy: createId(),
       brancheId: createId(),
-      categories: [],
+      devices: [],
       menuItems: [
         { itemID: createId(), itemName: 'Tea', quantity: 2, price: 30 },
         { itemID: createId(), itemName: 'Water', quantity: 3, price: 5 },
@@ -51,13 +51,13 @@ describe('Invoice model totals characterization', () => {
     expect(persisted.menuItemsTotal).toBe(75);
   });
 
-  it('service sync sets total = menuItemsTotal + categoriesTotal', async () => {
+  it('service sync sets total = menuItemsTotal + devicesTotal', async () => {
     const invoice = await Invoice.create({
       createdBy: createId(),
       brancheId: createId(),
-      categories: [
+      devices: [
         {
-          categoryId: createId(),
+          deviceId: createId(),
           type: 'open',
           Sessiontype: 'open',
           price: 50,
@@ -71,7 +71,7 @@ describe('Invoice model totals characterization', () => {
     await InvoiceService.syncInvoiceTotals(invoice as any);
 
     const persisted = await Invoice.findById(invoice._id).orFail();
-    expect(persisted.categoriesTotal).toBe(100);
+    expect(persisted.devicesTotal).toBe(100);
     expect(persisted.menuItemsTotal).toBe(30);
     expect(persisted.total).toBe(130);
   });

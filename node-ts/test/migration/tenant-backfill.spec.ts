@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import Auth from '../../src/models/auth';
 import Branche from '../../src/models/branche';
-import Category from '../../src/models/category';
+import Device from '../../src/models/device';
 import ComplaintsSuggestion from '../../src/models/complaints-suggestion';
 import Invoice from '../../src/models/invoice';
 import Session from '../../src/models/session';
@@ -49,11 +49,11 @@ describe('tenant backfill', () => {
 
   it('dry-runs and applies tenantId backfill from brancheId without touching orphaned docs', async () => {
     const seeded = await seedTenant('backfill');
-    await Category.create({
+    await Device.create({
       ownerId: seeded.owner._id,
       createdBy: seeded.owner._id,
       brancheId: seeded.branche._id,
-      category: 'Games',
+      name: 'Games',
       price: 50,
       type: 'room',
       logo: '',
@@ -82,9 +82,9 @@ describe('tenant backfill', () => {
       activeState: true,
       description: '',
       total: 0,
-      categoriesTotal: 0,
+      devicesTotal: 0,
       menuItemsTotal: 0,
-      categories: [],
+      devices: [],
       menuItems: [],
     } as any);
 
@@ -100,10 +100,10 @@ describe('tenant backfill', () => {
       activeState: false,
       description: '',
       total: 0,
-      categoriesTotal: 0,
+      devicesTotal: 0,
       menuItemsTotal: 0,
       invoiceNo: 1,
-      categories: [],
+      devices: [],
       menuItems: [],
     } as any);
 
@@ -112,19 +112,19 @@ describe('tenant backfill', () => {
     expect(dryRun.orphanCount).toBe(0);
     expect(dryRun.updatedCount).toBeGreaterThan(0);
 
-    const beforeApply = await Category.findOne({ category: 'Games' }).lean();
+    const beforeApply = await Device.findOne({ name: 'Games' }).lean();
     expect(beforeApply?.tenantId ?? null).toBeNull();
 
     const applied = await runTenantBackfill(false);
     expect(applied.dryRun).toBe(false);
     expect(applied.orphanCount).toBe(0);
 
-    const category = await Category.findOne({ category: 'Games' }).lean();
+    const device = await Device.findOne({ name: 'Games' }).lean();
     const complaint = await ComplaintsSuggestion.findOne({ comment: 'Great service' }).lean();
     const session = await Session.findOne({ createdBy: seeded.owner._id }).lean();
     const invoice = await Invoice.findOne({ invoiceNo: 1 }).lean();
 
-    expect(String(category?.tenantId)).toBe(String(seeded.tenant._id));
+    expect(String(device?.tenantId)).toBe(String(seeded.tenant._id));
     expect(String(complaint?.tenantId)).toBe(String(seeded.tenant._id));
     expect(String(session?.tenantId)).toBe(String(seeded.tenant._id));
     expect(String(invoice?.tenantId)).toBe(String(seeded.tenant._id));
