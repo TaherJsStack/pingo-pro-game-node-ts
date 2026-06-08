@@ -9,15 +9,11 @@ export class ClientController extends CRUDController<IClient> {
     super(clientRepository);
   }
 
-  private getScope(req: Request) {
-    return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
-  }
-
   checkPhone = async (req: Request, res: Response) => {
     // console.log('checkPhone req.params ---> ', req.params);
     let { phone } = req.params;
     // let { activeState, ...otherFilters } = req.query; // Assuming additional filters are sent via query params
-    
+
     let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
     let { brancheId } = filter;
     // console.log('filter---> ', filter);
@@ -26,10 +22,10 @@ export class ClientController extends CRUDController<IClient> {
     try {
       // Build query object dynamically
       let query: any = { phone: { $regex: phone, $options: 'i' } }; // Regular expression for phone number
-          query.activeState = true; // Convert to boolean
-          query.brancheId = brancheId;
+      query.activeState = true; // Convert to boolean
+      query.brancheId = brancheId;
 
-          Object.assign(query);
+      Object.assign(query);
 
       // console.log('checkPhone query ---> ', query);
       // Use regular expression to filter phone numbers that contain the provided string
@@ -42,9 +38,9 @@ export class ClientController extends CRUDController<IClient> {
           errors: [],
           status: 200,
           message: '',
-          data: users 
+          data: users
         });
-      } 
+      }
     } catch (err: any) {
       // console.log('catch checkPhone error ---> ', err);
       // this.sendErrorResponse(res, err);
@@ -61,12 +57,12 @@ export class ClientController extends CRUDController<IClient> {
   getAllItemsPagination = async (req: Request, res: Response) => {
     try {
       let { page = 1, limit = 10, filterBy, filterValue } = req.query;
-  
+
       let filter: any = {};
       // if (filterBy && filterValue) {
       //   filter[filterBy] = { $regex: new RegExp(filterValue, 'i') };
       // }
-  
+
       const pageNo = Number(page) || 1;
       const pageSize = Number(limit) || 10;
       const items = await this.repository.find(filter, {
@@ -74,9 +70,9 @@ export class ClientController extends CRUDController<IClient> {
         limit: pageSize,
         scope: this.getScope(req),
       });
-  
+
       const totalCount = await this.repository.countDocuments(filter, this.getScope(req));
-  
+
       res.status(200).json({
         success: true,
         data: {

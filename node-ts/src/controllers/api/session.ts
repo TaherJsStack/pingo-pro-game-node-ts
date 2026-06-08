@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { Types } from 'mongoose';
 import { SessionService } from '../../services/session.service';
 import { ISession } from '../../types';
-import { categoryRepository, clientRepository, invoiceRepository, sessionRepository } from '../../repositories/instances';
+import { deviceRepository, clientRepository, invoiceRepository, sessionRepository } from '../../repositories/instances';
 
 const { ObjectId } = require('mongoose').Types;
 
@@ -23,8 +23,8 @@ interface EndSessionRequest extends Request {
     tenantId?: string;
   };
   body: Partial<ISession> & {
-    categoryId?: string;
-    categoriesIds?: string[];
+    deviceId?: string;
+    devicesIds?: string[];
     endTime?: string;
     description?: string;
     name?: string;

@@ -19,21 +19,19 @@ interface SessionsIdsList {
   endIn?: string;
 }
 
-export class InvoiceController 
-// extends SendResponse{
+export class InvoiceController extends CRUDController<IInvoice> {
 
-  extends CRUDController<IInvoice> {
-    constructor() {
-      super(invoiceRepository);
-    }
-
-  private getScope(req: Request) {
-    return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
+  constructor() {
+    super(invoiceRepository);
   }
+
+  // private getScope(req: Request) {
+  //   return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
+  // }
 
 
   createNewInvoice = async (req: CreateRequest, res: Response) => {
-    try{
+    try {
       const savedInvoice = await InvoiceService.createNewInvoice(
         {
           ...req.body,
@@ -42,8 +40,8 @@ export class InvoiceController
         req.authData.id,
         req.authData.tenantId
       );
-      this.sendResponse(req, res, 200, [savedInvoice], savedInvoice.categories.length, 'Invoice created successfully');
-    }catch(err){
+      this.sendResponse(req, res, 200, [savedInvoice], savedInvoice.devices.length, 'Invoice created successfully');
+    } catch (err) {
       this.sendErrorResponse(req, res, err);
     }
   }
@@ -55,7 +53,7 @@ export class InvoiceController
 
       // Build filter object based on query parameters
       let filter: any = {};
-  
+
       // Fetch items from database with pagination and filtering
       const pageNo = Number(page) || 1;
       const pageSize = Number(limit) || 10;
@@ -64,10 +62,10 @@ export class InvoiceController
         limit: pageSize,
         scope: this.getScope(req),
       });
-  
+
       // Count total number of items (for pagination)
       const totalCount = await invoiceRepository.countDocuments(filter, this.getScope(req));
-  
+
       res.status(200).json({
         success: true,
         data: {
@@ -96,11 +94,11 @@ export class InvoiceController
         return res.status(404).json({ msg: 'Item not found' });
       }
       await InvoiceService.syncInvoiceTotals(updatedItem);
-  
+
       res.status(201)
         .json({
           success: true,
-          errors: [], 
+          errors: [],
           status: 200,
           message: '',
           data: [updatedItem],
@@ -114,23 +112,23 @@ export class InvoiceController
   endDeviceBookStateInInvoice = async (req: CreateRequest, res: Response) => {
     try {
       // console.log('endDeviceBookStateInInvoice ----------> ', req.body);
-  
+
       const documentId = req.params.id;
-      const { categories, activeState } = req.body;
-  
+      const { devices, activeState } = req.body;
+
       // Validate input
-      if (!categories || !categories[0]?.categoryId || !categories[0]?.endTime) {
+      if (!devices || !devices[0]?.deviceId || !devices[0]?.endTime) {
         return res.status(400).json({
           success: false,
           errors: ['Invalid request data.'],
           status: 400,
-          message: 'Category ID and End Time are required.',
+          message: 'Device ID and End Time are required.',
         });
       }
-        
-      const categoryId      = categories[0].categoryId;
-      const endTime         = categories[0].endTime;
-      const closedBy        = req.authData.id;
+
+      const deviceId = devices[0].deviceId;
+      const endTime = devices[0].endTime;
+      const closedBy = req.authData.id;
       const invoiceClosedBy = activeState == false ? req.authData.id : null;
 
       // const invoiceNo = await InvoiceModel.countDocuments({ activeState: false })+1;
@@ -139,32 +137,32 @@ export class InvoiceController
       const updateItem = await invoiceRepository.updateOne(
         {
           _id: new ObjectId(documentId),
-          "categories.categoryId": categoryId,
+          "devices.deviceId": deviceId,
         },
         {
           $set: {
-            "categories.$.endTime":  endTime,
-            "categories.$.closedBy": closedBy,
-            activeState:  activeState,
-            closedBy:     invoiceClosedBy
+            "devices.$.endTime": endTime,
+            "devices.$.closedBy": closedBy,
+            activeState: activeState,
+            closedBy: invoiceClosedBy
           },
         },
         { scope: this.getScope(req) }
       );
-  
+
       // Check if update was successful
       if (updateItem.matchedCount === 0) {
         return res.status(404).json({ msg: 'Item not found' });
       }
-  
+
       // Retrieve the updated document
       const updatedItem = await invoiceRepository.findById(documentId, this.getScope(req));
-  
+
       // Ensure additional calculations are done
       if (updatedItem) {
         await InvoiceService.syncInvoiceTotals(updatedItem);
       }
-  
+
       res.status(200).json({
         success: true,
         errors: [],
@@ -185,7 +183,7 @@ export class InvoiceController
 
   // Update - PUT request handler
   updateLockBill = async (req: CreateRequest, res: Response) => {
-  
+
     // menuItems
     let _id = req.params.id
     let closedBy = new Types.ObjectId(req.authData.id);
@@ -197,21 +195,21 @@ export class InvoiceController
       // Update item by ID in database
       // req.body['closedBy'] = new Types.ObjectId(req.authData.id);
       const update = await invoiceRepository.updateMany(
-        { 
+        {
           _id: new ObjectId(req.params.id), // Replace with the specific _id
-          "categories.endTime": null // Match documents where endTime is null in any category
-        }, 
-          
-        { 
-          $set: { 
-            "categories.$[elem].endTime": (req.body as any)['endTime'] as string, // Set the endTime to the current timestamp or a specific value
-            "categories.$[elem].closedBy": closedBy,
+          "devices.endTime": null // Match documents where endTime is null in any device
+        },
+
+        {
+          $set: {
+            "devices.$[elem].endTime": (req.body as any)['endTime'] as string, // Set the endTime to the current timestamp or a specific value
+            "devices.$[elem].closedBy": closedBy,
             "activeState": req.body['activeState'], // Set activeState to false
             "closedBy": closedBy,
           }
         },
-        { 
-          arrayFilters: [{ "elem.endTime": null }], // Filter to target categories with endTime as null
+        {
+          arrayFilters: [{ "elem.endTime": null }], // Filter to target devices with endTime as null
           upsert: false, // Ensure it doesn't insert a new document if no match is found
           scope: this.getScope(req),
         }
@@ -230,32 +228,32 @@ export class InvoiceController
           status: 200,
           message: '',
           data: [updatedItem],
-      })
+        })
     } catch (err: any) {
       console.error(err.message);
       // res.status(500).send('Server Error');
       this.sendErrorResponse(req, res, err);
     }
   };
-  
+
   // Update - PUT request handler
   updateItemMenuItems = async (req: Request, res: Response) => {
-  
+
     // menuItems
     let _id = req.params.id
     try {
-  
+
       const updateQuery = {
         $push: {
           menuItems: {
-            itemID:   req.body.itemID,
+            itemID: req.body.itemID,
             itemName: req.body.itemName,
             quantity: req.body.quantity,
-            price:    req.body.price
+            price: req.body.price
           }
         }
       };
-  
+
       // Update item by ID in database
       const updatedItem = await invoiceRepository.updateById(_id, updateQuery as any, this.getScope(req));
       if (!updatedItem) {
@@ -286,29 +284,29 @@ export class InvoiceController
       try {
         const existingInvoice = await invoiceRepository.findOne({ sessionId }, scope);
         console.log('2- existingInvoice ----->', existingInvoice);
-  
+
         if (existingInvoice) {
-        console.log('3- existingInvoice ----->', existingInvoice);
+          console.log('3- existingInvoice ----->', existingInvoice);
 
-          for (const category of existingInvoice.categories) {
-            console.log('4- category ----->', category);
+          for (const device of existingInvoice.devices) {
+            console.log('4- device ----->', device);
 
-            if (category.endTime === undefined) {
-              console.log('5- category.endIn ----->', category.endTime);
+            if (device.endTime === undefined) {
+              console.log('5- device.endIn ----->', device.endTime);
 
               const updateQuery = {
                 $set: {
-                  'categories.$[elem].endIn': idsList.endIn ?? '',
+                  'devices.$[elem].endIn': idsList.endIn ?? '',
                 }
               };
               const options = {
                 new: true,
                 arrayFilters: [{ 'elem.sessionId': sessionId }]
               };
-  
+
               await invoiceRepository.updateOne({ _id: existingInvoice._id }, updateQuery as any, { ...(options as any), scope });
               const updatedInvoice = await invoiceRepository.findById(existingInvoice._id.toString(), scope);
-  
+
               if (updatedInvoice) {
                 await InvoiceService.syncInvoiceTotals(updatedInvoice);
               } else {
@@ -318,7 +316,7 @@ export class InvoiceController
             }
           }
         } else {
-          throw new Error('Invoice not found. Cannot update category data.');
+          throw new Error('Invoice not found. Cannot update device data.');
         }
       } catch (error) {
         console.error('Error updating invoice:', error);
@@ -326,7 +324,7 @@ export class InvoiceController
       }
     }
   }
-  
+
   // --------------------------------------------------------------------------------------------------
   // --------------------------------------------------------------------------------------------------
   // --------------------------------------------------------------------------------------------------
@@ -358,19 +356,19 @@ export class InvoiceController
       }
 
       res.status(201)
-      .json({
-        success: true,
-        errors: [], 
-        status: 200,
-        message: '',
-        data: {
-          invoices, 
-          treeInvoices,
-          totalInvoices,
-          percentages,
-          clientAdded
-        },
-      });
+        .json({
+          success: true,
+          errors: [],
+          status: 200,
+          message: '',
+          data: {
+            invoices,
+            treeInvoices,
+            totalInvoices,
+            percentages,
+            clientAdded
+          },
+        });
     } catch (error) {
       console.error('Error fetching invoices:', error);
       throw error;

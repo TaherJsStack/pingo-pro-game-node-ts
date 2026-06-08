@@ -12,10 +12,6 @@ export class BrancheController extends CRUDController<IBranche> {
     super(brancheRepository);
   }
 
-  private getScope(req: Request) {
-    return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
-  }
-
   override createItem = async (req: Request, res: Response): Promise<void> => {
     try {
       if (req.file) {

@@ -11,10 +11,6 @@ export class EmployeesController extends CRUDController<IAuth> {
         super(authRepository);
     }
 
-    private getScope(req: Request) {
-        return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
-    }
-
     checkEmail = (req: Request, res: Response, next: NextFunction): void => {
         authRepository.findOne({ email: req.params.email })
             .then((user: any) => {

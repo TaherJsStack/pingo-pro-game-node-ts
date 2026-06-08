@@ -11,13 +11,9 @@ interface CreateItemRequest extends Request {
   };
 }
 
-export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
+export class InvoiceMenuController extends CRUDController<IInvoiceMenu> {
   constructor() {
     super(invoiceMenuRepository);
-  }
-
-  private getScope(req: Request) {
-    return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
   }
 
   // Create - POST request handler
@@ -37,21 +33,21 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
           // console.error('Error updating total:', error);
         });
       res.status(201)
-          .json({
-            success: true,
-            errors: [],
-            status: 200,
-            message:  '',
-            data: [savedItem]
+        .json({
+          success: true,
+          errors: [],
+          status: 200,
+          message: '',
+          data: [savedItem]
         });
     } catch (err: any) {
-      console.error('createItem err.message -->',err.message);
+      console.error('createItem err.message -->', err.message);
       res.status(500)
         .json({
           success: false,
-          errors: [ err.message ],
+          errors: [err.message],
           status: 500,
-          message:  '',
+          message: '',
           data: {}
         });
       // .send('Server Error');
@@ -72,27 +68,27 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
       }
       if (updatedItem) {
         (updatedItem as any).updateTotal?.()
-        .then((total: any) => {
-          // console.log('Updated total:', total);
-        })
-        .catch((error: any) => {
-          console.error('Error updating total:', error);
-        });
+          .then((total: any) => {
+            // console.log('Updated total:', total);
+          })
+          .catch((error: any) => {
+            console.error('Error updating total:', error);
+          });
       }
       res.status(201)
-      .json({
-        success: true,
-        errors: [],
-        status: 200,
-        message:  '',
-        data: [updatedItem]
-    });
-    } catch (err : any) {
+        .json({
+          success: true,
+          errors: [],
+          status: 200,
+          message: '',
+          data: [updatedItem]
+        });
+    } catch (err: any) {
       console.error(err.message);
       res.status(500).send('Server Error');
     }
   };
-  
+
   // Update - PUT request handler
   updateMenuItems = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -102,7 +98,7 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
         res.status(404).json({ msg: 'Item not found' });
         return;
       }
-      if (updatedItem) {      
+      if (updatedItem) {
         (updatedItem as any).updateTotal?.()
           .then((total: any) => {
             // console.log('Updated total:', total);
@@ -111,15 +107,15 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu>{
             console.error('Error updating total:', error);
           });
       }
-  
+
       res.status(201)
-      .json({
-        success: true,
-        errors: [],
-        status: 200,
-        message:  '',
-        data: [updatedItem]
-    });
+        .json({
+          success: true,
+          errors: [],
+          status: 200,
+          message: '',
+          data: [updatedItem]
+        });
     } catch (err: any) {
       console.error(err.message);
       res.status(500).send('Server Error');
