@@ -11,7 +11,11 @@ import { buildUploadUrl } from '../../util/uploads';
 
 export abstract class CRUDController<T extends object> extends SendResponse
   implements CreateOperation<T>, ReadOperation<T>, UpdateOperation<T>, DeleteOperation<T> {
-  
+
+  getScope(req: Request) {
+    return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
+  }
+
   protected repository: IRepository<T>;
 
   constructor(repository: IRepository<T>) {
@@ -60,7 +64,7 @@ export abstract class CRUDController<T extends object> extends SendResponse
 
   public getAllItems = async (req: Request, res: Response): Promise<void> => {
     try {
- 
+
       // console.clear();
       // console.log('CRUDController getAllItems filter -->', req.query.Filter);
       const filter = this.parseFilter(req.query.Filter);
@@ -106,15 +110,15 @@ export abstract class CRUDController<T extends object> extends SendResponse
         // };
         req.body['logo'] = buildUploadUrl(req, req.file.filename);
       }
-  
+
       // console.log('req.body -->', req.rawHeaders);
       // console.log('req.body -->', req.body, fileData);
 
       (req.body as any)._id = req.params.id;
       const updatedItem = await this.repository.updateById(req.params.id, req.body as any, this.getRequestScope(req));
       if (!updatedItem) {
-       res.status(404).json({ msg: 'Item not found' });
-       return;
+        res.status(404).json({ msg: 'Item not found' });
+        return;
       }
       this.sendResponse(req, res, 200, [updatedItem]);
     } catch (err: any) {
@@ -125,7 +129,7 @@ export abstract class CRUDController<T extends object> extends SendResponse
   public updateManyItems = async (req: Request, res: Response): Promise<void> => {
 
     try {
-      
+
       // console.log('updateManyItems -->', req.body);
 
       let ids: string[] = req.body.map((item: any) => item._id);
@@ -153,8 +157,8 @@ export abstract class CRUDController<T extends object> extends SendResponse
       const scope = this.getRequestScope(req);
       const deletedItem = await this.repository.deleteById(req.params.id, scope);
       if (!deletedItem) {
-       res.status(404).json({ msg: 'Item not found' });
-       return;
+        res.status(404).json({ msg: 'Item not found' });
+        return;
       }
       const totalData = await this.repository.countDocuments({}, scope);
       this.sendResponse(req, res, 200, [deletedItem], totalData);

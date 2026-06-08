@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 
-export abstract class SendResponse{
+export abstract class SendResponse {
     public sendResponse(req: Request, res: Response, statusCode: number, data: any, totalData?: number, message?: string) {
         res.status(statusCode).json({
-          success: true,
-          errors: [],
-          status: statusCode,
-          message: message||'',
-          data: data,
-          totalData
+            success: true,
+            errors: [],
+            status: statusCode,
+            message: message || '',
+            data: data,
+            totalData
         });
     }
 
