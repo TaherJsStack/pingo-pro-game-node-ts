@@ -7,7 +7,7 @@ import AnalyticsService from '../../services/analytics.service';
 import { KpiPeriod } from '../../enums/kpi-period.enum';
 // import { SendResponse } from '../api/base/sendResponse';
 
-export class StatisticsController extends SendResponse{
+export class StatisticsController extends SendResponse {
   constructor() {
     super();
     this.getCollectionStatistics = this.getCollectionStatistics.bind(this);
@@ -38,7 +38,7 @@ export class StatisticsController extends SendResponse{
   }
 
 
-  async getAggregate(req: Request, res: Response){
+  async getAggregate(req: Request, res: Response) {
     // console.log('getAggregate');
     try {
       const invoices = await Invoice.aggregate([
@@ -54,11 +54,11 @@ export class StatisticsController extends SendResponse{
             _id: "$closedBy",
             invoices: { $push: "$$ROOT" },
             invoicesTotal: { $sum: "$total" },
-            categoriesTotal: { $sum: "$categoriesTotal" },
+            devicesTotal: { $sum: "$devicesTotal" },
             menuItemsTotal: { $sum: "$menuItemsTotal" },
           },
         },
-        
+
         {
           $lookup: {
             from: 'auths',
@@ -106,7 +106,7 @@ export class StatisticsController extends SendResponse{
         //     totalMenuItemsQuantity: "$menuItemsQuantityTotal",
         //   },
         // },
-        
+
       ]);
       // const invoices = await Invoice.aggregate([
       //   {
@@ -171,7 +171,7 @@ export class StatisticsController extends SendResponse{
       //     },
       //   },
       // ]);
-  
+
       res.status(201).json({
         success: true,
         errors: [],
