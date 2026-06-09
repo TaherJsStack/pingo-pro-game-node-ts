@@ -2,6 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 import uniqueValidator from 'mongoose-unique-validator';
 import { IDevice } from './interfaces/device.interface';
 import { uniquePerBranch } from './plugins/unique-per-branch.plugin';
+import { DeviceType } from '../enums/device-type.enum';
 
 const DeviceSchema: Schema<IDevice> = new Schema<IDevice>({
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
@@ -10,7 +11,8 @@ const DeviceSchema: Schema<IDevice> = new Schema<IDevice>({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
   name: { type: String, required: true },
   price: { type: Number, default: 0 },
-  type: { type: String, required: true },
+  type: { type: String, enum: Object.values(DeviceType), required: true },
+  mode: { type: String, enum: ['single', 'multi'], default: 'single' },
   logo: { type: String, default: '' },
   description: { type: String, default: '' },
   activeState: { type: Boolean, default: true },
