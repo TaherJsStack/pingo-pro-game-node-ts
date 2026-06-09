@@ -8,6 +8,7 @@ export interface IDevice extends BaseEntity, ActivityFields {
   createdBy: ObjectId;
   name: string;
   price: number;
+  priceMulti: number;
   type: DeviceType;
   mode: 'single' | 'multi';
   logo: string;
