@@ -4,6 +4,7 @@ import { PaymentMethod, PaymentProvider, SubscriptionStatus } from '../enums';
 import { ValidationError } from '../errors/AppError';
 import { IRepository } from '../repositories';
 import { subscriptionRepository } from '../repositories/instances';
+import { assertObjectId } from '../util/object-id';
 import { IPayment } from '../models/interfaces/payment.interface';
 import { IPlan } from '../models/interfaces/plan.interface';
 import { ISubscription } from '../models/interfaces/subscription.interface';
@@ -217,8 +218,9 @@ class SubscriptionService implements ISubscriptionService {
   }
 
   async getSubscription(userId: string): Promise<ISubscription | null> {
+    const userObjectId = assertObjectId(userId, 'Authenticated user id');
     const subscription = await this.subscriptions.findOne({
-      userId,
+      userId: userObjectId,
       status: {
         $in: [
           SubscriptionStatus.Active,
