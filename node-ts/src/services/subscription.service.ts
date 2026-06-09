@@ -105,10 +105,15 @@ class SubscriptionService implements ISubscriptionService {
     const endDate = new Date(now);
     endDate.setUTCDate(endDate.getUTCDate() + Math.max(trialDays, 1));
 
+    // Only a paid plan should auto-renew at trial end. Planless registration/system
+    // trials AND the free-plan trial (price 0) must NOT auto-renew — otherwise the
+    // billing scheduler treats them as due renewals and flips them to PastDue instead
+    // of letting the expiry sweep cleanly end them. Keeping the (free) plan attached
+    // still lets the UI show the selected plan during the trial.
+    const isPaidPlan = Boolean(plan) && (plan!.price ?? 0) > 0;
+
     return this.subscriptions.create({
       userId: new Types.ObjectId(userId),
-      // Planless registration/system trials store plan = null and cannot auto-renew;
-      // they are ended by the billing expiry sweep when the trial window closes.
       plan: plan?._id ?? null,
       status: SubscriptionStatus.Trialing,
       startDate: now,
@@ -116,9 +121,9 @@ class SubscriptionService implements ISubscriptionService {
       currentPeriodEnd: endDate,
       trial: true,
       currency: plan?.currency ?? 'EGP',
-      autoRenew: Boolean(plan),
+      autoRenew: isPaidPlan,
       cancelAtPeriodEnd: false,
-      nextBillingDate: endDate,
+      nextBillingDate: isPaidPlan ? endDate : undefined,
       failedAttempts: 0,
     } as any);
   }
@@ -212,7 +217,7 @@ class SubscriptionService implements ISubscriptionService {
   }
 
   async getSubscription(userId: string): Promise<ISubscription | null> {
-    return this.subscriptions.findOne({
+    const subscription = await this.subscriptions.findOne({
       userId,
       status: {
         $in: [
@@ -223,6 +228,10 @@ class SubscriptionService implements ISubscriptionService {
         ],
       },
     });
+
+    // Return full plan details (name, price, durationMonths, deviceLimit, featureFlags)
+    // instead of a bare ObjectId so the client doesn't need a second round-trip.
+    return subscription ? subscription.populate('plan') : null;
   }
 
   private async findSubscriptionForPayment(userId: string, payment: IPayment): Promise<ISubscription | null> {

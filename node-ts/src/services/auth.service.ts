@@ -4,6 +4,7 @@ import Address from '../models/address';
 import Inbox from '../models/inbox';
 import Branche from '../models/branche';
 import Subscription from '../models/subscription';
+import Plan from '../models/plan';
 import Tenant from '../models/tenant';
 import { BaseRepository } from '../repositories/BaseRepository';
 import { AuthRepository } from '../repositories/AuthRepository';
@@ -14,6 +15,12 @@ import { IAuthService } from './interfaces/IAuthService';
 import { AppError } from '../errors/AppError';
 import { InboxType } from '../enums/inbox-type.enum';
 
+// New owners get a self-serve free trial (no plan, no auto-renew); the billing
+// expiry sweep ends it when the window closes.
+const REGISTRATION_TRIAL_DAYS = 14;
+// Version of the Terms & Conditions the owner agreed to at registration.
+const TERMS_VERSION = '1.0';
+
 export class AuthService implements IAuthService {
   private readonly authRepository = new AuthRepository(Auth);
   private readonly passwordRepository = new BaseRepository<any>(Password);
@@ -21,12 +28,18 @@ export class AuthService implements IAuthService {
   private readonly inboxRepository = new BaseRepository<any>(Inbox);
   private readonly brancheRepository = new BaseRepository<any>(Branche);
   private readonly subscriptionRepository = new BaseRepository<any>(Subscription);
+  private readonly planRepository = new BaseRepository<any>(Plan);
   private readonly tenantRepository = new BaseRepository<any>(Tenant);
   private readonly subscriptionManager = new SubscriptionManager();
   private readonly tokenManager = new TokenManager();
 
   async register(payload: any): Promise<{ token: string; user: any }> {
     const bcryptHash = await generateBcryptHash(payload.password, 10);
+    // Terms acceptance is enforced at the router; stamp when/which version was agreed.
+    if (payload.termsAccepted === true) {
+      payload.termsAcceptedAt = new Date();
+      payload.termsVersion = TERMS_VERSION;
+    }
     const savedUser = await this.authRepository.create(payload);
     let savedBranche: any = null;
     let savedTenant: any = null;
@@ -71,14 +84,18 @@ export class AuthService implements IAuthService {
       const welcomeMessage = await this.inboxRepository.create({
         ownerId: savedUser._id,
         tenantId: savedTenant._id,
-        title: 'Welcome to pingo',
+        title: 'Welcome to Pingo Pro Game',
         type: InboxType.Welcome,
-        context: 'Your account is ready.',
+        context: `Welcome aboard, ${payload.username || branchName}! Your account and main branch "${branchName}" are ready. Open a session on any device to create your first invoice.`,
         isSeen: false,
       });
       createdInboxIds.push(welcomeMessage._id.toString());
-      const trialDays = 20;
-      subscriptionData = await this.subscriptionManager.createSubscription(savedUser._id.toString(), null, trialDays);
+      const trialDays = REGISTRATION_TRIAL_DAYS;
+      // Tie the trial to the seeded Free plan when available (falls back to a
+      // planless trial if the catalog hasn't been seeded yet).
+      const freePlan = await this.planRepository.findOne({ code: 'free', activeState: true });
+      const trialPlanId = freePlan?._id ? freePlan._id.toString() : null;
+      subscriptionData = await this.subscriptionManager.createSubscription(savedUser._id.toString(), trialPlanId, trialDays);
       if (subscriptionData?._id) {
         await this.subscriptionRepository.updateById(subscriptionData._id.toString(), { tenantId: savedTenant._id });
         subscriptionData.tenantId = savedTenant._id;
