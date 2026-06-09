@@ -25,6 +25,11 @@ router.post(
     check('name').notEmpty().withMessage('name is required'),
     check('price').notEmpty().withMessage('price is required'),
     check('type').notEmpty().withMessage('type is required'),
+    check('mode').optional().isIn(['single', 'multi']),
+    check('priceMulti')
+      .if((value, { req }) => req.body.mode === 'multi')
+      .notEmpty()
+      .withMessage('priceMulti is required for multi mode'),
   ],
   async (req: Request, res: Response) => {
     // Check for validation errors
@@ -59,7 +64,12 @@ router.put(
     check('address')
       .optional()
       .notEmpty()
-      .withMessage('address is required')
+      .withMessage('address is required'),
+    check('mode').optional().isIn(['single', 'multi']),
+    check('priceMulti')
+      .if((value, { req }) => req.body.mode === 'multi')
+      .notEmpty()
+      .withMessage('priceMulti is required for multi mode'),
   ],
   async (req: Request, res: Response) => {
     // Check for validation errors
