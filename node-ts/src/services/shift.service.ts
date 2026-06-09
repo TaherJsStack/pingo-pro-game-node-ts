@@ -9,18 +9,19 @@ import { ConflictError } from '../errors/AppError';
 import RealtimeService from './realtime.service';
 import { RealtimeEvent } from '../enums';
 import NotificationService from './notification.service';
+import { assertObjectId } from '../util/object-id';
 
 class ShiftService {
   async getCurrentShift(employeeId: string, brancheId: string, tenantId?: string): Promise<any> {
     const filter: Record<string, any> = {
-      employeeId: new Types.ObjectId(employeeId),
-      brancheId: new Types.ObjectId(brancheId),
+      employeeId: assertObjectId(employeeId, 'employeeId'),
+      brancheId: assertObjectId(brancheId, 'brancheId'),
       status: ShiftStatus.Open,
       activeState: true,
     };
 
     if (tenantId) {
-      filter.tenantId = new Types.ObjectId(tenantId);
+      filter.tenantId = assertObjectId(tenantId, 'tenantId');
     }
 
     return shiftRepository.findOne(filter as any);
@@ -42,10 +43,10 @@ class ShiftService {
     }
 
     const shiftPayload = {
-      employeeId: new Types.ObjectId(payload.employeeId),
-      tenantId: payload.tenantId ? new Types.ObjectId(payload.tenantId) : null,
-      brancheId: new Types.ObjectId(payload.brancheId),
-      openedBy: new Types.ObjectId(payload.openedBy),
+      employeeId: assertObjectId(payload.employeeId, 'employeeId'),
+      tenantId: payload.tenantId ? assertObjectId(payload.tenantId, 'tenantId') : null,
+      brancheId: assertObjectId(payload.brancheId, 'brancheId'),
+      openedBy: assertObjectId(payload.openedBy, 'openedBy'),
       openedAt: new Date(),
       openingCash: Number(payload.openingCash ?? 0),
       status: ShiftStatus.Open,
@@ -225,13 +226,13 @@ class ShiftService {
     endDate.setHours(23, 59, 59, 999);
 
     const shiftFilter: Record<string, any> = {
-      brancheId: new Types.ObjectId(brancheId),
+      brancheId: assertObjectId(brancheId, 'brancheId'),
       openedAt: { $gte: startDate, $lte: endDate },
       activeState: true,
     };
 
     if (tenantId) {
-      shiftFilter.tenantId = new Types.ObjectId(tenantId);
+      shiftFilter.tenantId = assertObjectId(tenantId, 'tenantId');
     }
 
     const shifts = await ShiftModel.find(shiftFilter as any).lean();
