@@ -80,10 +80,10 @@ export class SessionService implements ISessionService {
     );
   }
 
-  private async resolveDevicePrice(deviceId: any, scope: any): Promise<number> {
+  private async resolveDeviceRate(deviceId: any, scope: any, mode: 'single' | 'multi'): Promise<number> {
     if (!deviceId) return 0;
     const device = await this.deviceRepository.findById(assertObjectId(deviceId, 'deviceId').toString(), scope);
-    return Number(device?.price ?? 0);
+    return Number(mode === 'multi' ? device?.priceMulti ?? 0 : device?.price ?? 0);
   }
 
   async createItem(body: ISession, authUserId: string, tenantId?: string): Promise<any> {
@@ -100,7 +100,8 @@ export class SessionService implements ISessionService {
     const devices = await Promise.all(
       incomingDevices.map(async (device: any) => {
         const deviceType = String(device.type ?? 'room');
-        const devicePrice = await this.resolveDevicePrice(device.deviceId, scope);
+        const mode = device.mode === 'multi' ? 'multi' : 'single';
+        const devicePrice = await this.resolveDeviceRate(device.deviceId, scope, mode);
         return {
           ...device,
           deviceId: assertObjectId(device.deviceId, 'deviceId'),
@@ -108,6 +109,7 @@ export class SessionService implements ISessionService {
           closedBy: device.closedBy ?? null,
           type: deviceType,
           Sessiontype: device.Sessiontype ?? 'open',
+          mode,
           startTime: device.startTime ?? new Date(),
           price: this.resolvePriceValue(device.price, devicePrice),
           estimationInHours: Number(device.estimationInHours ?? 0),
@@ -210,7 +212,8 @@ export class SessionService implements ISessionService {
       if (!requestedDeviceIds.includes(deviceId)) continue;
       matchedDeviceIds.add(deviceId);
       if (!device.endTime) {
-        const devicePrice = await this.resolveDevicePrice(device.deviceId, scope);
+        const mode = device.mode === 'multi' ? 'multi' : 'single';
+        const devicePrice = await this.resolveDeviceRate(device.deviceId, scope, mode);
         device.endTime = parsedEndTime;
         device.closedBy = closedBy;
         device.price = this.resolvePriceValue(device.price, devicePrice);
@@ -309,6 +312,7 @@ export class SessionService implements ISessionService {
             closedBy: device.closedBy ?? closedBy,
             type: device.type ?? 'room',
             Sessiontype: device.Sessiontype ?? 'open',
+            mode: device.mode ?? 'single',
             price: Number(device.price ?? 0),
             startTime: this.toInvoiceDate(device.startTime) ?? new Date(),
             endTime: this.toInvoiceDate(device.endTime),
