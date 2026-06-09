@@ -11,6 +11,7 @@ const DeviceSchema: Schema<IDevice> = new Schema<IDevice>({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
   name: { type: String, required: true },
   price: { type: Number, default: 0 },
+  priceMulti: { type: Number, default: 0 },
   type: { type: String, enum: Object.values(DeviceType), required: true },
   mode: { type: String, enum: ['single', 'multi'], default: 'single' },
   logo: { type: String, default: '' },
