@@ -10,9 +10,12 @@ class SubscriptionManager {
       throw new ValidationError('Paid subscriptions must be initiated through /payment/initiate.');
     }
 
-    // System/registration trials are allowed with no selected paid plan.
+    // System/registration trials with no selected paid plan fall back to the
+    // seeded Free plan, so the subscription always carries a real plan reference
+    // (only truly planless when the catalog hasn't been seeded yet).
     if (!plan) {
-      return SubscriptionService.startTrial(userId, null, trialDays);
+      const freePlan = await planRepository.findOne({ code: 'free', activeState: true });
+      return SubscriptionService.startTrial(userId, freePlan ?? null, trialDays);
     }
 
     const foundPlan = await planRepository.findById(plan);
