@@ -15,6 +15,7 @@ import AnalyticsService from './analytics.service';
 import { deviceCharge } from '../util/money';
 import RealtimeService from './realtime.service';
 import { RealtimeEvent } from '../enums';
+import { assertObjectId } from '../util/object-id';
 
 export class SessionService implements ISessionService {
   private readonly deviceRepository = new BaseRepository<any>(DeviceModel);
@@ -81,15 +82,18 @@ export class SessionService implements ISessionService {
 
   private async resolveDevicePrice(deviceId: any, scope: any): Promise<number> {
     if (!deviceId) return 0;
-    const device = await this.deviceRepository.findById(String(deviceId), scope);
+    const device = await this.deviceRepository.findById(assertObjectId(deviceId, 'deviceId').toString(), scope);
     return Number(device?.price ?? 0);
   }
 
   async createItem(body: ISession, authUserId: string, tenantId?: string): Promise<any> {
-    const createdBy = new Types.ObjectId(authUserId);
+    const createdBy = assertObjectId(authUserId, 'Authenticated user id');
+    const branchId = assertObjectId(body.brancheId, 'brancheId');
+    const clientId = body.clientId ? assertObjectId(body.clientId, 'clientId') : null;
+    const resolvedTenantId = tenantId ? assertObjectId(tenantId, 'tenantId') : null;
     const scope = { tenantId, requireTenant: true };
     const currentShift = body.brancheId
-      ? await ShiftService.getCurrentShift(authUserId, String(body.brancheId), tenantId)
+      ? await ShiftService.getCurrentShift(createdBy.toString(), branchId.toString(), resolvedTenantId?.toString())
       : null;
     const incomingDevices = Array.isArray(body.devices) ? body.devices : [];
     const clientRequestId = (body as any).clientRequestId ? String((body as any).clientRequestId) : undefined;
@@ -99,6 +103,7 @@ export class SessionService implements ISessionService {
         const devicePrice = await this.resolveDevicePrice(device.deviceId, scope);
         return {
           ...device,
+          deviceId: assertObjectId(device.deviceId, 'deviceId'),
           createdBy,
           closedBy: device.closedBy ?? null,
           type: deviceType,
@@ -116,7 +121,9 @@ export class SessionService implements ISessionService {
         {
           ...body,
           createdBy,
-          tenantId: tenantId ? new Types.ObjectId(tenantId) : null,
+          tenantId: resolvedTenantId,
+          brancheId: branchId,
+          clientId,
           activeState: true,
           devices,
           shiftId: currentShift?._id ?? null,
@@ -148,7 +155,7 @@ export class SessionService implements ISessionService {
     }
 
     const existingSession = body.clientId
-      ? await this.sessionRepository.findActiveSessionByClientAndBranch(body.clientId, body.brancheId, scope)
+      ? await this.sessionRepository.findActiveSessionByClientAndBranch(clientId, branchId, scope)
       : null;
     if (existingSession) {
       existingSession.devices.push(...devices);
@@ -158,7 +165,9 @@ export class SessionService implements ISessionService {
     const createdSession = await this.sessionRepository.create({
       ...body,
       createdBy,
-      tenantId: tenantId ? new Types.ObjectId(tenantId) : null,
+      tenantId: resolvedTenantId,
+      brancheId: branchId,
+      clientId,
       activeState: true,
       devices,
       shiftId: currentShift?._id ?? null,
@@ -188,13 +197,13 @@ export class SessionService implements ISessionService {
     const session = await this.sessionRepository.findById(sessionId, scope);
     if (!session) throw new NotFoundError('Session not found');
 
+    const closedBy = assertObjectId(authUserId, 'Authenticated user id');
     const requestedDeviceIds = this.normalizeDeviceIds(body);
     if (!requestedDeviceIds.length) throw new ValidationError('At least one deviceId is required to end a session.');
 
     const parsedEndTime = body.endTime ? new Date(body.endTime) : new Date();
     if (Number.isNaN(parsedEndTime.getTime())) throw new ValidationError('Invalid endTime value.');
 
-    const closedBy = new Types.ObjectId(authUserId);
     const matchedDeviceIds = new Set<string>();
     for (const device of session.devices as any[]) {
       const deviceId = String(device.deviceId);
@@ -216,7 +225,7 @@ export class SessionService implements ISessionService {
       ...matchedDeviceIds,
     ].map((deviceId) =>
       this.deviceRepository.updateOne(
-        { _id: new Types.ObjectId(deviceId) },
+        { _id: assertObjectId(deviceId, 'deviceId') },
         { $set: { bookState: false } },
         { scope }
       )
@@ -283,9 +292,9 @@ export class SessionService implements ISessionService {
         try {
         createdBill = await this.invoiceRepository.create({
           sessionId: session._id,
-          tenantId: tenantId ? new Types.ObjectId(tenantId) : (session as any).tenantId ?? null,
+          tenantId: tenantId ? assertObjectId(tenantId, 'tenantId') : (session as any).tenantId ?? null,
           shiftId: (session as any).shiftId ?? null,
-          createdBy: new Types.ObjectId(authUserId),
+          createdBy: closedBy,
           closedBy,
           brancheId: session.brancheId,
           clientId: session.clientId ?? null,
@@ -310,7 +319,7 @@ export class SessionService implements ISessionService {
           menuItems: Array.isArray(session.menuItems)
             ? session.menuItems.map((item: any) => ({
                 itemID: item.itemID,
-                createdBy: item.createdBy ?? new Types.ObjectId(authUserId),
+                createdBy: item.createdBy ?? closedBy,
                 itemName: item.itemName,
                 quantity: Number(item.quantity ?? 0),
                 price: Number(item.price ?? 0),
