@@ -1,3 +1,4 @@
+import { DeviceType } from '../../enums/device-type.enum';
 import { ActivityFields, BaseEntity, ObjectId } from './common.interface';
 
 export interface IDevice extends BaseEntity, ActivityFields {
@@ -7,7 +8,8 @@ export interface IDevice extends BaseEntity, ActivityFields {
   createdBy: ObjectId;
   name: string;
   price: number;
-  type: string;
+  type: DeviceType;
+  mode: 'single' | 'multi';
   logo: string;
   bookState: boolean;
 }
