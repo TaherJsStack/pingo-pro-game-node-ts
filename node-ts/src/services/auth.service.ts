@@ -6,6 +6,9 @@ import Branche from '../models/branche';
 import Subscription from '../models/subscription';
 import Plan from '../models/plan';
 import Tenant from '../models/tenant';
+import Device from '../models/device';
+import Menu from '../models/menu';
+import { buildDefaultDevices, buildDefaultMenu } from './seed/owner-seed.data';
 import { BaseRepository } from '../repositories/BaseRepository';
 import { AuthRepository } from '../repositories/AuthRepository';
 import { generateBcryptHash } from '../util/jwtUtil';
@@ -30,6 +33,8 @@ export class AuthService implements IAuthService {
   private readonly subscriptionRepository = new BaseRepository<any>(Subscription);
   private readonly planRepository = new BaseRepository<any>(Plan);
   private readonly tenantRepository = new BaseRepository<any>(Tenant);
+  private readonly deviceRepository = new BaseRepository<any>(Device);
+  private readonly menuRepository = new BaseRepository<any>(Menu);
   private readonly subscriptionManager = new SubscriptionManager();
   private readonly tokenManager = new TokenManager();
 
@@ -45,6 +50,8 @@ export class AuthService implements IAuthService {
     let savedTenant: any = null;
     let subscriptionData: any = null;
     const createdInboxIds: string[] = [];
+    const createdDeviceIds: string[] = [];
+    const createdMenuIds: string[] = [];
     try {
       await this.passwordRepository.create({ userId: savedUser._id, password: bcryptHash });
       await this.addressRepository.create({ ownerId: savedUser._id });
@@ -81,6 +88,22 @@ export class AuthService implements IAuthService {
       });
       await this.authRepository.updateById(savedUser._id.toString(), { brancheId: savedBranche._id });
       savedUser.brancheId = savedBranche._id;
+      // Seed a usable starting workspace: default devices (one per type, single + multi)
+      // and a small menu (hot/cold drinks + foods), all scoped to the new owner.
+      const seedContext = {
+        ownerId: savedUser._id,
+        tenantId: savedTenant._id,
+        brancheId: savedBranche._id,
+        createdBy: savedUser._id,
+      };
+      for (const deviceData of buildDefaultDevices(seedContext)) {
+        const device = await this.deviceRepository.create(deviceData);
+        createdDeviceIds.push(device._id.toString());
+      }
+      for (const menuData of buildDefaultMenu(seedContext)) {
+        const menuItem = await this.menuRepository.create(menuData);
+        createdMenuIds.push(menuItem._id.toString());
+      }
       const welcomeMessage = await this.inboxRepository.create({
         ownerId: savedUser._id,
         tenantId: savedTenant._id,
@@ -122,6 +145,12 @@ export class AuthService implements IAuthService {
     } catch (error) {
       if (createdInboxIds.length > 0) {
         await this.inboxRepository.deleteMany({ _id: { $in: createdInboxIds } });
+      }
+      if (createdDeviceIds.length > 0) {
+        await this.deviceRepository.deleteMany({ _id: { $in: createdDeviceIds } });
+      }
+      if (createdMenuIds.length > 0) {
+        await this.menuRepository.deleteMany({ _id: { $in: createdMenuIds } });
       }
       if (subscriptionData?._id) {
         await this.subscriptionRepository.deleteById(subscriptionData._id.toString());
