@@ -23,6 +23,13 @@ router.post(
         }
         return true;
       }),
+    check('termsAccepted')
+      .custom((value) => {
+        if (value !== true) {
+          throw new Error('Terms & Conditions must be accepted');
+        }
+        return true;
+      }),
   ],
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);

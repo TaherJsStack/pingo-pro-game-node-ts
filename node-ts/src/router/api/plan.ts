@@ -7,6 +7,8 @@ const planManager = new PlanManager();
 
 router.post("/", signReqData, planManager.createItem as unknown as express.RequestHandler);
 
+router.get("/public", signReqData, planManager.listPublicPlans);
+
 router.get("/", signReqData, planManager.getAllItems);
 
 router.get("/:id", signReqData, planManager.getItemById);
