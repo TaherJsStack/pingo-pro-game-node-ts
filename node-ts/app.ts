@@ -20,6 +20,7 @@ import { startBillingScheduler, stopBillingScheduler } from './src/jobs/billing-
 import { startNotificationDispatcher, stopNotificationDispatcher } from './src/jobs/notification-dispatcher';
 import { ensureUploadDirectory, getUploadPath } from './src/util/uploads';
 import { closeSocket, initializeSocket } from './socket';
+import { seedPlans } from './src/DB/seeders/plan.seeder';
 
 config();
 
@@ -129,6 +130,7 @@ class App {
   public async start(): Promise<void> {
     ensureUploadDirectory();
     await Database.connect();
+    await seedPlans();
     startBillingScheduler();
     startNotificationDispatcher();
 
