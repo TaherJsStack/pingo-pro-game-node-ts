@@ -23,6 +23,12 @@ class SubscriptionManager {
   }
 
   async updateSubscription(subscriptionId: string, plan: string | null): Promise<ISubscription | null> {
+    if (plan) {
+      const foundPlan = await planRepository.findById(plan);
+      if (!foundPlan) {
+        throw new NotFoundError('Plan not found.');
+      }
+    }
     return await subscriptionRepository.updateById(subscriptionId, { plan } as any);
   }
 
