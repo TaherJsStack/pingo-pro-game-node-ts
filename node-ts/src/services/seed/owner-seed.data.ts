@@ -20,7 +20,14 @@ export interface SeedContext {
 export function buildDefaultDevices(ctx: SeedContext): Array<Record<string, any>> {
   return Object.values(DeviceType).flatMap((type) => [
     { ...ctx, name: `${type} (Single)`, type, mode: 'single', price: getRandomPrice(5, 25) },
-    { ...ctx, name: `${type} (Multi)`, type, mode: 'multi', price: getRandomPrice(25, 65) },
+    {
+      ...ctx,
+      name: `${type} (Multi)`,
+      type,
+      mode: 'multi',
+      price: getRandomPrice(5, 25),
+      priceMulti: getRandomPrice(25, 65),
+    },
   ]);
 }
 
@@ -37,5 +44,6 @@ export function buildDefaultMenu(ctx: SeedContext): Array<Record<string, any>> {
     { ...ctx, name: 'Iced Cola', type: FoodType.COLD_DRINK, price: 12 },
     { ...ctx, name: 'Burger', type: FoodType.HOT_FOOD, price: 35 },
     { ...ctx, name: 'Garden Salad', type: FoodType.COLD_FOOD, price: 25 },
+    { ...ctx, name: 'SNACKS', type: FoodType.SNACKS, price: 20 },
   ];
 }
