@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
-import { Types } from 'mongoose';
 import { ValidationError } from '../errors/AppError';
 import { planRepository, sessionRepository } from '../repositories/instances';
 import SubscriptionService from '../services/subscription.service';
+import { assertObjectId } from '../util/object-id';
 
 type PlanGateOptions = {
   requiredFeature?: string;
@@ -35,6 +35,7 @@ function normalizeDeviceLimit(plan: any): number {
 }
 
 async function resolvePlanForUser(userId: string) {
+  assertObjectId(userId, 'Authenticated user id');
   const subscription = await SubscriptionService.getSubscription(userId);
   const planId = subscription?.plan ? String(subscription.plan) : null;
   const plan = planId ? await planRepository.findById(planId) : null;
@@ -80,8 +81,9 @@ export function createPlanGate(options: PlanGateOptions = {}) {
       const branchId = req.body?.brancheId;
 
       if (branchId && requestedUnits > 0) {
+        const branchObjectId = assertObjectId(branchId, 'brancheId');
         const existingSessions = await sessionRepository.find(
-          { brancheId: new Types.ObjectId(String(branchId)) },
+          { brancheId: branchObjectId },
           {
             scope: {
               tenantId: req.authData?.tenantId ?? null,
@@ -105,10 +107,10 @@ export function createPlanGate(options: PlanGateOptions = {}) {
 
       next();
     } catch (error: any) {
-      res.status(403).json({
+      res.status(error?.statusCode ?? 403).json({
         success: false,
         errors: [error?.message ?? 'Plan gate blocked the request.'],
-        status: 403,
+        status: error?.statusCode ?? 403,
         message: error?.message ?? 'Plan gate blocked the request.',
       });
     }
