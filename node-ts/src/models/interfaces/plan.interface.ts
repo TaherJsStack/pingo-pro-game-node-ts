@@ -6,6 +6,7 @@ export interface IPlanExternalIds {
 }
 
 export interface IPlan extends BaseEntity, ActivityFields {
+  code?: 'free' | 'quarterly' | 'extended';
   tier?: 'basic' | 'advanced';
   name: string;
   price: number;

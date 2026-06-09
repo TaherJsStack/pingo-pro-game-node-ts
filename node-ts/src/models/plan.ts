@@ -4,6 +4,7 @@ import { toMinor } from '../util/money';
 
 
 const PlanSchema: Schema<IPlan> = new Schema<IPlan>({
+  code: { type: String, enum: ['free', 'quarterly', 'extended'], index: true, sparse: true },
   tier: { type: String, enum: ['basic', 'advanced'], default: 'basic' },
   name: { type: String, required: true },
   price: { type: Number, required: true, min: 0 },

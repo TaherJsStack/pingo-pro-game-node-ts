@@ -15,4 +15,6 @@ export interface IAuth extends BaseEntity, ActivityFields {
   permission: number[];
   permissions: IPermissions[];
   authType: AuthType;
+  termsAcceptedAt?: Date | null;
+  termsVersion?: string;
 }
