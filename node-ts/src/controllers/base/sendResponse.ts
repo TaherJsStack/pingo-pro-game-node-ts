@@ -13,6 +13,7 @@ export abstract class SendResponse {
     }
 
     protected sendErrorResponse(req: Request, res: Response, err: any) {
+        const statusCode = typeof err?.statusCode === 'number' ? err.statusCode : 500;
         let errorMessage: string;
 
         if (typeof err === 'object' && err !== null && 'message' in err) {
@@ -22,11 +23,11 @@ export abstract class SendResponse {
         } else {
             errorMessage = 'An unknown error occurred';
         }
-        console.error('Error:', err.message);
-        res.status(500).json({
+        console.error('Error:', err?.message ?? err);
+        res.status(statusCode).json({
             success: false,
             errors: [errorMessage],
-            status: 500,
+            status: statusCode,
             message: '',
             data: {},
         });
