@@ -25,7 +25,6 @@ router.post(
     getRequestedUnits: (req) => (Array.isArray((req as any).body?.devices) ? (req as any).body.devices.length : 1),
   }),
   [
-    check('brancheId').notEmpty().withMessage('brancheId is required'),
     check('devices').isArray({ min: 1 }).withMessage('devices must be a non-empty array'),
     check('devices.*.deviceId').isMongoId().withMessage('each deviceId must be a valid Mongo id'),
     check('clientId').optional({ nullable: true, checkFalsy: true }),
@@ -49,7 +48,6 @@ router.put(
   '/:id',
   signReqData,
   [
-    check('brancheId').notEmpty().withMessage('brancheId is required'),
     check('deviceId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('deviceId must be a valid Mongo id'),
     check('clientId').optional({ nullable: true }),
   ],

@@ -20,7 +20,6 @@ router.post(
   '',
   signReqData,
   [
-    check('brancheId').notEmpty().withMessage('brancheId is required'),
     check('client').notEmpty().withMessage('client is required'),
     check('menuItems').isArray({ min: 1 }).withMessage('menuItems must be a non-empty array'),
     check('menuItems.*.quantity').isInt({ min: 1 }).withMessage('each quantity must be a positive integer'),

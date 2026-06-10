@@ -20,7 +20,6 @@ router.post(
   signReqData,
   [
     // Validation rules using express-validator
-    check('brancheId').notEmpty().withMessage('branchId is required'),
     check('comment').notEmpty().withMessage('comment is required'),
 
   ],

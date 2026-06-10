@@ -40,6 +40,16 @@ router.post(
   }
 );
 router.post('/refresh',            authController.refreshToken.bind(authController));
+router.post(
+  '/select-branch',
+  signReqData,
+  [check('brancheId').notEmpty().withMessage('brancheId is required')],
+  (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    return authController.selectBranch(req, res, next);
+  }
+);
 router.put('/:id',                 signReqData, authController.updateOne);
 router.post('/login',              authController.login.bind(authController));
 router.get('/get-all',             signReqData, authController.getAll.bind(authController));

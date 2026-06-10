@@ -17,9 +17,7 @@ interface CreateRequest extends Request {
 
 
 router.post( '', signReqData,
-  [
-    check('brancheId').notEmpty().withMessage('brancheId is required'),
-  ],
+  [],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
     const errors = validationResult(req);

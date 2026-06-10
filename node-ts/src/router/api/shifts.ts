@@ -10,7 +10,7 @@ const shiftController: ShiftController = new ShiftController();
 router.post(
   '/open',
   signReqData,
-  [check('brancheId').notEmpty().withMessage('brancheId is required')],
+  [],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
     const errors = validationResult(req);

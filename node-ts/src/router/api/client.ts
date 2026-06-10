@@ -21,7 +21,6 @@ router.post(
   signReqData,
   [
     // Validation rules using express-validator
-    check('brancheId').notEmpty().withMessage('brancheId is required'),
     check('name').notEmpty().withMessage('name is required'),
     check('phone').notEmpty().withMessage('price is required'),
   ],

@@ -22,7 +22,6 @@ router.post(
   signReqData,
   [
     // Validation rules using express-validator
-    check('brancheId').notEmpty().withMessage('brancheId is required'),
     check('name').notEmpty().withMessage('name is required'),
     check('price').notEmpty().withMessage('price is required'),
   ],
@@ -33,7 +32,8 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, brancheId } = req.body;
+    const { name } = req.body;
+    const brancheId = (req as any).authData?.brancheId;
     const isName = await MenuModel.findOne({
       name,
       brancheId,
