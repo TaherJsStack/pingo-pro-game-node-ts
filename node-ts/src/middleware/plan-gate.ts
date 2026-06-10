@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { ValidationError } from '../errors/AppError';
-import { planRepository, sessionRepository } from '../repositories/instances';
+import { sessionRepository } from '../repositories/instances';
 import SubscriptionService from '../services/subscription.service';
 import { assertObjectId } from '../util/object-id';
 
@@ -37,9 +37,10 @@ function normalizeDeviceLimit(plan: any): number {
 async function resolvePlanForUser(userId: string) {
   assertObjectId(userId, 'Authenticated user id');
   const subscription = await SubscriptionService.getSubscription(userId);
-  const planId = subscription?.plan ? String(subscription.plan) : null;
-  const plan = planId ? await planRepository.findById(planId) : null;
-  return { plan };
+  // getSubscription() already populates `plan`, so use the resolved document
+  // directly. Re-fetching via String(subscription.plan) stringifies the whole
+  // populated document (not its _id), which throws an ObjectId cast error.
+  return { plan: subscription?.plan ?? null };
 }
 
 function resolveRequestedUnits(req: GateRequest, getRequestedUnits?: PlanGateOptions['getRequestedUnits']): number {
