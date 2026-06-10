@@ -4,7 +4,7 @@ import { generateBcryptHash, compareBcryptHash } from '../../util/jwtUtil';
 import { IAuth } from '../../types';
 import { IPassword } from '../../types';
 import { SendResponse } from '../base/sendResponse';
-import { authRepository, passwordRepository } from '../../repositories/instances';
+import { authRepository, brancheRepository, passwordRepository } from '../../repositories/instances';
 import { AuthService } from '../../services/auth.service';
 
 const tokenManager: TokenManager = new TokenManager();
@@ -152,6 +152,7 @@ export class AuthController extends SendResponse {
                     email: fetchedData.email,
                     name: fetchedData.lastName + ' ' + fetchedData.firstName,
                     tenantId: fetchedData.tenantId?.toString?.() ?? fetchedData.tenantId,
+                    brancheId: fetchedData.brancheId?.toString?.() ?? null,
                     role: fetchedData.role,
                     permission: fetchedData.permission,
                     permissions: fetchedData.permissions,
@@ -235,6 +236,36 @@ export class AuthController extends SendResponse {
                     status: 500
                 });
             });
+    };
+
+    selectBranch = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { brancheId } = req.body;
+            const authData = (req as any).authData;
+
+            const branch = await brancheRepository.findOne(
+                { _id: brancheId, tenantId: authData.tenantId },
+                { tenantId: authData.tenantId, requireTenant: true }
+            );
+            if (!branch) {
+                return res.status(403).json({ message: 'Branch not found or access denied' });
+            }
+
+            const newToken = tokenManager.generateToken({
+                _id: authData.id,
+                email: authData.email,
+                tenantId: authData.tenantId,
+                brancheId: brancheId,
+                role: authData.role,
+                permission: authData.permission,
+                permissions: authData.permissions,
+                authType: authData.authType,
+            });
+
+            return res.status(200).json({ status: 200, message: newToken, success: true, errors: [] });
+        } catch (err: any) {
+            this.sendErrorResponse(req, res, err);
+        }
     };
 
     deleteOne = (req: Request, res: Response, next: NextFunction) => {

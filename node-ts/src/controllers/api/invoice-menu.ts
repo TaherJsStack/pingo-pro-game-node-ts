@@ -62,7 +62,7 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu> {
     try {
       const menuItems = await this.resolveMenuItems(req, (req.body as any).menuItems);
       const savedItem = await this.repository.create({
-        brancheId: req.body.brancheId,
+        brancheId: (req as any).authData?.brancheId,
         client: req.body.client,
         description: req.body.description ?? '',
         menuItems,

@@ -22,7 +22,7 @@ export class ShiftController extends CRUDController<IShift> {
       const shift = await ShiftService.openShift({
         employeeId,
         tenantId: req.authData.tenantId,
-        brancheId: req.body.brancheId,
+        brancheId: (req as any).authData?.brancheId,
         openingCash: req.body.openingCash,
         openedBy: req.authData.id,
         clientRequestId: (req as any).idempotency?.key ?? (req.body as any).clientRequestId,

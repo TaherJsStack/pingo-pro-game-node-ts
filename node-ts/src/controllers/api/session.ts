@@ -37,14 +37,19 @@ export class SessionController extends SendResponse {
 
   createItem = async (req: CreateItemRequest, res: Response) => {
     try {
-      const savedItem = await sessionService.createItem(
+      const body = { ...req.body, brancheId: (req as any).authData?.brancheId };
+      const result = await sessionService.createItem(
         {
-          ...req.body,
+          ...body,
           clientRequestId: (req as any).idempotency?.key ?? (req.body as any).clientRequestId,
         } as any,
         req.authData.id,
         req.authData.tenantId
       );
+      const { item: savedItem, wasAddedToExisting } = typeof result === 'object' && 'item' in result
+        ? result as { item: any; wasAddedToExisting: boolean }
+        : { item: result, wasAddedToExisting: false };
+
       const responseStatus = savedItem?.activeState ? 201 : 200;
 
       res.status(responseStatus).json({
@@ -53,6 +58,7 @@ export class SessionController extends SendResponse {
         status: responseStatus,
         message: '',
         data: [savedItem],
+        wasAddedToExisting,
       });
     } catch (err) {
       this.sendErrorResponse(req, res, err);
