@@ -93,7 +93,7 @@ owner => barnches list[]
 employyee = barnch[]
 
 ## Phase 5 SOLID migration run order
-1. Deploy the Phase 1/3 backend changes first (with permission, ObjectId refs, and Date category times support).
+1. Deploy the Phase 1/3 backend changes first (with permission, ObjectId refs, and Date Device times support).
 2. Run the one-off idempotent migration from `node-ts`:
 ```bash
 cd node-ts

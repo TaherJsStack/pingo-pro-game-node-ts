@@ -66,7 +66,7 @@ describe('analytics KPI correctness', () => {
       description: '',
     } as any);
 
-    const roomCategory = {
+    const roomDevice = {
       deviceId: createId(),
       createdBy: owner._id,
       closedBy: owner._id,
@@ -80,7 +80,7 @@ describe('analytics KPI correctness', () => {
       estimationInMinutes: 0,
     };
 
-    const computerCategory = {
+    const computerDevice = {
       deviceId: createId(),
       createdBy: owner._id,
       closedBy: owner._id,
@@ -106,7 +106,7 @@ describe('analytics KPI correctness', () => {
       total: 300,
       devicesTotal: 240,
       menuItemsTotal: 60,
-      devices: [roomCategory, computerCategory],
+      devices: [roomDevice, computerDevice],
       menuItems: [
         {
           itemID: createId(),
@@ -135,7 +135,7 @@ describe('analytics KPI correctness', () => {
       devicesTotal: 240,
       menuItemsTotal: 60,
       invoiceNo: 1,
-      devices: [roomCategory, computerCategory],
+      devices: [roomDevice, computerDevice],
       menuItems: [
         {
           itemID: createId(),

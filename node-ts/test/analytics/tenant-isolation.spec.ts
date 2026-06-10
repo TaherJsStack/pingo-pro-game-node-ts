@@ -66,7 +66,7 @@ describe('analytics tenant isolation', () => {
       description: '',
     } as any);
 
-    const baseCategory = {
+    const baseDevice = {
       deviceId: createId(),
       createdBy: owner._id,
       closedBy: owner._id,
@@ -92,7 +92,7 @@ describe('analytics tenant isolation', () => {
       total: revenue,
       devicesTotal: revenue,
       menuItemsTotal: 0,
-      devices: [baseCategory],
+      devices: [baseDevice],
       menuItems: [],
     } as any);
 
@@ -113,7 +113,7 @@ describe('analytics tenant isolation', () => {
       devicesTotal: revenue,
       menuItemsTotal: 0,
       invoiceNo: revenue,
-      devices: [baseCategory],
+      devices: [baseDevice],
       menuItems: [],
     } as any);
 
