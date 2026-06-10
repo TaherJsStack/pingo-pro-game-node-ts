@@ -11,6 +11,7 @@ import { clientRepository } from '../repositories/instances';
 import AnalyticsService from './analytics.service';
 import ShiftService from './shift.service';
 import { deviceCharge, roundMoney, sumMoney } from '../util/money';
+import { resolveDeviceRate } from '../util/device-pricing';
 import RealtimeService from './realtime.service';
 import { RealtimeEvent } from '../enums';
 import NotificationService from './notification.service';
@@ -295,7 +296,19 @@ class InvoiceService implements IInvoiceService {
     const currentShift = payload.brancheId
       ? await ShiftService.getCurrentShift(authUserId, String(payload.brancheId), tenantId)
       : null;
-    const devices = Array.isArray(payload.devices) ? payload.devices : [];
+
+    // Resolve device prices server-side to prevent client-side forgery
+    const rawDevices = Array.isArray(payload.devices) ? payload.devices : [];
+    const devices = await Promise.all(
+      rawDevices.map(async (device: any) => {
+        const mode = device.mode === 'multi' ? 'multi' : 'single';
+        const resolvedPrice = await resolveDeviceRate(device.deviceId, scope, mode);
+        return {
+          ...device,
+          price: resolvedPrice,
+        };
+      })
+    );
 
     if (devices[0]) {
       (devices[0] as any).createdBy = createdBy;

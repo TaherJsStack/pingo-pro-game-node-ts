@@ -11,6 +11,7 @@ import ShiftService from './shift.service';
 import AnalyticsService from './analytics.service';
 import { deviceCharge } from '../util/money';
 import { resolveEndTime } from '../util/session-time';
+import { resolveDeviceRate } from '../util/device-pricing';
 import RealtimeService from './realtime.service';
 import { RealtimeEvent } from '../enums';
 
@@ -30,11 +31,6 @@ export class SessionService implements ISessionService {
     if (!value) return undefined;
     const parsedDate = value instanceof Date ? value : new Date(value as string);
     return Number.isNaN(parsedDate.getTime()) ? undefined : parsedDate;
-  }
-
-  private resolvePriceValue(currentPrice: unknown, fallbackPrice: number): number {
-    const parsedPrice = Number(currentPrice ?? 0);
-    return parsedPrice > 0 ? parsedPrice : Number(fallbackPrice ?? 0);
   }
 
   private toObjectId(value: unknown, fieldName: string): Types.ObjectId {
@@ -119,7 +115,7 @@ export class SessionService implements ISessionService {
       incomingDevices.map(async (device: any) => {
         const deviceType = String(device.type ?? 'room');
         const mode = device.mode === 'multi' ? 'multi' : 'single';
-        const devicePrice = await this.resolveDeviceRate(device.deviceId, scope, mode);
+        const devicePrice = await resolveDeviceRate(device.deviceId, scope, mode);
         return {
           ...device,
           deviceId: this.toObjectId(device.deviceId, 'deviceId'),
@@ -129,7 +125,7 @@ export class SessionService implements ISessionService {
           Sessiontype: device.Sessiontype ?? 'open',
           mode,
           startTime: device.startTime ?? new Date(),
-          price: this.resolvePriceValue(device.price, devicePrice),
+          price: devicePrice,
           estimationInHours: Number(device.estimationInHours ?? 0),
           estimationInMinutes: Number(device.estimationInMinutes ?? 0),
         };
@@ -227,11 +223,8 @@ export class SessionService implements ISessionService {
       if (!requestedDeviceIds.includes(deviceId)) continue;
       matchedDeviceIds.add(deviceId);
       if (!device.endTime) {
-        const mode = device.mode === 'multi' ? 'multi' : 'single';
-        const devicePrice = await this.resolveDeviceRate(device.deviceId, scope, mode);
         device.endTime = resolveEndTime(body.endTime, device.startTime);
         device.closedBy = closedBy;
-        device.price = this.resolvePriceValue(device.price, devicePrice);
       }
     }
     if (!matchedDeviceIds.size) {
