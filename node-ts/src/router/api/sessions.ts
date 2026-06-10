@@ -1,6 +1,5 @@
 import express, { Router, Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
-// import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
 import { createPlanGate } from '../../middleware/plan-gate';
 import { idempotencyMiddleware } from '../../middleware/idempotency';
@@ -26,20 +25,18 @@ router.post(
     getRequestedUnits: (req) => (Array.isArray((req as any).body?.devices) ? (req as any).body.devices.length : 1),
   }),
   [
-    // Validation rules using express-validator
     check('brancheId').notEmpty().withMessage('brancheId is required'),
-    check('devices').notEmpty().withMessage('devices is required'),
+    check('devices').isArray({ min: 1 }).withMessage('devices must be a non-empty array'),
+    check('devices.*.deviceId').isMongoId().withMessage('each deviceId must be a valid Mongo id'),
     check('clientId').optional({ nullable: true, checkFalsy: true }),
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Call controller method to create item
     await sessionController.createItem(req as CreateItemRequest, res);
   }
 );
@@ -52,20 +49,17 @@ router.put(
   '/:id',
   signReqData,
   [
-    // Validation rules using express-validator
     check('brancheId').notEmpty().withMessage('brancheId is required'),
-    check('deviceId').optional({ nullable: true }),
+    check('deviceId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('deviceId must be a valid Mongo id'),
     check('clientId').optional({ nullable: true }),
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Call controller method to update item
     await sessionController.updateItem(req, res);
   }
 );
@@ -74,19 +68,18 @@ router.put(
   '/endSession/:id',
   signReqData,
   [
-    // Validation rules using express-validator
-    check('deviceId').optional().notEmpty().withMessage('deviceId is required'),
+    check('deviceId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('deviceId must be a valid Mongo id'),
     check('devicesIds').optional().isArray({ min: 1 }).withMessage('devicesIds must be a non-empty array'),
+    check('devicesIds.*').optional().isMongoId().withMessage('each devicesIds entry must be a valid Mongo id'),
+    check('endTime').optional({ nullable: true, checkFalsy: true }).isISO8601().withMessage('endTime must be a valid ISO8601 date'),
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Call controller method to update item
     await sessionController.endSession(req as CreateItemRequest, res);
   }
 );
@@ -95,7 +88,7 @@ router.put(
 router.get("", signReqData, sessionController.getAllItems);
 
 router.delete('/:id', signReqData, idempotencyMiddleware, sessionController.deleteItem)
-router.delete('/deleteSessionItem/:id/:endIn', signReqData, idempotencyMiddleware, sessionController.deleteSessionItem)
-router.delete('/deleteAllReletedToBill/:id/:endIn', signReqData, idempotencyMiddleware, sessionController.deleteAllReletedToBill)
+router.delete('/deleteSessionItem/:id', signReqData, idempotencyMiddleware, sessionController.deleteSessionItem)
+router.delete('/deleteAllReletedToBill/:id', signReqData, idempotencyMiddleware, sessionController.deleteAllReletedToBill)
 
 export default router;

@@ -1,7 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import { check, validationResult } from 'express-validator';
 import  {InvoiceMenuController} from '../../controllers/api/invoice-menu';
-// import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
 import { idempotencyMiddleware } from '../../middleware/idempotency';
 import { IInvoiceMenu } from '../../models/interfaces/invoice-menu.interface';
@@ -21,19 +20,19 @@ router.post(
   '',
   signReqData,
   [
-    // Validation rules using express-validator
     check('brancheId').notEmpty().withMessage('brancheId is required'),
-    check('client').notEmpty().withMessage('price is required'),
+    check('client').notEmpty().withMessage('client is required'),
+    check('menuItems').isArray({ min: 1 }).withMessage('menuItems must be a non-empty array'),
+    check('menuItems.*.quantity').isInt({ min: 1 }).withMessage('each quantity must be a positive integer'),
+    check('menuItems.*.price').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('each price must be a non-negative number'),
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
     
-    // Call controller method to create item
     await invoiceMenuController.createItem(req as CreateItemRequest, res);
   }
 );
@@ -43,8 +42,6 @@ router.put(
   '/:id',
   signReqData,
   [
-    // Validation rules using express-validator
-    check('branche').optional().notEmpty().withMessage('branche is required'),
     check('address')
       .optional()
       .notEmpty()
@@ -52,13 +49,11 @@ router.put(
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Call controller method to update item
     await invoiceMenuController.updateItem(req, res);
   }
 );
@@ -68,22 +63,17 @@ router.put(
   '/updateMenuItems/:id',
   signReqData,
   [
-    // Validation rules using express-validator
-    check('branche').optional().notEmpty().withMessage('branche is required'),
-    check('address')
-      .optional()
-      .notEmpty()
-      .withMessage('address is required')
+    check('menuItems').isArray({ min: 1 }).withMessage('menuItems must be a non-empty array'),
+    check('menuItems.*.quantity').isInt({ min: 1 }).withMessage('each quantity must be a positive integer'),
+    check('menuItems.*.price').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('each price must be a non-negative number'),
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Call controller method to update item
     await invoiceMenuController.updateMenuItems(req, res);
   }
 );
@@ -93,8 +83,6 @@ router.put(
   '/lockOrders/:id',
   signReqData,
   [
-    // Validation rules using express-validator
-    check('branche').optional().notEmpty().withMessage('branche is required'),
     check('address')
       .optional()
       .notEmpty()
@@ -102,13 +90,11 @@ router.put(
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Call controller method to update item
     await invoiceMenuController.updateMenuItemsLockOrders(req as CreateItemRequest, res);
   }
 );

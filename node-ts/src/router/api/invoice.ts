@@ -1,7 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import { check, validationResult } from 'express-validator';
 import {InvoiceController} from '../../controllers/api/invoice';
-// import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
 import { idempotencyMiddleware } from '../../middleware/idempotency';
 import { IInvoice } from '../../models/interfaces/invoice.interface';
@@ -19,20 +18,15 @@ interface CreateRequest extends Request {
 
 router.post( '', signReqData,
   [
-    // Validation rules using express-validator
     check('brancheId').notEmpty().withMessage('brancheId is required'),
-    // check('categoryId').notEmpty().withMessage('category is required'),
-    // check('clientId').notEmpty().withMessage('client Id is required'),
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
     
-    // Call controller method to create item
     await invoiceController.createNewInvoice(req as CreateRequest, res);
   
 })
@@ -42,18 +36,15 @@ router.put(
   '/updateBill/:id',
   signReqData,
   [
-    // Validation rules using express-validator
-    check('branche').optional().notEmpty().withMessage('branche is required'),
+    check('clientId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('clientId must be a valid Mongo id'),
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Call controller method to update item
     await invoiceController.updateBill(req as CreateRequest, res);
   }
 );
@@ -63,18 +54,17 @@ router.put(
   '/endCategoryBookStateInInvoice/:id',
   signReqData,
   [
-    // Validation rules using express-validator
-    check('branche').optional().notEmpty().withMessage('branche is required'),
+    check('devices').isArray({ min: 1 }).withMessage('devices must be a non-empty array'),
+    check('devices.*.deviceId').isMongoId().withMessage('each deviceId must be a valid Mongo id'),
+    check('devices.*.endTime').optional({ nullable: true, checkFalsy: true }).isISO8601().withMessage('endTime must be a valid ISO8601 date'),
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Call controller method to update item
     await invoiceController.endDeviceBookStateInInvoice(req as CreateRequest, res);
   }
 );
@@ -84,22 +74,15 @@ router.put(
   '/lockBill/:id',
   signReqData,
   [
-    // Validation rules using express-validator
-    check('branche').optional().notEmpty().withMessage('branche is required'),
-    check('address')
-      .optional()
-      .notEmpty()
-      .withMessage('address is required')
+    check('endTime').optional({ nullable: true, checkFalsy: true }).isISO8601().withMessage('endTime must be a valid ISO8601 date'),
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Call controller method to update item
     await invoiceController.updateLockBill(req as CreateRequest, res);
   }
 );
@@ -109,22 +92,17 @@ router.put(
   '/updateMenuItems/:id',
   signReqData,
   [
-    // Validation rules using express-validator
-    check('branche').optional().notEmpty().withMessage('branche is required'),
-    check('address')
-      .optional()
-      .notEmpty()
-      .withMessage('address is required')
+    check('itemID').isMongoId().withMessage('itemID must be a valid Mongo id'),
+    check('quantity').isInt({ min: 1 }).withMessage('quantity must be a positive integer'),
+    check('price').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('price must be a non-negative number'),
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Call controller method to update item
     await invoiceController.updateItemMenuItems(req, res);
   }
 );
@@ -134,8 +112,6 @@ router.put(
   '/:id',
   signReqData,
   [
-    // Validation rules using express-validator
-    check('branche').optional().notEmpty().withMessage('branche is required'),
     check('address')
       .optional()
       .notEmpty()
@@ -143,13 +119,11 @@ router.put(
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Call controller method to update item
     await invoiceController.updateItem(req, res);
   }
 );
