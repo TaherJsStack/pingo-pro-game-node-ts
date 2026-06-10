@@ -100,7 +100,12 @@ export class SessionService implements ISessionService {
     return Number(mode === 'multi' ? device?.priceMulti ?? 0 : device?.price ?? 0);
   }
 
-  async createItem(body: ISession, authUserId: string, tenantId?: string): Promise<any> {
+  async createItem(
+    body: ISession,
+    authUserId: string,
+    tenantId?: string
+  ): Promise<{ item: any; wasAddedToExisting: boolean }> {
+    
     const createdBy = this.toObjectId(authUserId, 'Authenticated user id');
     const branchId = this.toObjectId(body.brancheId, 'brancheId');
     const clientId = body.clientId ? this.toObjectId(body.clientId, 'clientId') : null;
@@ -131,7 +136,17 @@ export class SessionService implements ISessionService {
         };
       })
     );
+    // Always check for an existing active session for this client+branch first
+    const existingSession = clientId
+      ? await this.sessionRepository.findActiveSessionByClientAndBranch(clientId, branchId)
+      : null;
+    if (existingSession) {
+      existingSession.devices.push(...devices);
+      const saved = await existingSession.save();
+      return { item: saved, wasAddedToExisting: true };
+    }
 
+    // No existing session — create new one with idempotency if key provided
     if (clientRequestId) {
       const result = await this.sessionRepository.upsertByClientRequestId(
         {
@@ -167,15 +182,7 @@ export class SessionService implements ISessionService {
         }
       }
 
-      return result.item;
-    }
-
-    const existingSession = body.clientId
-      ? await this.sessionRepository.findActiveSessionByClientAndBranch(clientId, branchId, scope)
-      : null;
-    if (existingSession) {
-      existingSession.devices.push(...devices);
-      return existingSession.save();
+      return { item: result.item, wasAddedToExisting: !result.created };
     }
 
     const createdSession = await this.sessionRepository.create({
@@ -205,7 +212,7 @@ export class SessionService implements ISessionService {
         activeState: true,
       });
     }
-    return createdSession;
+    return { item: createdSession, wasAddedToExisting: false };
   }
 
   async endSession(sessionId: string, body: any, authUserId: string, tenantId?: string): Promise<{ session: any; bill: any; message: string }> {
