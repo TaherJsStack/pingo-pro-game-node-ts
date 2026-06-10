@@ -2,14 +2,14 @@ import mongoose from 'mongoose';
 import Database from '../DB/mongoDBConfig';
 
 /**
- * One-time migration for the category -> device rename.
+ * One-time migration for the device -> device rename.
  *
  * Moves the persisted MongoDB shape to match the unified "device" domain term:
- *  1. renames the `categories` collection -> `devices`
- *  2. drops the now-stale `*_category_*` index and renames the `category` field -> `name`
+ *  1. renames the `devices` collection -> `devices`
+ *  2. drops the now-stale `*_device_*` index and renames the `device` field -> `name`
  *  3. on `sessions` + `invoices`:
- *       - top-level `$rename`: categories -> devices, categoriesTotal -> devicesTotal
- *       - per array element: categoryId -> deviceId (pipeline update; `$rename` can't reach into arrays)
+ *       - top-level `$rename`: devices -> devices, devicesTotal -> devicesTotal
+ *       - per array element: deviceId -> deviceId (pipeline update; `$rename` can't reach into arrays)
  *
  * Idempotent: re-running is a no-op once the fields/collection are already renamed.
  * Always back up the database first. Use `--dry-run` (or `-n`) to preview without writing.
@@ -36,17 +36,16 @@ async function collectionExists(name: string): Promise<boolean> {
   return matches.length > 0;
 }
 
-async function renameCategoriesCollection(dryRun: boolean): Promise<boolean> {
-  const hasCategories = await collectionExists('categories');
+async function renameDevicesCollection(dryRun: boolean): Promise<boolean> {
   const hasDevices = await collectionExists('devices');
 
-  if (!hasCategories || hasDevices) {
+  if (!hasDevices || hasDevices) {
     // Already migrated (or nothing to migrate).
     return false;
   }
 
   if (!dryRun) {
-    await db().collection('categories').rename('devices');
+    await db().collection('devices').rename('devices');
   }
   return true;
 }
@@ -57,18 +56,18 @@ async function renameDeviceNameField(dryRun: boolean): Promise<number> {
   }
 
   const devices = db().collection('devices');
-  const pending = await devices.countDocuments({ category: { $exists: true } });
+  const pending = await devices.countDocuments({ device: { $exists: true } });
 
   if (!dryRun && pending > 0) {
-    // Drop any stale index that still references the old `category` field; Mongoose
+    // Drop any stale index that still references the old `device` field; Mongoose
     // recreates the `name` index on boot.
     const indexes = await devices.indexes();
     for (const index of indexes) {
-      if (index.name && index.name !== '_id_' && JSON.stringify(index.key).includes('category')) {
+      if (index.name && index.name !== '_id_' && JSON.stringify(index.key).includes('device')) {
         await devices.dropIndex(index.name).catch(() => undefined);
       }
     }
-    await devices.updateMany({ category: { $exists: true } }, { $rename: { category: 'name' } });
+    await devices.updateMany({ device: { $exists: true } }, { $rename: { device: 'name' } });
   }
 
   return pending;
@@ -84,41 +83,41 @@ async function migrateSessionShape(
 
   const collection = db().collection(collectionName);
   const topLevelPending = await collection.countDocuments({
-    $or: [{ categories: { $exists: true } }, { categoriesTotal: { $exists: true } }],
+    $or: [{ devices: { $exists: true } }, { devicesTotal: { $exists: true } }],
   });
 
   if (!dryRun && topLevelPending > 0) {
     await collection.updateMany(
-      { $or: [{ categories: { $exists: true } }, { categoriesTotal: { $exists: true } }] },
-      { $rename: { categories: 'devices', categoriesTotal: 'devicesTotal' } }
+      { $or: [{ devices: { $exists: true } }, { devicesTotal: { $exists: true } }] },
+      { $rename: { devices: 'devices', devicesTotal: 'devicesTotal' } }
     );
   }
 
-  // Rename the per-element `categoryId` -> `deviceId` inside the (now) `devices` array.
-  const arrayPending = await collection.countDocuments({ 'devices.categoryId': { $exists: true } });
+  // Rename the per-element `deviceId` -> `deviceId` inside the (now) `devices` array.
+  const arrayPending = await collection.countDocuments({ 'devices.deviceId': { $exists: true } });
 
   if (!dryRun && arrayPending > 0) {
-    await collection.updateMany({ 'devices.categoryId': { $exists: true } }, [
+    await collection.updateMany({ 'devices.deviceId': { $exists: true } }, [
       {
         $set: {
           devices: {
             $map: {
               input: '$devices',
               as: 'd',
-              in: { $mergeObjects: ['$$d', { deviceId: '$$d.categoryId' }] },
+              in: { $mergeObjects: ['$$d', { deviceId: '$$d.deviceId' }] },
             },
           },
         },
       },
-      { $unset: 'devices.categoryId' },
+      { $unset: 'devices.deviceId' },
     ] as any);
   }
 
   return { topLevelRenamed: topLevelPending, arrayFieldRenamed: arrayPending };
 }
 
-export async function runCategoryToDeviceRename(dryRun = true): Promise<RenameReport> {
-  const collectionRenamed = await renameCategoriesCollection(dryRun);
+export async function runDeviceToDeviceRename(dryRun = true): Promise<RenameReport> {
+  const collectionRenamed = await renameDevicesCollection(dryRun);
   const deviceNameFieldRenamed = await renameDeviceNameField(dryRun);
   const sessions = await migrateSessionShape('sessions', dryRun);
   const invoices = await migrateSessionShape('invoices', dryRun);
@@ -136,7 +135,7 @@ async function main() {
   const dryRun = process.argv.includes('--dry-run') || process.argv.includes('-n');
   await Database.connect();
   try {
-    const report = await runCategoryToDeviceRename(dryRun);
+    const report = await runDeviceToDeviceRename(dryRun);
     // eslint-disable-next-line no-console
     console.log(JSON.stringify(report, null, 2));
   } finally {
