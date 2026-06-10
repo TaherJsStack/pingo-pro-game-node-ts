@@ -52,6 +52,9 @@ export abstract class CRUDController<T extends object> extends SendResponse
       if (req.authData?.tenantId) {
         payload.tenantId = new ObjectId(req.authData.tenantId);
       }
+      if ((req as any).authData?.brancheId) {
+        payload.brancheId = new ObjectId((req as any).authData.brancheId);
+      }
 
       const scope = this.getRequestScope(req);
       const savedItem = await this.repository.create(payload, scope);
