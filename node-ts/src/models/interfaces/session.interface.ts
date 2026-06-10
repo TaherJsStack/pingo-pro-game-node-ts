@@ -8,7 +8,8 @@ export interface ISession extends BaseEntity, ActivityFields {
   clientRequestId?: string;
   brancheId?: ObjectId;
   clientId?: ObjectId;
-  shiftId?: ObjectId | null;
+  startedShiftId?: ObjectId | null;
+  closedShiftId?: ObjectId | null;
   // times: number;
   startTime: string;
   endTime?: string;
