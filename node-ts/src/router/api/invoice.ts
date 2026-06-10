@@ -51,7 +51,7 @@ router.put(
 
 // Route: PUT /items/:id (Update item)
 router.put(
-  '/endCategoryBookStateInInvoice/:id',
+  '/endDeviceBookStateInInvoice/:id',
   signReqData,
   [
     check('devices').isArray({ min: 1 }).withMessage('devices must be a non-empty array'),

@@ -1,6 +1,6 @@
 import express, { Router, Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
-import {MenuController} from '../../controllers/api/menu';
+import { MenuController } from '../../controllers/api/menu';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
 import { IMenu } from '../../models/interfaces/menu.interface';
@@ -23,7 +23,7 @@ router.post(
   [
     // Validation rules using express-validator
     check('brancheId').notEmpty().withMessage('brancheId is required'),
-    check('name').notEmpty().withMessage('category is required'),
+    check('name').notEmpty().withMessage('name is required'),
     check('price').notEmpty().withMessage('price is required'),
   ],
   async (req: Request, res: Response) => {
@@ -32,7 +32,7 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     const { name, brancheId } = req.body;
     const isName = await MenuModel.findOne({
       name,
