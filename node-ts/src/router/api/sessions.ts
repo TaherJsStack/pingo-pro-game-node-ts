@@ -44,6 +44,9 @@ router.post(
   }
 );
 
+// Route: GET /items/:id (Get item by id)
+router.get('/:id', signReqData, sessionController.getItemById);
+
 // Route: PUT /items/:id (Update item)
 router.put(
   '/:id',
@@ -51,8 +54,8 @@ router.put(
   [
     // Validation rules using express-validator
     check('brancheId').notEmpty().withMessage('brancheId is required'),
-    check('deviceId').notEmpty().withMessage('deviceId is required'),
-    check('clientId').notEmpty().withMessage('clientId is required'),
+    check('deviceId').optional({ nullable: true }),
+    check('clientId').optional({ nullable: true }),
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
