@@ -104,7 +104,7 @@ async function migrateObjectIdFields(): Promise<void> {
   }
 }
 
-async function migrateInvoiceCategoryDates(): Promise<void> {
+async function migrateInvoiceDeviceDates(): Promise<void> {
   const db = mongoose.connection.db;
   if (!db) {
     throw new Error('Database connection is not available.');
@@ -113,7 +113,7 @@ async function migrateInvoiceCategoryDates(): Promise<void> {
   const invoices = db.collection('invoices');
   const cursor = invoices.find(
     {
-      categories: {
+      devices: {
         $elemMatch: {
           $or: [
             { startTime: { $type: 'string' } },
@@ -122,7 +122,7 @@ async function migrateInvoiceCategoryDates(): Promise<void> {
         },
       },
     },
-    { projection: { categories: 1 } }
+    { projection: { devices: 1 } }
   );
 
     const operations: any[] = [];
@@ -132,27 +132,27 @@ async function migrateInvoiceCategoryDates(): Promise<void> {
 
   for await (const invoice of cursor) {
     scanned += 1;
-    const categories = Array.isArray(invoice.categories) ? invoice.categories : [];
+    const devices = Array.isArray(invoice.devices) ? invoice.devices : [];
     let docChanged = false;
 
-    const normalizedCategories = categories.map((category: Record<string, unknown>) => {
-      const nextCategory = { ...category };
+    const normalizedDevices = devices.map((device: Record<string, unknown>) => {
+      const nextDevice = { ...device };
 
-      const nextStartTime = toDateOrNull(nextCategory.startTime);
-      if (nextStartTime && typeof nextCategory.startTime === 'string') {
-        nextCategory.startTime = nextStartTime;
+      const nextStartTime = toDateOrNull(nextDevice.startTime);
+      if (nextStartTime && typeof nextDevice.startTime === 'string') {
+        nextDevice.startTime = nextStartTime;
         docChanged = true;
         normalizedValues += 1;
       }
 
-      const nextEndTime = toDateOrNull(nextCategory.endTime);
-      if (nextEndTime && typeof nextCategory.endTime === 'string') {
-        nextCategory.endTime = nextEndTime;
+      const nextEndTime = toDateOrNull(nextDevice.endTime);
+      if (nextEndTime && typeof nextDevice.endTime === 'string') {
+        nextDevice.endTime = nextEndTime;
         docChanged = true;
         normalizedValues += 1;
       }
 
-      return nextCategory;
+      return nextDevice;
     });
 
     if (!docChanged) {
@@ -163,7 +163,7 @@ async function migrateInvoiceCategoryDates(): Promise<void> {
     operations.push({
       updateOne: {
         filter: { _id: invoice._id },
-        update: { $set: { categories: normalizedCategories } },
+        update: { $set: { devices: normalizedDevices } },
       },
     });
   }
@@ -175,7 +175,7 @@ async function migrateInvoiceCategoryDates(): Promise<void> {
   }
 
   console.log(
-    `[invoiceDates] invoices.categories: scanned=${scanned}, changedDocs=${changedDocs}, modified=${modified}, normalizedValues=${normalizedValues}`
+    `[invoiceDates] invoices.devices: scanned=${scanned}, changedDocs=${changedDocs}, modified=${modified}, normalizedValues=${normalizedValues}`
   );
 }
 
@@ -191,7 +191,7 @@ async function run(): Promise<void> {
   try {
     await migratePermissionField();
     await migrateObjectIdFields();
-    await migrateInvoiceCategoryDates();
+    await migrateInvoiceDeviceDates();
     console.log('SOLID migration completed.');
   } finally {
     await mongoose.connection.close();
