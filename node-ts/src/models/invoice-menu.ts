@@ -2,6 +2,7 @@ import mongoose, { Model, Schema } from 'mongoose';
 import { IInvoiceMenu, IInvoiceMenuMethods } from './interfaces/invoice-menu.interface';
 import { IInvoiceMenuItem } from './interfaces/invoice-menu-item.interface';
 import { invoiceMenuItemSchema } from './schemas/menu-item.schema';
+import { sumMoney } from '../util/money';
 
 type InvoiceMenuModel = Model<IInvoiceMenu, {}, IInvoiceMenuMethods>;
 
@@ -33,7 +34,7 @@ invoiceMenuSchema.index(
 
 invoiceMenuSchema.methods.updateTotal = async function (): Promise<number> {
   try {
-    const total = this.menuItems.reduce((acc: number, item: IInvoiceMenuItem) => acc + item.quantity * item.price, 0);
+    const total = sumMoney(this.menuItems.map((item: IInvoiceMenuItem) => Number(item.quantity ?? 0) * Number(item.price ?? 0)));
     this.total = total;
     await this.save();
     return this.total;
