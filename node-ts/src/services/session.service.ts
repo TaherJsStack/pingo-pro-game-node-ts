@@ -73,7 +73,7 @@ export class SessionService implements ISessionService {
     const basePayload = {
       tenantId,
       brancheId: String(session.brancheId),
-      shiftId: session.shiftId ? String(session.shiftId) : null,
+      shiftId: (session as any).startedShiftId ? String((session as any).startedShiftId) : null,
       sessionId: String(session._id),
       occurredAt: new Date(),
     };
@@ -114,6 +114,9 @@ export class SessionService implements ISessionService {
     const currentShift = body.brancheId
       ? await ShiftService.getCurrentShift(createdBy.toString(), branchId.toString(), resolvedTenantId?.toString())
       : null;
+    if (!currentShift) {
+      throw new ValidationError('لا يمكن فتح جلسة بدون مناوبة مفتوحة. الرجاء فتح مناوبة أولاً');
+    }
     const incomingDevices = Array.isArray(body.devices) ? body.devices : [];
     const clientRequestId = (body as any).clientRequestId ? String((body as any).clientRequestId) : undefined;
     const devices = await Promise.all(
@@ -157,7 +160,7 @@ export class SessionService implements ISessionService {
           clientId,
           activeState: true,
           devices,
-          shiftId: currentShift?._id ?? null,
+          startedShiftId: currentShift?._id ?? null,
           clientRequestId,
         } as any,
         scope
@@ -170,13 +173,13 @@ export class SessionService implements ISessionService {
             tenantId,
             brancheId: String(body.brancheId ?? ''),
             sessionId: String(result.item._id),
-            shiftId: result.item.shiftId ? String(result.item.shiftId) : null,
+            startedShiftId: result.item.startedShiftId ? String(result.item.startedShiftId) : null,
           });
           RealtimeService.emitToTenant(tenantId, RealtimeEvent.TableStatusChanged, {
             tenantId,
             brancheId: String(body.brancheId ?? ''),
             sessionId: String(result.item._id),
-            shiftId: result.item.shiftId ? String(result.item.shiftId) : null,
+            startedShiftId: result.item.startedShiftId ? String(result.item.startedShiftId) : null,
             activeState: true,
           });
         }
@@ -193,7 +196,7 @@ export class SessionService implements ISessionService {
       clientId,
       activeState: true,
       devices,
-      shiftId: currentShift?._id ?? null,
+      startedShiftId: currentShift?._id ?? null,
     } as any, scope);
 
     await this.emitSessionAnalytics(createdSession, 'session_opened', authUserId, tenantId);
@@ -202,13 +205,13 @@ export class SessionService implements ISessionService {
         tenantId,
         brancheId: String(body.brancheId ?? ''),
         sessionId: String(createdSession._id),
-        shiftId: createdSession.shiftId ? String(createdSession.shiftId) : null,
+        startedShiftId: createdSession.startedShiftId ? String(createdSession.startedShiftId) : null,
       });
       RealtimeService.emitToTenant(tenantId, RealtimeEvent.TableStatusChanged, {
         tenantId,
         brancheId: String(body.brancheId ?? ''),
         sessionId: String(createdSession._id),
-        shiftId: createdSession.shiftId ? String(createdSession.shiftId) : null,
+        startedShiftId: createdSession.startedShiftId ? String(createdSession.startedShiftId) : null,
         activeState: true,
       });
     }
@@ -239,6 +242,12 @@ export class SessionService implements ISessionService {
     }
 
     if (body.description?.trim()) session.description = body.description.trim();
+
+    const closingShift = (session as any).brancheId
+      ? await ShiftService.getCurrentShift(closedBy.toString(), String((session as any).brancheId), tenantId)
+      : null;
+    (session as any).closedShiftId = closingShift?._id ?? null;
+
     await Promise.all([
       ...matchedDeviceIds,
     ].map((deviceId) =>
@@ -260,14 +269,16 @@ export class SessionService implements ISessionService {
         tenantId: resolvedTenantId,
         brancheId: String(session.brancheId),
         sessionId: String(session._id),
-        shiftId: (session as any).shiftId ? String((session as any).shiftId) : null,
+        startedShiftId: (session as any).startedShiftId ? String((session as any).startedShiftId) : null,
+        closedShiftId: (session as any).closedShiftId ? String((session as any).closedShiftId) : null,
         activeState: false,
       });
       RealtimeService.emitToTenant(resolvedTenantId, RealtimeEvent.TableStatusChanged, {
         tenantId: resolvedTenantId,
         brancheId: String(session.brancheId),
         sessionId: String(session._id),
-        shiftId: (session as any).shiftId ? String((session as any).shiftId) : null,
+        startedShiftId: (session as any).startedShiftId ? String((session as any).startedShiftId) : null,
+        closedShiftId: (session as any).closedShiftId ? String((session as any).closedShiftId) : null,
         activeState: false,
       });
     }
@@ -278,7 +289,7 @@ export class SessionService implements ISessionService {
           AnalyticsService.recordEvent({
             tenantId: tenantId ?? String((session as any).tenantId),
             brancheId: String(session.brancheId),
-            shiftId: (session as any).shiftId ? String((session as any).shiftId) : null,
+            shiftId: (session as any).startedShiftId ? String((session as any).startedShiftId) : null,
             sessionId: String(session._id),
             invoiceId: null,
             deviceType: String(device.type ?? 'room'),
