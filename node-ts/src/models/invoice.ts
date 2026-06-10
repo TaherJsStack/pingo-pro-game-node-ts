@@ -30,6 +30,19 @@ const invoiceSchema: Schema<IInvoice, InvoiceModel> = new Schema<IInvoice, Invoi
   },
   {
     timestamps: true,
+    toJSON: {
+      transform(_doc, ret) {
+        const devicesTotal = (ret.devices ?? []).reduce((sum: number, d: any) => sum + (d.price || 0), 0);
+        const menuItemsTotal = (ret.menuItems ?? []).reduce(
+          (sum: number, m: any) => sum + (m.quantity || 0) * (m.price || 0),
+          0
+        );
+        ret.devicesTotal = devicesTotal;
+        ret.menuItemsTotal = menuItemsTotal;
+        ret.total = devicesTotal + menuItemsTotal;
+        return ret;
+      },
+    },
   }
 );
 
