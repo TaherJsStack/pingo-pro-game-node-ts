@@ -3,7 +3,9 @@ import { Request, Response } from 'express';
 import InvoiceService from '../../services/invoice.service';
 import { IInvoice } from '../../types';
 import { CRUDController } from '../base/CRUDController';
-import { clientRepository, invoiceRepository } from '../../repositories/instances';
+import { clientRepository, invoiceRepository, menuRepository } from '../../repositories/instances';
+import { NotFoundError, ValidationError } from '../../errors/AppError';
+import { resolveEndTime } from '../../util/session-time';
 const { ObjectId } = require('mongoose').Types;
 
 interface CreateRequest extends Request {
@@ -14,21 +16,61 @@ interface CreateRequest extends Request {
   body: IInvoice;
 }
 
-interface SessionsIdsList {
-  idsToDelete: string[];
-  endIn?: string;
-}
-
 export class InvoiceController extends CRUDController<IInvoice> {
-
   constructor() {
     super(invoiceRepository);
   }
 
-  // private getScope(req: Request) {
-  //   return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
-  // }
+  private pickInvoiceUpdatableFields(body: Partial<IInvoice> & Record<string, unknown>) {
+    const updates: Record<string, unknown> = {};
 
+    if (typeof body.name === 'string') {
+      updates.name = body.name;
+    }
+    if (typeof body.phone === 'string') {
+      updates.phone = body.phone;
+    }
+    if (typeof body.description === 'string') {
+      updates.description = body.description;
+    }
+    if ('clientId' in body) {
+      updates.clientId = body.clientId || null;
+    }
+
+    return updates;
+  }
+
+  private normalizeQuantity(quantityValue: unknown): number {
+    const quantity = Number(quantityValue);
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      throw new ValidationError('quantity must be a positive integer.');
+    }
+
+    return quantity;
+  }
+
+  private async resolveMenuLine(
+    req: Request,
+    menuIdValue: unknown,
+    quantityValue: unknown,
+  ): Promise<{ itemID: any; itemName: string; quantity: number; price: number }> {
+    const menuId = String(menuIdValue ?? '').trim();
+    if (!menuId || !Types.ObjectId.isValid(menuId)) {
+      throw new ValidationError('itemID must be a valid ObjectId.');
+    }
+
+    const menuItem = await menuRepository.findById(menuId, this.getScope(req));
+    if (!menuItem) {
+      throw new NotFoundError('Menu item not found.');
+    }
+
+    return {
+      itemID: menuItem._id,
+      itemName: menuItem.name,
+      quantity: this.normalizeQuantity(quantityValue),
+      price: Number(menuItem.price ?? 0),
+    };
+  }
 
   createNewInvoice = async (req: CreateRequest, res: Response) => {
     try {
@@ -78,18 +120,15 @@ export class InvoiceController extends CRUDController<IInvoice> {
           },
         },
       });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   };
 
   updateBill = async (req: CreateRequest, res: Response) => {
-    let _id = req.params.id
     try {
-      // Update item by ID in database
-      // req.body['updatedBy'] = new Types.ObjectId(req.authData.id);
-      const updatedItem = await invoiceRepository.updateById(_id, req.body as any, this.getScope(req));
+      const updates = this.pickInvoiceUpdatableFields(req.body as any);
+      const updatedItem = await invoiceRepository.updateById(req.params.id, updates as any, this.getScope(req));
       if (!updatedItem) {
         return res.status(404).json({ msg: 'Item not found' });
       }
@@ -103,65 +142,44 @@ export class InvoiceController extends CRUDController<IInvoice> {
           message: '',
           data: [updatedItem],
         });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   }
 
   endDeviceBookStateInInvoice = async (req: CreateRequest, res: Response) => {
     try {
-      // console.log('endDeviceBookStateInInvoice ----------> ', req.body);
-
-      const documentId = req.params.id;
       const { devices, activeState } = req.body;
 
-      // Validate input
-      if (!devices || !devices[0]?.deviceId || !devices[0]?.endTime) {
+      if (!devices || !devices[0]?.deviceId) {
         return res.status(400).json({
           success: false,
           errors: ['Invalid request data.'],
           status: 400,
-          message: 'Device ID and End Time are required.',
+          message: 'Device ID is required.',
         });
       }
 
-      const deviceId = devices[0].deviceId;
-      const endTime = devices[0].endTime;
+      const updatedItem = await invoiceRepository.findById(req.params.id, this.getScope(req));
+      if (!updatedItem) {
+        throw new NotFoundError('Item not found');
+      }
+
+      const deviceId = String(devices[0].deviceId);
+      const targetDevice = updatedItem.devices.find((device: any) => String(device.deviceId) === deviceId);
+      if (!targetDevice) {
+        throw new NotFoundError('Device not found on invoice.');
+      }
+
       const closedBy = req.authData.id;
-      const invoiceClosedBy = activeState == false ? req.authData.id : null;
+      const resolvedActiveState = typeof activeState === 'boolean' ? activeState : updatedItem.activeState;
+      targetDevice.endTime = resolveEndTime(devices[0].endTime, targetDevice.startTime);
+      targetDevice.closedBy = new Types.ObjectId(closedBy);
+      updatedItem.activeState = resolvedActiveState;
+      updatedItem.closedBy = resolvedActiveState === false ? new Types.ObjectId(closedBy) : null;
 
-      // const invoiceNo = await InvoiceModel.countDocuments({ activeState: false })+1;
-
-      // Perform update
-      const updateItem = await invoiceRepository.updateOne(
-        {
-          _id: new ObjectId(documentId),
-          "devices.deviceId": deviceId,
-        },
-        {
-          $set: {
-            "devices.$.endTime": endTime,
-            "devices.$.closedBy": closedBy,
-            activeState: activeState,
-            closedBy: invoiceClosedBy
-          },
-        },
-        { scope: this.getScope(req) }
-      );
-
-      // Check if update was successful
-      if (updateItem.matchedCount === 0) {
-        return res.status(404).json({ msg: 'Item not found' });
-      }
-
-      // Retrieve the updated document
-      const updatedItem = await invoiceRepository.findById(documentId, this.getScope(req));
-
-      // Ensure additional calculations are done
-      if (updatedItem) {
-        await InvoiceService.syncInvoiceTotals(updatedItem);
-      }
+      await updatedItem.save();
+      await InvoiceService.syncInvoiceTotals(updatedItem);
 
       res.status(200).json({
         success: true,
@@ -170,55 +188,31 @@ export class InvoiceController extends CRUDController<IInvoice> {
         message: 'Update successful.',
         data: [updatedItem],
       });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).json({
-        success: false,
-        errors: [err.message],
-        status: 500,
-        message: 'Server Error',
-      });
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   };
 
-  // Update - PUT request handler
   updateLockBill = async (req: CreateRequest, res: Response) => {
-
-    // menuItems
-    let _id = req.params.id
-    let closedBy = new Types.ObjectId(req.authData.id);
-
-    //console.log('updateLockBill req.authData ----------------> ', req.authData)
-    //console.log('updateLockBill closedBy ----------------> ', closedBy)
-
     try {
-      // Update item by ID in database
-      // req.body['closedBy'] = new Types.ObjectId(req.authData.id);
-      const update = await invoiceRepository.updateMany(
-        {
-          _id: new ObjectId(req.params.id), // Replace with the specific _id
-          "devices.endTime": null // Match documents where endTime is null in any device
-        },
-
-        {
-          $set: {
-            "devices.$[elem].endTime": (req.body as any)['endTime'] as string, // Set the endTime to the current timestamp or a specific value
-            "devices.$[elem].closedBy": closedBy,
-            "activeState": req.body['activeState'], // Set activeState to false
-            "closedBy": closedBy,
-          }
-        },
-        {
-          arrayFilters: [{ "elem.endTime": null }], // Filter to target devices with endTime as null
-          upsert: false, // Ensure it doesn't insert a new document if no match is found
-          scope: this.getScope(req),
-        }
-      );
-
-      let updatedItem = await invoiceRepository.findById(_id, this.getScope(req));
+      const updatedItem = await invoiceRepository.findById(req.params.id, this.getScope(req));
       if (!updatedItem) {
-        return res.status(404).json({ msg: 'Item not found' });
+        throw new NotFoundError('Item not found');
       }
+
+      const closedBy = new Types.ObjectId(req.authData.id);
+      updatedItem.devices.forEach((device: any) => {
+        if (device.endTime) {
+          return;
+        }
+
+        device.endTime = resolveEndTime((req.body as any).endTime, device.startTime);
+        device.closedBy = closedBy;
+      });
+
+      updatedItem.activeState = Boolean(req.body['activeState']);
+      updatedItem.closedBy = closedBy;
+      await updatedItem.save();
       await InvoiceService.syncInvoiceTotals(updatedItem);
 
       return res.status(201)
@@ -229,36 +223,22 @@ export class InvoiceController extends CRUDController<IInvoice> {
           message: '',
           data: [updatedItem],
         })
-    } catch (err: any) {
-      console.error(err.message);
-      // res.status(500).send('Server Error');
+    } catch (err) {
       this.sendErrorResponse(req, res, err);
     }
   };
 
-  // Update - PUT request handler
   updateItemMenuItems = async (req: Request, res: Response) => {
-
-    // menuItems
-    let _id = req.params.id
     try {
-
-      const updateQuery = {
-        $push: {
-          menuItems: {
-            itemID: req.body.itemID,
-            itemName: req.body.itemName,
-            quantity: req.body.quantity,
-            price: req.body.price
-          }
-        }
-      };
-
-      // Update item by ID in database
-      const updatedItem = await invoiceRepository.updateById(_id, updateQuery as any, this.getScope(req));
+      const updatedItem = await invoiceRepository.findById(req.params.id, this.getScope(req));
       if (!updatedItem) {
-        return res.status(404).json({ msg: 'Item not found' });
+        throw new NotFoundError('Item not found');
       }
+
+      const resolvedMenuLine = await this.resolveMenuLine(req, (req.body as any).itemID, (req.body as any).quantity);
+      updatedItem.menuItems.push(resolvedMenuLine);
+      await updatedItem.save();
+
       await InvoiceService.syncInvoiceTotals(updatedItem);
       res.status(201)
         .json({
@@ -268,70 +248,14 @@ export class InvoiceController extends CRUDController<IInvoice> {
           message: '',
           data: [updatedItem]
         });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
-    }
-  };
-
-  // --------------------------------------------------------------------------------------------------
-  // --------------------------------------------------------------------------------------------------
-  // --------------------------------------------------------------------------------------------------  
-  async setEndTimeToSessionsList(idsList: SessionsIdsList, tenantId?: string) {
-    const scope = { tenantId, requireTenant: Boolean(tenantId) };
-    console.log('1- idsList ----->', idsList);
-    for (const sessionId of idsList.idsToDelete) {
-      try {
-        const existingInvoice = await invoiceRepository.findOne({ sessionId }, scope);
-        console.log('2- existingInvoice ----->', existingInvoice);
-
-        if (existingInvoice) {
-          console.log('3- existingInvoice ----->', existingInvoice);
-
-          for (const device of existingInvoice.devices) {
-            console.log('4- device ----->', device);
-
-            if (device.endTime === undefined) {
-              console.log('5- device.endIn ----->', device.endTime);
-
-              const updateQuery = {
-                $set: {
-                  'devices.$[elem].endIn': idsList.endIn ?? '',
-                }
-              };
-              const options = {
-                new: true,
-                arrayFilters: [{ 'elem.sessionId': sessionId }]
-              };
-
-              await invoiceRepository.updateOne({ _id: existingInvoice._id }, updateQuery as any, { ...(options as any), scope });
-              const updatedInvoice = await invoiceRepository.findById(existingInvoice._id.toString(), scope);
-
-              if (updatedInvoice) {
-                await InvoiceService.syncInvoiceTotals(updatedInvoice);
-              } else {
-                console.error('Failed to update invoice. Updated document is null.');
-                throw new Error('Failed to update invoice. Updated document is null.');
-              }
-            }
-          }
-        } else {
-          throw new Error('Invoice not found. Cannot update device data.');
-        }
-      } catch (error) {
-        console.error('Error updating invoice:', error);
-        throw new Error('Error updating invoice.');
-      }
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   }
 
-  // --------------------------------------------------------------------------------------------------
-  // --------------------------------------------------------------------------------------------------
-  // --------------------------------------------------------------------------------------------------
   getInvoicesByEmployeeWithCountsasync = async (req: Request, res: Response) => {
-    let empId = req.params.id
-
     try {
+      const empId = req.params.id;
       const {
         invoices,
         treeInvoices,
@@ -369,12 +293,9 @@ export class InvoiceController extends CRUDController<IInvoice> {
             clientAdded
           },
         });
-    } catch (error) {
-      console.error('Error fetching invoices:', error);
-      throw error;
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   }
-
-
 }
 

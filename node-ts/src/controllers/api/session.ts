@@ -1,10 +1,8 @@
 import { Request, Response } from 'express';
-import { Types } from 'mongoose';
 import { SessionService } from '../../services/session.service';
 import { ISession } from '../../types';
-import { deviceRepository, clientRepository, invoiceRepository, sessionRepository } from '../../repositories/instances';
-
-const { ObjectId } = require('mongoose').Types;
+import { sessionRepository } from '../../repositories/instances';
+import { SendResponse } from '../base/sendResponse';
 
 const sessionService = new SessionService();
 
@@ -32,7 +30,7 @@ interface EndSessionRequest extends Request {
   };
 }
 
-export class SessionController {
+export class SessionController extends SendResponse {
   private getScope(req: Request) {
     return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
   }
@@ -56,29 +54,16 @@ export class SessionController {
         message: '',
         data: [savedItem],
       });
-    } catch (err: any) {
-      console.error('SessionController createItem err.message -->', err.message);
-      res.status(500).json({
-        success: false,
-        errors: [err.message],
-        status: 500,
-        message: '',
-        data: [],
-      });
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   };
 
   getAllItems = async (req: Request, res: Response) => {
-    // let filter = JSON.parse(req.query.Filter);
     let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
-    // console.log('sessions filter --->', filter);
     let { brancheId } = filter;
 
-    const pageSize = req.query.PageSize && +req.query.PageSize > 0 ? req.query.PageSize : 15;
-    const pageNo = req.query.PageNo && +req.query.PageNo > 0 ? req.query.PageNo : 1;
-
     try {
-      // Fetch all items from database
       const items = await sessionRepository.find({ brancheId }, { sort: { createdAt: -1, activeState: 1 }, scope: this.getScope(req) });
       res.status(201).json({
         success: true,
@@ -87,9 +72,8 @@ export class SessionController {
         message: '',
         data: items,
       });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   };
 
@@ -99,20 +83,13 @@ export class SessionController {
       page = +page;
       limit = +limit;
 
-      // Build filter object based on query parameters
       let filter = {};
-      // if (filterBy && filterValue) {
-      //   filter[filterBy] = { $regex: new RegExp(filterValue, 'i') }; // Case-insensitive regex search
-      // }
-
-      // Fetch items from database with pagination and filtering
       const items = await sessionRepository.find(filter, {
         skip: (page - 1) * limit,
         limit,
         scope: this.getScope(req),
       });
 
-      // Count total number of items (for pagination)
       const totalCount = await sessionRepository.countDocuments(filter, this.getScope(req));
 
       res.status(200).json({
@@ -127,9 +104,8 @@ export class SessionController {
           },
         },
       });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   };
 
@@ -146,15 +122,13 @@ export class SessionController {
         message: '',
         data: [item],
       });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   };
 
   updateItem = async (req: Request, res: Response) => {
     try {
-      // Update item by ID in database
       const updatedItem = await sessionRepository.updateById(req.params.id, req.body as any, this.getScope(req));
       if (!updatedItem) {
         return res.status(404).json({ msg: 'Item not found' });
@@ -166,9 +140,8 @@ export class SessionController {
         message: '',
         data: [updatedItem],
       });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   };
 
@@ -184,20 +157,13 @@ export class SessionController {
         data: [result.session],
         bill: result.bill,
       });
-    } catch (err: any) {
-      res.status(500).json({
-        success: false,
-        errors: [err.message],
-        status: 500,
-        message: '',
-        data: [],
-      });
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   };
 
   deleteItem = async (req: Request, res: Response) => {
     try {
-      // Delete item by ID from database
       const deletedItem = await sessionRepository.deleteById(req.params.id, this.getScope(req));
       if (!deletedItem) {
         return res.status(404).json({ msg: 'Item not found' });
@@ -209,15 +175,13 @@ export class SessionController {
         message: '',
         data: [deletedItem],
       });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   };
 
   deleteSessionItem = async (req: Request, res: Response) => {
     try {
-      // Delete item by ID from database
       const deletedItem = await sessionRepository.deleteById(req.params.id, this.getScope(req));
       if (!deletedItem) {
         return res.status(404).json({ msg: 'Item not found' });
@@ -230,18 +194,15 @@ export class SessionController {
         message: '',
         data: [deletedItem],
       });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   };
 
   deleteAllReletedToBill = async (req: Request, res: Response) => {
     try {
-      // console.log('deleteAllReletedToBill req.params', req.params);
-
       let ids = req.params.id.split(',');
-      let deletedList = await sessionRepository.deleteManyByIds(ids, this.getScope(req));
+      await sessionRepository.deleteManyByIds(ids, this.getScope(req));
 
       res.status(201).json({
         success: true,
@@ -250,9 +211,8 @@ export class SessionController {
         message: ids,
         data: ids,
       });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
   };
 }
