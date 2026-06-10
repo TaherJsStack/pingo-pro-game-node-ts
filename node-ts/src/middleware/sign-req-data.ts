@@ -6,6 +6,7 @@ interface CustomRequest extends Request {
     authData?: {
         id: string;
         tenantId?: string;
+        brancheId?: string;
         role: string;
         email: string;
         permission: string;
@@ -23,6 +24,7 @@ const authMiddleware = (req: CustomRequest, res: Response, next: NextFunction) =
             req.authData = {
                 id: decodedToken._id,
                 tenantId: decodedToken.tenantId,
+                brancheId: decodedToken.brancheId,
                 role: decodedToken.role,
                 email: decodedToken.email,
                 permission: decodedToken.permission,
