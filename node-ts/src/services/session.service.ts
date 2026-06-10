@@ -1,11 +1,8 @@
 import { Types } from 'mongoose';
 import DeviceModel from '../models/device';
-import ClientModel from '../models/client';
 import SessionModel from '../models/session';
-import InvoiceModel from '../models/invoice';
 import { BaseRepository } from '../repositories/BaseRepository';
 import { SessionRepository } from '../repositories/SessionRepository';
-import { InvoiceRepository } from '../repositories/InvoiceRepository';
 import { ISession } from '../models/interfaces/session.interface';
 import InvoiceService from './invoice.service';
 import { ISessionService } from './interfaces/ISessionService';
@@ -13,14 +10,13 @@ import { NotFoundError, ValidationError } from '../errors/AppError';
 import ShiftService from './shift.service';
 import AnalyticsService from './analytics.service';
 import { deviceCharge } from '../util/money';
+import { resolveEndTime } from '../util/session-time';
 import RealtimeService from './realtime.service';
 import { RealtimeEvent } from '../enums';
 
 export class SessionService implements ISessionService {
   private readonly deviceRepository = new BaseRepository<any>(DeviceModel);
-  private readonly clientRepository = new BaseRepository<any>(ClientModel);
   private readonly sessionRepository = new SessionRepository(SessionModel);
-  private readonly invoiceRepository = new InvoiceRepository(InvoiceModel);
 
   private normalizeDeviceIds(body: any): string[] {
     const idsFromDevices = Array.isArray(body.devices)
@@ -225,9 +221,6 @@ export class SessionService implements ISessionService {
     const requestedDeviceIds = this.normalizeDeviceIds(body);
     if (!requestedDeviceIds.length) throw new ValidationError('At least one deviceId is required to end a session.');
 
-    const parsedEndTime = body.endTime ? new Date(body.endTime) : new Date();
-    if (Number.isNaN(parsedEndTime.getTime())) throw new ValidationError('Invalid endTime value.');
-
     const matchedDeviceIds = new Set<string>();
     for (const device of session.devices as any[]) {
       const deviceId = String(device.deviceId);
@@ -236,7 +229,7 @@ export class SessionService implements ISessionService {
       if (!device.endTime) {
         const mode = device.mode === 'multi' ? 'multi' : 'single';
         const devicePrice = await this.resolveDeviceRate(device.deviceId, scope, mode);
-        device.endTime = parsedEndTime;
+        device.endTime = resolveEndTime(body.endTime, device.startTime);
         device.closedBy = closedBy;
         device.price = this.resolvePriceValue(device.price, devicePrice);
       }
@@ -291,7 +284,7 @@ export class SessionService implements ISessionService {
             deviceType: String(device.type ?? 'room'),
             eventType: 'device_utilization',
             amount: this.calculateDeviceRevenue(device),
-            occurredAt: this.toInvoiceDate(device.endTime) ?? parsedEndTime,
+            occurredAt: this.toInvoiceDate(device.endTime) ?? new Date(),
             metadata: {
               deviceId: String(device.deviceId),
             },
@@ -302,62 +295,7 @@ export class SessionService implements ISessionService {
 
     let createdBill = null;
     if (allDevicesEnded) {
-      const existingInvoice = await this.invoiceRepository.findOne({ sessionId: session._id }, scope);
-      if (existingInvoice) {
-        createdBill = existingInvoice;
-      } else {
-        if (!tenantId) {
-          throw new Error('Tenant scope is required to create invoices.');
-        }
-        if (!session.brancheId) {
-          throw new Error('Branche is required to create invoices.');
-        }
-        const client = session.clientId ? await this.clientRepository.findById(session.clientId, scope) : null;
-        const invoiceNo = await InvoiceService.allocateInvoiceNo(tenantId, session.brancheId);
-        try {
-        createdBill = await this.invoiceRepository.create({
-          sessionId: session._id,
-          tenantId: tenantId ? this.toObjectId(tenantId, 'tenantId') : (session as any).tenantId ?? null,
-          shiftId: (session as any).shiftId ?? null,
-          createdBy: closedBy,
-          closedBy,
-          brancheId: session.brancheId,
-          clientId: session.clientId ?? null,
-          name: body.name ?? client?.name ?? '',
-          phone: body.phone ?? client?.phone ?? '',
-          activeState: false,
-          description: body.description ?? session.description ?? '',
-          invoiceNo,
-          devices: session.devices.map((device: any) => ({
-            deviceId: device.deviceId,
-            createdBy: device.createdBy ?? new Types.ObjectId(authUserId),
-            closedBy: device.closedBy ?? closedBy,
-            type: device.type ?? 'room',
-            Sessiontype: device.Sessiontype ?? 'open',
-            mode: device.mode ?? 'single',
-            price: Number(device.price ?? 0),
-            startTime: this.toInvoiceDate(device.startTime) ?? new Date(),
-            endTime: this.toInvoiceDate(device.endTime),
-            estimationTime: device.estimationTime ?? '',
-            estimationInHours: Number(device.estimationInHours ?? 0),
-            estimationInMinutes: Number(device.estimationInMinutes ?? 0),
-          })),
-          menuItems: Array.isArray(session.menuItems)
-            ? session.menuItems.map((item: any) => ({
-                itemID: item.itemID,
-                createdBy: item.createdBy ?? closedBy,
-                itemName: item.itemName,
-                quantity: Number(item.quantity ?? 0),
-                price: Number(item.price ?? 0),
-              }))
-            : [],
-        } as any, scope);
-        } catch (error) {
-          await InvoiceService.releaseInvoiceNo(tenantId, session.brancheId, invoiceNo);
-          throw error;
-        }
-        await InvoiceService.syncInvoiceTotals(createdBill);
-      }
+      createdBill = await InvoiceService.createInvoiceFromSession(savedSession, body, authUserId, tenantId);
     }
 
     return {

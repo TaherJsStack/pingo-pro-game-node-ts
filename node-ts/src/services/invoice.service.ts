@@ -3,9 +3,11 @@ import CounterModel from '../models/counter';
 import InvoiceModel from '../models/invoice';
 import { IInvoice } from '../models/interfaces/invoice.interface';
 import { IMenuItem } from '../models/interfaces/menu-item.interface';
+import { ISession } from '../models/interfaces/session.interface';
 import { ISessionDevice } from '../models/interfaces/session-device.interface';
 import { IInvoiceService } from './interfaces/IInvoiceService';
 import { InvoiceRepository } from '../repositories/InvoiceRepository';
+import { clientRepository } from '../repositories/instances';
 import AnalyticsService from './analytics.service';
 import ShiftService from './shift.service';
 import { deviceCharge, roundMoney, sumMoney } from '../util/money';
@@ -16,6 +18,12 @@ import SettingsModel from '../models/settings';
 
 class InvoiceService implements IInvoiceService {
   private readonly invoiceRepository = new InvoiceRepository(InvoiceModel);
+
+  private toInvoiceDate(value: unknown): Date | undefined {
+    if (!value) return undefined;
+    const parsedDate = value instanceof Date ? value : new Date(value as string);
+    return Number.isNaN(parsedDate.getTime()) ? undefined : parsedDate;
+  }
 
   private calculateDeviceRevenue(device: ISessionDevice): number {
     return deviceCharge(device);
@@ -174,6 +182,35 @@ class InvoiceService implements IInvoiceService {
     };
   }
 
+  buildInvoiceDevicesFromSession(session: Pick<ISession, 'devices'>, closedBy: Types.ObjectId) {
+    return (session.devices ?? []).map((device: any) => ({
+      deviceId: device.deviceId,
+      createdBy: device.createdBy ?? closedBy,
+      closedBy: device.closedBy ?? closedBy,
+      type: device.type ?? 'room',
+      Sessiontype: device.Sessiontype ?? 'open',
+      mode: device.mode ?? 'single',
+      price: Number(device.price ?? 0),
+      startTime: this.toInvoiceDate(device.startTime) ?? new Date(),
+      endTime: this.toInvoiceDate(device.endTime),
+      estimationTime: device.estimationTime ?? '',
+      estimationInHours: Number(device.estimationInHours ?? 0),
+      estimationInMinutes: Number(device.estimationInMinutes ?? 0),
+    }));
+  }
+
+  buildInvoiceMenuItemsFromSession(session: Pick<ISession, 'menuItems'>, closedBy: Types.ObjectId) {
+    return Array.isArray(session.menuItems)
+      ? session.menuItems.map((item: any) => ({
+          itemID: item.itemID,
+          createdBy: item.createdBy ?? closedBy,
+          itemName: item.itemName,
+          quantity: Number(item.quantity ?? 0),
+          price: Number(item.price ?? 0),
+        }))
+      : [];
+  }
+
   async syncInvoiceTotals(
     invoice: Pick<IInvoice, 'devices' | 'menuItems' | 'devicesTotal' | 'menuItemsTotal' | 'total'> & {
       save: () => Promise<unknown>;
@@ -197,6 +234,50 @@ class InvoiceService implements IInvoiceService {
         devicesTotal,
         menuItemsTotal,
       });
+    }
+  }
+
+  async createInvoiceFromSession(session: any, body: any, authUserId: string, tenantId?: string): Promise<any> {
+    const scope = { tenantId, requireTenant: true };
+    const existingInvoice = await this.invoiceRepository.findOne({ sessionId: session._id }, scope);
+    if (existingInvoice) {
+      return existingInvoice;
+    }
+
+    if (!tenantId) {
+      throw new Error('Tenant scope is required to create invoices.');
+    }
+    if (!session.brancheId) {
+      throw new Error('Branche is required to create invoices.');
+    }
+
+    const closedBy = new Types.ObjectId(authUserId);
+    const client = session.clientId ? await clientRepository.findById(String(session.clientId), scope) : null;
+    const invoiceNo = await this.allocateInvoiceNo(tenantId, session.brancheId);
+
+    try {
+      const createdInvoice = await this.invoiceRepository.create({
+        sessionId: session._id,
+        tenantId: tenantId ? new Types.ObjectId(tenantId) : session.tenantId ?? null,
+        shiftId: session.shiftId ?? null,
+        createdBy: closedBy,
+        closedBy,
+        brancheId: session.brancheId,
+        clientId: session.clientId ?? null,
+        name: body.name ?? client?.name ?? '',
+        phone: body.phone ?? client?.phone ?? '',
+        activeState: false,
+        description: body.description ?? session.description ?? '',
+        invoiceNo,
+        devices: this.buildInvoiceDevicesFromSession(session, closedBy),
+        menuItems: this.buildInvoiceMenuItemsFromSession(session, closedBy),
+      } as any, scope);
+
+      await this.syncInvoiceTotals(createdInvoice);
+      return createdInvoice;
+    } catch (error) {
+      await this.releaseInvoiceNo(tenantId, session.brancheId, invoiceNo);
+      throw error;
     }
   }
 
