@@ -88,7 +88,22 @@ router.put(
 router.get("", signReqData, sessionController.getAllItems);
 
 router.delete('/:id', signReqData, idempotencyMiddleware, sessionController.deleteItem)
-router.delete('/deleteSessionItem/:id', signReqData, idempotencyMiddleware, sessionController.deleteSessionItem)
-router.delete('/deleteAllReletedToBill/:id', signReqData, idempotencyMiddleware, sessionController.deleteAllReletedToBill)
+router.delete(
+  '/deleteAllReletedToBill/:id',
+  signReqData,
+  [
+    check('ids').isArray({ min: 1, max: 100 }).withMessage('ids must be a non-empty array with max 100 items'),
+    check('ids.*').isMongoId().withMessage('each id must be a valid Mongo ObjectId'),
+  ],
+  idempotencyMiddleware,
+  async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    await sessionController.deleteAllReletedToBill(req, res);
+  }
+)
 
 export default router;
