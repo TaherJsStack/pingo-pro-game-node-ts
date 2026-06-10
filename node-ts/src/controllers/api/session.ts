@@ -135,17 +135,16 @@ export class SessionController {
 
   getItemById = async (req: Request, res: Response) => {
     try {
-      // Fetch item by ID from database
       const item = await sessionRepository.findById(req.params.id, this.getScope(req));
       if (!item) {
         return res.status(404).json({ msg: 'Item not found' });
       }
-      res.status(201).json({
+      res.status(200).json({
         success: true,
         errors: [],
         status: 200,
         message: '',
-        data: {},
+        data: [item],
       });
     } catch (err: any) {
       console.error(err.message);
