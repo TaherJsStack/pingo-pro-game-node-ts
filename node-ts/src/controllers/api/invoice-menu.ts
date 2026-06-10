@@ -69,13 +69,7 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu> {
         createdBy: new ObjectId(req.authData.id),
       } as any, this.getScope(req));
 
-      (savedItem as any).updateTotal?.()
-        .then((total: any) => {
-          // console.log('Updated total:', total);
-        })
-        .catch((error: any) => {
-          // console.error('Error updating total:', error);
-        });
+      await (savedItem as any).updateTotal?.();
       res.status(201)
         .json({
           success: true,
@@ -101,13 +95,7 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu> {
         return;
       }
       if (updatedItem) {
-        (updatedItem as any).updateTotal?.()
-          .then((total: any) => {
-            // console.log('Updated total:', total);
-          })
-          .catch((error: any) => {
-            console.error('Error updating total:', error);
-          });
+        await (updatedItem as any).updateTotal?.();
       }
       res.status(201)
         .json({
@@ -136,13 +124,7 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu> {
         return;
       }
       if (updatedItem) {
-        (updatedItem as any).updateTotal?.()
-          .then((total: any) => {
-            // console.log('Updated total:', total);
-          })
-          .catch((error: any) => {
-            console.error('Error updating total:', error);
-          });
+        await (updatedItem as any).updateTotal?.();
       }
 
       res.status(201)

@@ -77,38 +77,6 @@ export class SessionController extends SendResponse {
     }
   };
 
-  getAllItemsPagination = async (req: Request, res: Response) => {
-    try {
-      let { page = 1, limit = 10, filterBy, filterValue } = req.query;
-      page = +page;
-      limit = +limit;
-
-      let filter = {};
-      const items = await sessionRepository.find(filter, {
-        skip: (page - 1) * limit,
-        limit,
-        scope: this.getScope(req),
-      });
-
-      const totalCount = await sessionRepository.countDocuments(filter, this.getScope(req));
-
-      res.status(200).json({
-        success: true,
-        data: {
-          items,
-          pagination: {
-            currentPage: page,
-            totalPages: Math.ceil(totalCount / limit),
-            totalItems: totalCount,
-            itemsPerPage: limit,
-          },
-        },
-      });
-    } catch (err) {
-      this.sendErrorResponse(req, res, err);
-    }
-  };
-
   getItemById = async (req: Request, res: Response) => {
     try {
       const item = await sessionRepository.findById(req.params.id, this.getScope(req));
@@ -180,28 +148,9 @@ export class SessionController extends SendResponse {
     }
   };
 
-  deleteSessionItem = async (req: Request, res: Response) => {
-    try {
-      const deletedItem = await sessionRepository.deleteById(req.params.id, this.getScope(req));
-      if (!deletedItem) {
-        return res.status(404).json({ msg: 'Item not found' });
-      }
-
-      res.status(201).json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: [deletedItem],
-      });
-    } catch (err) {
-      this.sendErrorResponse(req, res, err);
-    }
-  };
-
   deleteAllReletedToBill = async (req: Request, res: Response) => {
     try {
-      let ids = req.params.id.split(',');
+      const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
       await sessionRepository.deleteManyByIds(ids, this.getScope(req));
 
       res.status(201).json({

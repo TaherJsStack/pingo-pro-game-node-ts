@@ -88,43 +88,6 @@ export class InvoiceController extends CRUDController<IInvoice> {
     }
   }
 
-  // Read - GET request handler (Get all items with pagination and filtering)
-  getAllItemsPagination = async (req: Request, res: Response) => {
-    try {
-      let { page = 1, limit = 10, filterBy, filterValue } = req.query;
-
-      // Build filter object based on query parameters
-      let filter: any = {};
-
-      // Fetch items from database with pagination and filtering
-      const pageNo = Number(page) || 1;
-      const pageSize = Number(limit) || 10;
-      const items = await invoiceRepository.find(filter, {
-        skip: (pageNo - 1) * pageSize,
-        limit: pageSize,
-        scope: this.getScope(req),
-      });
-
-      // Count total number of items (for pagination)
-      const totalCount = await invoiceRepository.countDocuments(filter, this.getScope(req));
-
-      res.status(200).json({
-        success: true,
-        data: {
-          items,
-          pagination: {
-            currentPage: pageNo,
-            totalPages: Math.ceil(totalCount / pageSize),
-            totalItems: totalCount,
-            itemsPerPage: pageSize,
-          },
-        },
-      });
-    } catch (err) {
-      this.sendErrorResponse(req, res, err);
-    }
-  };
-
   updateBill = async (req: CreateRequest, res: Response) => {
     try {
       const updates = this.pickInvoiceUpdatableFields(req.body as any);
