@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PaymentMethod, PaymentProvider } from '../../enums';
 import { ValidationError } from '../../errors/AppError';
+import SubscriptionManager from './subscription-manager';
 import PaymentService from '../../services/payment.service';
 import { IPaymentService } from '../../services/interfaces/IPaymentService';
 import { SendResponse } from '../base/sendResponse';
@@ -8,7 +9,10 @@ import { toPublicPayment } from '../../util/redact';
 import { MaybeAuthenticatedRequest as AuthRequest } from '../../types/auth';
 
 class PaymentManager extends SendResponse {
-  constructor(private readonly paymentService: IPaymentService = PaymentService) {
+  constructor(
+    private readonly paymentService: IPaymentService = PaymentService,
+    private readonly subscriptionManager: SubscriptionManager = new SubscriptionManager()
+  ) {
     super();
   }
 
@@ -17,9 +21,19 @@ class PaymentManager extends SendResponse {
     if (!userId) {
       throw new ValidationError('Authenticated user is required.');
     }
+    const brancheId = req.body.brancheId;
+    if (!brancheId) {
+      throw new ValidationError('brancheId is required.');
+    }
+
+    const branch = await this.subscriptionManager.assertOwnedBranch(brancheId, userId);
+    await this.subscriptionManager.assertFreePlanAvailable(userId, req.body.planId);
+    const tenantId = branch.tenantId ? String(branch.tenantId) : req.authData?.tenantId ?? null;
 
     const checkout = await this.paymentService.initiate({
       userId,
+      brancheId,
+      tenantId,
       planId: req.body.planId,
       provider: req.body.provider as PaymentProvider,
       method: req.body.method as PaymentMethod,

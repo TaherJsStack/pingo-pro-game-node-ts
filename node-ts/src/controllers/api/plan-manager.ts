@@ -9,6 +9,10 @@ class PlanManager extends CRUDController<IPlan> {
     super(planRepository);
   }
 
+  protected override getRequestScope(): undefined {
+    return undefined;
+  }
+
   // Public catalog: active plans only, cheapest first — for the pricing UI.
   public listPublicPlans = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -57,4 +61,3 @@ class PlanManager extends CRUDController<IPlan> {
 }
 
 export default PlanManager;
-
