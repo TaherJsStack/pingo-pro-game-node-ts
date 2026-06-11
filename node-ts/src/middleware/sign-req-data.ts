@@ -1,21 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
+import { MaybeAuthenticatedRequest } from '../types/auth';
 
-interface CustomRequest extends Request {
-    authData?: {
-        id: string;
-        tenantId?: string;
-        brancheId?: string;
-        role: string;
-        email: string;
-        permission: string;
-        authType?: string;
-        permissions?: any;
-    };
-}
-
-const authMiddleware = (req: CustomRequest, res: Response, next: NextFunction) => {
+const authMiddleware = (req: MaybeAuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
         if (req.headers && req.headers.authorization) {
             const token: string = req.headers.authorization.split(" ")[1];

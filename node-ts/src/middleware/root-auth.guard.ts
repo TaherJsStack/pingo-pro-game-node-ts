@@ -1,18 +1,12 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { AuthType } from '../enums/auth-type.enum';
-
-interface AuthedRequest extends Request {
-  authData?: {
-    authType?: string;
-    role?: string;
-  };
-}
+import { MaybeAuthenticatedRequest } from '../types/auth';
 
 /**
  * Restricts a route to root/admin operators. Must run AFTER `signReqData` (which populates
  * `req.authData.authType` from the JWT). Returns 403 for any non-root caller.
  */
-const rootAuthGuard = (req: AuthedRequest, res: Response, next: NextFunction): void => {
+const rootAuthGuard = (req: MaybeAuthenticatedRequest, res: Response, next: NextFunction): void => {
   if (req.authData?.authType === AuthType.Root) {
     next();
     return;
