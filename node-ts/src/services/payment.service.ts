@@ -72,7 +72,12 @@ class PaymentService implements IPaymentService {
       };
     }
 
-    const subscription = await this.ensurePendingSubscription(command.userId, plan);
+    const subscription = await this.ensurePendingSubscription(
+      command.userId,
+      command.brancheId,
+      command.tenantId ?? null,
+      plan
+    );
     const amountMinor = Number.isInteger(plan.amountMinor) ? plan.amountMinor : toMinor(plan.price, plan.currency);
     const payment = existingPending ?? await this.payments.create({
       userId: new Types.ObjectId(command.userId),
@@ -237,8 +242,8 @@ class PaymentService implements IPaymentService {
     return updatedPayment;
   }
 
-  private async ensurePendingSubscription(userId: string, plan: IPlan): Promise<ISubscription> {
-    const existing = await this.subscriptionService.getSubscription(userId);
+  private async ensurePendingSubscription(userId: string, brancheId: string, tenantId: string | null, plan: IPlan): Promise<ISubscription> {
+    const existing = await this.subscriptionService.getSubscription(userId, brancheId);
     if (existing) {
       if ([SubscriptionStatus.Active, SubscriptionStatus.Trialing].includes(existing.status)) {
         throw new ValidationError('User already has an active subscription.');
@@ -249,6 +254,8 @@ class PaymentService implements IPaymentService {
     const now = new Date();
     return this.subscriptions.create({
       userId: new Types.ObjectId(userId),
+      brancheId: new Types.ObjectId(brancheId),
+      tenantId: tenantId ? new Types.ObjectId(tenantId) : null,
       plan: plan._id,
       status: SubscriptionStatus.PendingPayment,
       startDate: now,
@@ -258,6 +265,7 @@ class PaymentService implements IPaymentService {
       currency: plan.currency,
       autoRenew: true,
       cancelAtPeriodEnd: false,
+      expiryNotificationSent: false,
       failedAttempts: 0,
     } as any);
   }

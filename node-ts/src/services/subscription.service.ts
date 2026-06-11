@@ -67,6 +67,8 @@ class SubscriptionService implements ISubscriptionService {
     const recurring = supportsRecurring(payment.provider, payment.method);
     const update = {
       userId: new Types.ObjectId(userId),
+      brancheId: existing?.brancheId,
+      tenantId: existing?.tenantId ?? null,
       plan: plan._id,
       status: SubscriptionStatus.Active,
       startDate: existing?.startDate ?? now,
@@ -80,6 +82,7 @@ class SubscriptionService implements ISubscriptionService {
       cancelAtPeriodEnd: false,
       nextBillingDate: recurring ? endDate : undefined,
       lastPaymentId: payment._id,
+      expiryNotificationSent: false,
       failedAttempts: 0,
       gracePeriodEnd: undefined,
       // For PayPal, the recurring object is the subscription id (stored as the payment's
@@ -101,7 +104,7 @@ class SubscriptionService implements ISubscriptionService {
     return this.subscriptions.create(update as any);
   }
 
-  async startTrial(userId: string, plan: IPlan | null, trialDays: number): Promise<ISubscription> {
+  async startTrial(userId: string, brancheId: string, tenantId: string | null, plan: IPlan | null, trialDays: number): Promise<ISubscription> {
     const now = new Date();
     const endDate = new Date(now);
     endDate.setUTCDate(endDate.getUTCDate() + Math.max(trialDays, 1));
@@ -115,6 +118,8 @@ class SubscriptionService implements ISubscriptionService {
 
     return this.subscriptions.create({
       userId: new Types.ObjectId(userId),
+      brancheId: new Types.ObjectId(brancheId),
+      tenantId: tenantId ? new Types.ObjectId(tenantId) : null,
       plan: plan?._id ?? null,
       status: SubscriptionStatus.Trialing,
       startDate: now,
@@ -125,6 +130,7 @@ class SubscriptionService implements ISubscriptionService {
       autoRenew: isPaidPlan,
       cancelAtPeriodEnd: false,
       nextBillingDate: isPaidPlan ? endDate : undefined,
+      expiryNotificationSent: false,
       failedAttempts: 0,
     } as any);
   }
@@ -217,9 +223,9 @@ class SubscriptionService implements ISubscriptionService {
     } as any);
   }
 
-  async getSubscription(userId: string): Promise<ISubscription | null> {
+  async getSubscription(userId: string, brancheId?: string | null): Promise<ISubscription | null> {
     const userObjectId = assertObjectId(userId, 'Authenticated user id');
-    const subscription = await this.subscriptions.findOne({
+    const filter: Record<string, any> = {
       userId: userObjectId,
       status: {
         $in: [
@@ -229,7 +235,11 @@ class SubscriptionService implements ISubscriptionService {
           SubscriptionStatus.PastDue,
         ],
       },
-    });
+    };
+    if (brancheId) {
+      filter.brancheId = assertObjectId(brancheId, 'brancheId');
+    }
+    const subscription = await this.subscriptions.findOne(filter);
 
     // Return full plan details (name, price, durationMonths, deviceLimit, featureFlags)
     // instead of a bare ObjectId so the client doesn't need a second round-trip.

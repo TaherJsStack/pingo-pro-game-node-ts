@@ -118,11 +118,13 @@ export class AuthService implements IAuthService {
       // planless trial if the catalog hasn't been seeded yet).
       const freePlan = await this.planRepository.findOne({ code: 'free', activeState: true });
       const trialPlanId = freePlan?._id ? freePlan._id.toString() : null;
-      subscriptionData = await this.subscriptionManager.createSubscription(savedUser._id.toString(), trialPlanId, trialDays);
-      if (subscriptionData?._id) {
-        await this.subscriptionRepository.updateById(subscriptionData._id.toString(), { tenantId: savedTenant._id });
-        subscriptionData.tenantId = savedTenant._id;
-      }
+      subscriptionData = await this.subscriptionManager.createSubscription(
+        savedUser._id.toString(),
+        savedBranche._id.toString(),
+        savedTenant._id.toString(),
+        trialPlanId,
+        trialDays
+      );
       const trialEndDate = new Date(subscriptionData.endDate);
       const trialMessage = await this.inboxRepository.create({
         ownerId: savedUser._id,
@@ -138,6 +140,7 @@ export class AuthService implements IAuthService {
         email: savedUser.email,
         name: `${savedUser.lastName} ${savedUser.firstName}`,
         tenantId: savedTenant._id.toString(),
+        brancheId: savedBranche._id.toString(),
         role: savedUser.role,
         permission: savedUser.permission,
       });
