@@ -5,6 +5,8 @@ import { CheckoutSession } from './IPaymentProvider';
 
 export interface InitiatePaymentCommand {
   userId: string;
+  brancheId: string;
+  tenantId?: string | null;
   planId: string;
   provider: PaymentProvider;
   method: PaymentMethod;
