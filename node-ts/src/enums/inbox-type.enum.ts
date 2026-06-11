@@ -4,6 +4,7 @@
  */
 export enum InboxType {
   Welcome = 'welcom',
+  Admin = 'admin',
   Notification = 'notification',
   Support = 'support',
   System = 'system',
