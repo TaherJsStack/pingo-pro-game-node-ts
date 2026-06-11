@@ -8,7 +8,7 @@ import Plan from '../models/plan';
 import Tenant from '../models/tenant';
 import Device from '../models/device';
 import Menu from '../models/menu';
-import { buildDefaultDevices, buildDefaultMenu } from './seed/owner-seed.data';
+import { buildDefaultDevices, buildDefaultMenu } from '../DB/seeders/owner-seed.data';
 import { BaseRepository } from '../repositories/BaseRepository';
 import { AuthRepository } from '../repositories/AuthRepository';
 import { generateBcryptHash } from '../util/jwtUtil';
