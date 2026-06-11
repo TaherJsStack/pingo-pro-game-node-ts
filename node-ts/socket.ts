@@ -21,6 +21,7 @@ export interface SocketData {
 
 export const TENANT_ROOM_PREFIX = 'tenant:';
 export const BRANCH_ROOM_PREFIX = 'branch:';
+export const USER_ROOM_PREFIX = 'user:';
 
 let io: socketIo.Server | null = null;
 
@@ -43,6 +44,10 @@ export function getTenantRoom(tenantId: string): string {
 
 export function getBranchRoom(tenantId: string, brancheId: string): string {
   return `${BRANCH_ROOM_PREFIX}${tenantId}:${brancheId}`;
+}
+
+export function getUserRoom(userId: string): string {
+  return `${USER_ROOM_PREFIX}${userId}`;
 }
 
 export function verifySocketToken(token?: string): SocketAuthPayload {
@@ -90,6 +95,9 @@ export function registerSocketHandlers(server: socketIo.Server): socketIo.Server
     }
 
     void socket.join(getTenantRoom(auth.tenantId));
+    if (auth._id) {
+      void socket.join(getUserRoom(auth._id));
+    }
     if (auth.brancheId) {
       void socket.join(getBranchRoom(auth.tenantId, auth.brancheId));
     }
