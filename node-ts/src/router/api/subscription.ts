@@ -1,4 +1,6 @@
 import express, { NextFunction, Request, Response, Router } from 'express';
+import { check, validationResult } from 'express-validator';
+import SubscriptionManager from '../../controllers/api/subscription-manager';
 import signReqData from '../../middleware/sign-req-data';
 import { SendResponse } from '../../controllers/base/sendResponse';
 import { NotFoundError, ValidationError } from '../../errors/AppError';
@@ -16,6 +18,7 @@ class SubscriptionResponse extends SendResponse {
 
 const router: Router = express.Router();
 const response = new SubscriptionResponse();
+const subscriptionManager = new SubscriptionManager();
 
 function asyncHandler(handler: (req: AuthRequest, res: Response) => Promise<void>) {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -42,35 +45,58 @@ async function assertOwnsSubscription(subscriptionId: string, userId: string) {
   return subscription;
 }
 
-router.post('/subscribe', signReqData, asyncHandler(async (req: AuthRequest, res: Response) => {
-  const userId = requireUser(req);
-  const { trialDays = 0 } = req.body;
-  const planId = req.body.planId || req.body.plan;
-
-  if (Number(trialDays) > 0) {
-    const plan = await planRepository.findById(planId);
-    if (!plan) {
-      throw new NotFoundError('Plan not found.');
+router.post(
+  '/subscribe',
+  signReqData,
+  [check('brancheId').isMongoId().withMessage('brancheId must be a valid Mongo id')],
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const errors = validationResult(req as Request);
+    if (!errors.isEmpty()) {
+      throw new ValidationError(errors.array().map((item) => item.msg).join(', '));
     }
-    const subscription = await SubscriptionService.startTrial(userId, plan, Number(trialDays));
-    response.ok(req, res, 201, [subscription], 1);
-    return;
-  }
 
-  const checkout = await PaymentService.initiate({
-    userId,
-    planId,
-    provider: req.body.provider as PaymentProvider,
-    method: req.body.method as PaymentMethod,
-    idempotencyKey: req.header('Idempotency-Key') ?? undefined,
-    walletPhone: req.body.walletPhone ?? undefined,
-  });
+    const userId = requireUser(req);
+    const brancheId = String(req.body.brancheId ?? '');
+    const { trialDays = 0 } = req.body;
+    const planId = req.body.planId || req.body.plan;
+    const branch = await subscriptionManager.assertOwnedBranch(brancheId, userId);
+    await subscriptionManager.assertFreePlanAvailable(userId, planId);
+    const tenantId = branch.tenantId ? String(branch.tenantId) : req.authData?.tenantId ?? null;
 
-  response.ok(req, res, 201, [checkout], 1);
-}));
+    if (Number(trialDays) > 0) {
+      const plan = await planRepository.findById(planId);
+      if (!plan) {
+        throw new NotFoundError('Plan not found.');
+      }
+      const subscription = await SubscriptionService.startTrial(
+        userId,
+        brancheId,
+        tenantId,
+        plan,
+        Number(trialDays)
+      );
+      response.ok(req, res, 201, [subscription], 1);
+      return;
+    }
+
+    const checkout = await PaymentService.initiate({
+      userId,
+      brancheId,
+      tenantId,
+      planId,
+      provider: req.body.provider as PaymentProvider,
+      method: req.body.method as PaymentMethod,
+      idempotencyKey: req.header('Idempotency-Key') ?? undefined,
+      walletPhone: req.body.walletPhone ?? undefined,
+    });
+
+    response.ok(req, res, 201, [checkout], 1);
+  })
+);
 
 router.get('', signReqData, asyncHandler(async (req: AuthRequest, res: Response) => {
-  const subscription = await SubscriptionService.getSubscription(requireUser(req));
+  const branchId = req.query.brancheId ? String(req.query.brancheId) : undefined;
+  const subscription = await SubscriptionService.getSubscription(requireUser(req), branchId);
   const data = subscription ? [subscription] : [];
   response.ok(req, res, 200, data, data.length);
 }));
@@ -80,7 +106,8 @@ router.get('/member/:id', signReqData, asyncHandler(async (req: AuthRequest, res
   if (req.params.id !== userId) {
     throw new ValidationError('Cannot read another user subscription.');
   }
-  const subscription = await SubscriptionService.getSubscription(userId);
+  const branchId = req.query.brancheId ? String(req.query.brancheId) : undefined;
+  const subscription = await SubscriptionService.getSubscription(userId, branchId);
   const data = subscription ? [subscription] : [];
   response.ok(req, res, 200, data, data.length);
 }));
@@ -98,17 +125,13 @@ router.put('/member/:id', signReqData, asyncHandler(async (req: AuthRequest, res
   if (req.params.id !== userId) {
     throw new ValidationError('Cannot update another user subscription.');
   }
-  const subscription = await SubscriptionService.getSubscription(userId);
+  const branchId = req.query.brancheId ? String(req.query.brancheId) : undefined;
+  const subscription = await SubscriptionService.getSubscription(userId, branchId);
   if (!subscription) {
     throw new NotFoundError('Subscription not found.');
   }
   const updated = await subscriptionRepository.updateById(String(subscription._id), { plan: req.body.plan } as any);
   response.ok(req, res, 200, updated ? [updated] : [], updated ? 1 : 0);
-}));
-
-router.put('/renew/:id', signReqData, asyncHandler(async (req: AuthRequest, res: Response) => {
-  await assertOwnsSubscription(req.params.id, requireUser(req));
-  throw new ValidationError('Subscription renewal is handled by the billing scheduler.');
 }));
 
 router.patch('/:id/auto-renew', signReqData, asyncHandler(async (req: AuthRequest, res: Response) => {
