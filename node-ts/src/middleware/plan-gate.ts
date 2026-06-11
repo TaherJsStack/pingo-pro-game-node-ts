@@ -13,6 +13,7 @@ type GateRequest = Request & {
   authData?: {
     id?: string;
     tenantId?: string;
+    brancheId?: string;
   };
   body: Record<string, any>;
 };
@@ -34,9 +35,9 @@ function normalizeDeviceLimit(plan: any): number {
   return (plan?.tier ?? '').toString().toLowerCase() === 'advanced' ? 8 : 3;
 }
 
-async function resolvePlanForUser(userId: string) {
+async function resolvePlanForUser(userId: string, brancheId?: string) {
   assertObjectId(userId, 'Authenticated user id');
-  const subscription = await SubscriptionService.getSubscription(userId);
+  const subscription = await SubscriptionService.getSubscription(userId, brancheId ?? null);
   // getSubscription() already populates `plan`, so use the resolved document
   // directly. Re-fetching via String(subscription.plan) stringifies the whole
   // populated document (not its _id), which throws an ObjectId cast error.
@@ -57,11 +58,12 @@ export function createPlanGate(options: PlanGateOptions = {}) {
   return async function planGate(req: GateRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.authData?.id;
+      const brancheId = req.authData?.brancheId;
       if (!userId) {
         throw new ValidationError('Authenticated user is required.');
       }
 
-      const { plan } = await resolvePlanForUser(userId);
+      const { plan } = await resolvePlanForUser(userId, brancheId);
       const activePlan = plan ?? {
         tier: 'basic',
         deviceLimit: 3,
