@@ -11,6 +11,8 @@ export class StatisticsController extends SendResponse {
   constructor() {
     super();
     this.getCollectionStatistics = this.getCollectionStatistics.bind(this);
+    this.getAggregate = this.getAggregate.bind(this);
+    this.getPlatformKpiSummary = this.getPlatformKpiSummary.bind(this);
   }
   async getCollectionStatistics(req: Request, res: Response) {
     // console.log('getCollectionStatistics');
