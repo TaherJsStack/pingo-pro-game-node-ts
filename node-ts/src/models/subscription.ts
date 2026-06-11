@@ -9,6 +9,7 @@ const subscriptionSchema: Schema<ISubscription> = new Schema<ISubscription>({
     description: { type: String, default: '' },
 
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
+    brancheId: { type: Schema.Types.ObjectId, ref: 'Branche', required: true, index: true },
     tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', default: null, index: true },
     plan: { type: mongoose.Schema.Types.ObjectId, ref: 'Plan', default: null },
     status: { type: String, enum: Object.values(SubscriptionStatus), default: SubscriptionStatus.Inactive },
@@ -25,6 +26,7 @@ const subscriptionSchema: Schema<ISubscription> = new Schema<ISubscription>({
     lastPaymentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment', default: null },
     paymentInstrumentId: { type: mongoose.Schema.Types.ObjectId, ref: 'PaymentInstrument', default: null },
     providerSubscriptionId: { type: String, trim: true },
+    expiryNotificationSent: { type: Boolean, default: false },
     failedAttempts: { type: Number, default: 0, min: 0 },
     gracePeriodEnd: { type: Date },
 }, {
@@ -39,7 +41,7 @@ subscriptionSchema.pre('validate', function syncCurrentPeriodEnd(next) {
 });
 
 subscriptionSchema.index(
-    { userId: 1 },
+    { brancheId: 1, status: 1 },
     {
         unique: true,
         partialFilterExpression: {
