@@ -2,17 +2,10 @@ import express, { Router, Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
 import {InboxController} from '../../controllers/api/inbox';
 import signReqData from '../../middleware/sign-req-data';
-import { IInbox } from '../../models/interfaces/inbox.interface';
+import { AuthenticatedRequest } from '../../types/auth';
 
 const router: Router = express.Router();
 const controller:InboxController = new InboxController();
-
-interface CreateItemRequest extends Request {
-  authData: {
-    id: string;
-  };
-  body: IInbox;
-}
 // Route: POST /items (Create item)
 router.post(
   '',
@@ -30,7 +23,7 @@ router.post(
     }
     
     // Call controller method to create item
-    await controller.createItem(req as CreateItemRequest, res);
+    await controller.createItem(req as AuthenticatedRequest, res);
   }
 );
 

@@ -3,17 +3,10 @@ import { check, validationResult } from 'express-validator';
 import  {InvoiceMenuController} from '../../controllers/api/invoice-menu';
 import signReqData from '../../middleware/sign-req-data';
 import { idempotencyMiddleware } from '../../middleware/idempotency';
-import { IInvoiceMenu } from '../../models/interfaces/invoice-menu.interface';
+import { AuthenticatedRequest } from '../../types/auth';
 
 const router: Router = express.Router();
 const invoiceMenuController:InvoiceMenuController = new InvoiceMenuController();
-
-interface CreateItemRequest extends Request {
-  body: IInvoiceMenu;
-  authData: {
-    id: string;
-  };
-}
 
 // Route: POST /items (Create item)
 router.post(
@@ -32,7 +25,7 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
     
-    await invoiceMenuController.createItem(req as CreateItemRequest, res);
+    await invoiceMenuController.createItem(req as AuthenticatedRequest, res);
   }
 );
 
@@ -94,7 +87,7 @@ router.put(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    await invoiceMenuController.updateMenuItemsLockOrders(req as CreateItemRequest, res);
+    await invoiceMenuController.updateMenuItemsLockOrders(req as AuthenticatedRequest, res);
   }
 );
 

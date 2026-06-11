@@ -6,12 +6,7 @@ import { PaymentMethod, PaymentProvider } from '../../enums';
 import { planRepository, subscriptionRepository } from '../../repositories/instances';
 import PaymentService from '../../services/payment.service';
 import SubscriptionService from '../../services/subscription.service';
-
-interface AuthRequest extends Request {
-  authData?: {
-    id: string;
-  };
-}
+import { MaybeAuthenticatedRequest as AuthRequest } from '../../types/auth';
 
 class SubscriptionResponse extends SendResponse {
   ok(req: Request, res: Response, statusCode: number, data: any[], totalData?: number) {

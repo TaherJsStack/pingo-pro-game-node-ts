@@ -3,17 +3,10 @@ import { check, validationResult } from 'express-validator';
 import {InvoiceController} from '../../controllers/api/invoice';
 import signReqData from '../../middleware/sign-req-data';
 import { idempotencyMiddleware } from '../../middleware/idempotency';
-import { IInvoice } from '../../models/interfaces/invoice.interface';
+import { AuthenticatedRequest } from '../../types/auth';
 
 const router: Router = express.Router();
 const invoiceController:InvoiceController = new InvoiceController();
-
-interface CreateRequest extends Request {
-  authData: {
-    id: string;
-  };
-  body: IInvoice;
-}
 
 
 router.post( '', signReqData,
@@ -25,7 +18,7 @@ router.post( '', signReqData,
       return res.status(400).json({ errors: errors.array() });
     }
     
-    await invoiceController.createNewInvoice(req as CreateRequest, res);
+    await invoiceController.createNewInvoice(req as AuthenticatedRequest, res);
   
 })
 
@@ -43,7 +36,7 @@ router.put(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    await invoiceController.updateBill(req as CreateRequest, res);
+    await invoiceController.updateBill(req as AuthenticatedRequest, res);
   }
 );
 
@@ -63,7 +56,7 @@ router.put(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    await invoiceController.endDeviceBookStateInInvoice(req as CreateRequest, res);
+    await invoiceController.endDeviceBookStateInInvoice(req as AuthenticatedRequest, res);
   }
 );
 
@@ -81,7 +74,7 @@ router.put(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    await invoiceController.updateLockBill(req as CreateRequest, res);
+    await invoiceController.updateLockBill(req as AuthenticatedRequest, res);
   }
 );
 

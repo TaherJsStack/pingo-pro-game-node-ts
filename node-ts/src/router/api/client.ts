@@ -3,17 +3,10 @@ import { check, validationResult } from 'express-validator';
 import {ClientController} from '../../controllers/api/client';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
-import { IClient } from '../../models/interfaces/client.interface';
+import { AuthenticatedRequest } from '../../types/auth';
 
 const router: Router = express.Router();
 const clientController:ClientController = new ClientController();
-
-interface CreateItemRequest extends Request {
-  body: IClient;
-  authData: {
-    id: string;
-  };
-}
 
 // Route: POST /items (Create item)
 router.post(
@@ -32,7 +25,7 @@ router.post(
     }
 
     // Call controller method to create item
-    await clientController.createItem(req as CreateItemRequest, res);
+    await clientController.createItem(req as AuthenticatedRequest, res);
   }
 );
 

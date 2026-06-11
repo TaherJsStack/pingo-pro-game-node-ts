@@ -3,17 +3,10 @@ import { check, validationResult } from 'express-validator';
 import {ComplaintsSuggestionController} from '../../controllers/api/complaints-suggestion';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
-import { IComplaintsSuggestion } from '../../models/interfaces/complaints-suggestion.interface';
+import { AuthenticatedRequest } from '../../types/auth';
 
 const router: Router = express.Router();
 const controller:ComplaintsSuggestionController = new ComplaintsSuggestionController();
-
-interface CreateItemRequest extends Request {
-  authData: {
-    id: string;
-  };
-  body: IComplaintsSuggestion;
-}
 // Route: POST /items (Create item)
 router.post(
   '',
@@ -31,7 +24,7 @@ router.post(
     }
     
     // Call controller method to create item
-    await controller.createItem(req as CreateItemRequest, res);
+    await controller.createItem(req as AuthenticatedRequest, res);
   }
 );
 

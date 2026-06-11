@@ -4,18 +4,11 @@ import signReqData from '../../middleware/sign-req-data';
 import { createPlanGate } from '../../middleware/plan-gate';
 import { idempotencyMiddleware } from '../../middleware/idempotency';
 import { SessionController } from '../../controllers/api/session';
-import { ISession } from '../../models/interfaces/session.interface';
+import { AuthenticatedRequest } from '../../types/auth';
 
 const router: Router = express.Router();
 
 const sessionController: SessionController = new SessionController()
-
-interface CreateItemRequest extends Request {
-  authData: {
-    id: string;
-  };
-  body: ISession;
-}
 
 // Route: POST /items (Create item)
 router.post(
@@ -36,7 +29,7 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    await sessionController.createItem(req as CreateItemRequest, res);
+    await sessionController.createItem(req as AuthenticatedRequest, res);
   }
 );
 
@@ -78,7 +71,7 @@ router.put(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    await sessionController.endSession(req as CreateItemRequest, res);
+    await sessionController.endSession(req as AuthenticatedRequest, res);
   }
 );
 

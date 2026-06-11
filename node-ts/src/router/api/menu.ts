@@ -3,18 +3,11 @@ import { check, validationResult } from 'express-validator';
 import { MenuController } from '../../controllers/api/menu';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
-import { IMenu } from '../../models/interfaces/menu.interface';
 import MenuModel from '../../models/menu';
+import { AuthenticatedRequest } from '../../types/auth';
 
 const router: Router = express.Router();
 const menuController: MenuController = new MenuController();
-
-interface CreateItemRequest extends Request {
-  body: IMenu;
-  authData: {
-    id: string;
-  };
-}
 
 // Route: POST /items (Create item)
 router.post(
@@ -45,7 +38,7 @@ router.post(
     }
 
     // Call controller method to create item
-    await menuController.createItem(req as CreateItemRequest, res);
+    await menuController.createItem(req as AuthenticatedRequest, res);
   }
 );
 

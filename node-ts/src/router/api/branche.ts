@@ -3,19 +3,12 @@ import { check, validationResult } from 'express-validator';
 import {BrancheController} from '../../controllers/api/branche';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
-import { IBranche } from '../../models/interfaces/branche.interface';
-
 import upload from '../../middleware/multer-config';
+import { AuthenticatedRequest } from '../../types/auth';
 
 const router: Router = express.Router();
 const brancheController:BrancheController = new BrancheController();
 
-interface CreateItemRequest extends Request {
-  authData: {
-    id: string;
-  };
-  body: IBranche;
-}
 // Route: POST /items (Create item)
 router.post(
   '',
@@ -35,7 +28,7 @@ router.post(
     console.log('req.body -->', req.body);
     
     // Call controller method to create item
-    await brancheController.createItem(req as CreateItemRequest, res);
+    await brancheController.createItem(req as AuthenticatedRequest, res);
   }
 );
 

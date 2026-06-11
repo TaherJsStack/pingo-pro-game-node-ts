@@ -1,22 +1,15 @@
 import express, { Router, Request, Response } from 'express';
 import signReqData from '../../middleware/sign-req-data';
-import { IAddress } from '../../models/interfaces/address.interface';
 import { AddressController } from '../../controllers/api/address';
+import { AuthenticatedRequest } from '../../types/auth';
 
 const router: Router = express.Router();
 const addressController: AddressController = new AddressController();
 
-interface CreateItemRequest extends Request {
-  body: IAddress;
-  authData: {
-    id: string;
-  };
-}
-
 // Route: POST /items (Create item)
 router.post( '', signReqData,
   async (req: Request, res: Response) => {
-    await addressController.createItem(req as CreateItemRequest, res);
+    await addressController.createItem(req as AuthenticatedRequest, res);
   }
 );
 

@@ -2,18 +2,11 @@ import express, { Router, Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
 import { DeviceController } from '../../controllers/api/device';
 import signReqData from '../../middleware/sign-req-data';
-import { IDevice } from '../../models/interfaces/device.interface';
 import DeviceModel from '../../models/device';
+import { AuthenticatedRequest } from '../../types/auth';
 
 const router: Router = express.Router();
 const deviceController: DeviceController = new DeviceController();
-
-interface CreateItemRequest extends Request {
-  authData: {
-    id: string;
-  };
-  body: IDevice;
-}
 
 // Route: POST /items (Create item)
 router.post(
@@ -50,7 +43,7 @@ router.post(
     }
 
     // Call controller method to create item
-    await deviceController.createItem(req as CreateItemRequest, res);
+    await deviceController.createItem(req as AuthenticatedRequest, res);
   }
 );
 
