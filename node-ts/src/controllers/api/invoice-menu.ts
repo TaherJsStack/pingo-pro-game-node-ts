@@ -1,12 +1,10 @@
 import { Request, Response } from 'express';
 import { IInvoiceMenu } from '../../types';
 import { CRUDController } from '../base/CRUDController';
+import { CreateItemRequest } from '../interfaces/CustomRequestType';
 import { invoiceMenuRepository, menuRepository } from '../../repositories/instances';
 import { NotFoundError, ValidationError } from '../../errors/AppError';
-import { AuthenticatedRequest } from '../../types/auth';
 const { ObjectId } = require('mongoose').Types;
-
-type CreateItemRequest = AuthenticatedRequest & { body: IInvoiceMenu };
 
 export class InvoiceMenuController extends CRUDController<IInvoiceMenu> {
   constructor() {
@@ -54,7 +52,7 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu> {
     );
   }
 
-  createItem = async (req: CreateItemRequest, res: Response): Promise<void> => {
+  createItem = async (req: CreateItemRequest<IInvoiceMenu>, res: Response): Promise<void> => {
     try {
       const menuItems = await this.resolveMenuItems(req, (req.body as any).menuItems);
       const savedItem = await this.repository.create({
@@ -79,7 +77,7 @@ export class InvoiceMenuController extends CRUDController<IInvoiceMenu> {
     }
   };
 
-  updateMenuItemsLockOrders = async (req: CreateItemRequest, res: Response): Promise<void> => {
+  updateMenuItemsLockOrders = async (req: CreateItemRequest<IInvoiceMenu>, res: Response): Promise<void> => {
     try {
       req.body.closedBy = new ObjectId(req.authData.id);
       req.body.activeState = false;
