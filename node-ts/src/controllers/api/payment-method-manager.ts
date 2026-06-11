@@ -1,14 +1,9 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { ValidationError } from '../../errors/AppError';
 import PaymentMethodService, { PaymentMethodService as PaymentMethodServiceClass } from '../../services/payment-method.service';
 import { SendResponse } from '../base/sendResponse';
 import { toPublicPaymentMethod } from '../../util/redact';
-
-interface AuthRequest extends Request {
-  authData?: {
-    id: string;
-  };
-}
+import { MaybeAuthenticatedRequest as AuthRequest } from '../../types/auth';
 
 class PaymentMethodManager extends SendResponse {
   constructor(private readonly service: PaymentMethodServiceClass = PaymentMethodService) {

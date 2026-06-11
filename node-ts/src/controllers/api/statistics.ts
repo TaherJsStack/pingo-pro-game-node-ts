@@ -1,5 +1,6 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { Types } from 'mongoose';
+import { MaybeAuthenticatedRequest } from '../../types/auth';
 import { invoiceRepository } from '../../repositories/instances';
 import ShiftModel from '../../models/shift';
 import SessionModel from '../../models/session';
@@ -16,14 +17,8 @@ interface Filter {
   activeState: boolean;
 }
 
-interface AuthenticatedRequest extends Request {
-  authData?: {
-    tenantId?: string;
-  };
-}
-
 export class StatisticsController {
-  private getTenantMatch(req: AuthenticatedRequest) {
+  private getTenantMatch(req: MaybeAuthenticatedRequest) {
     // Owner-facing statistics must always be tenant-scoped. Refuse (rather than aggregate
     // across every tenant) when the caller's token carries no tenantId. Cross-tenant platform
     // stats live in controllers/root-api/statistics.ts behind rootAuthGuard.
@@ -34,7 +29,7 @@ export class StatisticsController {
     return { tenantId: new ObjectId(tenantId) };
   }
 
-  getGroupedInvoicesByClosedBy = async (req: AuthenticatedRequest, res: Response) => {
+  getGroupedInvoicesByClosedBy = async (req: MaybeAuthenticatedRequest, res: Response) => {
     // let filter: Filter = JSON.parse(req.query.Filter);
 
     let filterObg = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
@@ -113,7 +108,7 @@ export class StatisticsController {
       });
     }
   }
-  getGroupedInvoicesByClosedByMemberId = async (req: AuthenticatedRequest, res: Response) => {
+  getGroupedInvoicesByClosedByMemberId = async (req: MaybeAuthenticatedRequest, res: Response) => {
     // let filter: Filter = JSON.parse(req.query.Filter);
     let _id = req.params.id;
     let filterObg = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : req.query.Filter;
@@ -237,7 +232,7 @@ export class StatisticsController {
     }
   }
 
-  getTopCustomers = async (req: AuthenticatedRequest, res: Response) => {
+  getTopCustomers = async (req: MaybeAuthenticatedRequest, res: Response) => {
     try {
       const filterObg = typeof req.query.Filter === 'string'
         ? JSON.parse(req.query.Filter)
@@ -322,7 +317,7 @@ export class StatisticsController {
     }
   }
 
-  getKpiSummary = async (req: AuthenticatedRequest, res: Response) => {
+  getKpiSummary = async (req: MaybeAuthenticatedRequest, res: Response) => {
     try {
       const tenantId = req.authData?.tenantId;
       if (!tenantId) {

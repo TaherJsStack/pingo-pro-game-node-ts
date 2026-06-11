@@ -3,14 +3,10 @@ import { IInvoiceMenu } from '../../types';
 import { CRUDController } from '../base/CRUDController';
 import { invoiceMenuRepository, menuRepository } from '../../repositories/instances';
 import { NotFoundError, ValidationError } from '../../errors/AppError';
+import { AuthenticatedRequest } from '../../types/auth';
 const { ObjectId } = require('mongoose').Types;
 
-interface CreateItemRequest extends Request {
-  body: IInvoiceMenu;
-  authData: {
-    id: string;
-  };
-}
+type CreateItemRequest = AuthenticatedRequest & { body: IInvoiceMenu };
 
 export class InvoiceMenuController extends CRUDController<IInvoiceMenu> {
   constructor() {

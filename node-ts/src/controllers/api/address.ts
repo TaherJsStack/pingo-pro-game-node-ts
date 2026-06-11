@@ -9,13 +9,6 @@ import { IAuth } from '../../types';
 import { CRUDController } from '../base/CRUDController';
 const { ObjectId } = require('mongoose').Types;
 
-// interface CreateItemRequest extends Request {
-//   body: IAddress;
-//   authData: {
-//     id: string;
-//   };
-// }
-
 export class AddressController extends CRUDController<IAddress> implements CreateOperation<IAddress>{
   constructor() {
     super(addressRepository);

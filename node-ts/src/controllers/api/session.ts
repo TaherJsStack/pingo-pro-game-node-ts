@@ -3,23 +3,13 @@ import { SessionService } from '../../services/session.service';
 import { ISession } from '../../types';
 import { sessionRepository } from '../../repositories/instances';
 import { SendResponse } from '../base/sendResponse';
+import { AuthenticatedRequest } from '../../types/auth';
 
 const sessionService = new SessionService();
 
+type CreateItemRequest = AuthenticatedRequest & { body: ISession };
 
-interface CreateItemRequest extends Request {
-  authData: {
-    id: string;
-    tenantId?: string;
-  };
-  body: ISession;
-}
-
-interface EndSessionRequest extends Request {
-  authData: {
-    id: string;
-    tenantId?: string;
-  };
+type EndSessionRequest = AuthenticatedRequest & {
   body: Partial<ISession> & {
     deviceId?: string;
     devicesIds?: string[];
@@ -28,7 +18,7 @@ interface EndSessionRequest extends Request {
     name?: string;
     phone?: string;
   };
-}
+};
 
 export class SessionController extends SendResponse {
   private getScope(req: Request) {

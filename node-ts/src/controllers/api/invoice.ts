@@ -6,15 +6,10 @@ import { CRUDController } from '../base/CRUDController';
 import { clientRepository, invoiceRepository, menuRepository } from '../../repositories/instances';
 import { NotFoundError, ValidationError } from '../../errors/AppError';
 import { resolveEndTime } from '../../util/session-time';
+import { AuthenticatedRequest } from '../../types/auth';
 const { ObjectId } = require('mongoose').Types;
 
-interface CreateRequest extends Request {
-  authData: {
-    id: string;
-    tenantId?: string;
-  };
-  body: IInvoice;
-}
+type CreateRequest = AuthenticatedRequest & { body: IInvoice };
 
 export class InvoiceController extends CRUDController<IInvoice> {
   constructor() {
