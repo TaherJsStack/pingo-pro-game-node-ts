@@ -59,7 +59,6 @@ export class InboxController extends CRUDController<IInbox> {
       const authReq = req as AuthenticatedRequest;
       const count = await InboxModel.countDocuments({
         ownerId: new ObjectId(authReq.authData.id),
-        tenantId: new ObjectId(authReq.authData.tenantId),
         isSeen: false,
         activeState: true,
       });
@@ -77,7 +76,6 @@ export class InboxController extends CRUDController<IInbox> {
         {
           _id: req.params.id,
           ownerId: new ObjectId(authReq.authData.id),
-          tenantId: new ObjectId(authReq.authData.tenantId),
         },
         { isSeen: true },
         { new: true },

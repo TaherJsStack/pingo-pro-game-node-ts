@@ -42,7 +42,7 @@ export class InboxController extends CRUDController<IInbox> {
       for (const ownerId of ownerIds) {
         const createdDoc = await InboxModel.create({
           ownerId: new ObjectId(ownerId),
-          tenantId: new ObjectId(authReq.authData.tenantId),
+          tenantId: null,
           title,
           context,
           type: InboxType.Admin,
