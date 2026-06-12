@@ -1,17 +1,13 @@
-// controllers/statisticsController.js
-const mongoose = require('mongoose');
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { SendResponse } from '../base/sendResponse';
-import Invoice from '../../models/invoice';
 import AnalyticsService from '../../services/analytics.service';
 import { KpiPeriod } from '../../enums/kpi-period.enum';
-// import { SendResponse } from '../api/base/sendResponse';
 
 export class StatisticsController extends SendResponse {
   constructor() {
     super();
     this.getCollectionStatistics = this.getCollectionStatistics.bind(this);
-    this.getAggregate = this.getAggregate.bind(this);
     this.getPlatformKpiSummary = this.getPlatformKpiSummary.bind(this);
   }
   async getCollectionStatistics(req: Request, res: Response) {
@@ -25,7 +21,7 @@ export class StatisticsController extends SendResponse {
       });
 
       const stats = await Promise.all(statsPromises);
-      const statsObject = await stats.reduce((acc, stat) => {
+      const statsObject = stats.reduce<Record<string, number>>((acc, stat) => {
         acc[stat.collectionName] = stat.count;
         return acc;
       }, {});
@@ -38,161 +34,6 @@ export class StatisticsController extends SendResponse {
       // res.status(500).json({ error: 'An error occurred while fetching collection statistics' });
     }
   }
-
-
-  async getAggregate(req: Request, res: Response) {
-    // console.log('getAggregate');
-    try {
-      const invoices = await Invoice.aggregate([
-        {
-          $match: {
-            // createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
-            // brancheId: new ObjectId(brancheId),
-            activeState: false,
-          },
-        },
-        {
-          $group: {
-            _id: "$closedBy",
-            invoices: { $push: "$$ROOT" },
-            invoicesTotal: { $sum: "$total" },
-            devicesTotal: { $sum: "$devicesTotal" },
-            menuItemsTotal: { $sum: "$menuItemsTotal" },
-          },
-        },
-
-        {
-          $lookup: {
-            from: 'auths',
-            localField: '_id',
-            foreignField: '_id',
-            as: 'closedByUser',
-          },
-        },
-        {
-          $lookup: {
-            from: 'invoicemenus',
-            localField: '_id',
-            foreignField: 'closedBy',
-            as: 'invoicemenus',
-          },
-        },
-        {
-          $unwind: {
-            path: "$closedByUser",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $unwind: {
-            path: "$invoicemenus",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        // {
-        //   $group: {
-        //     _id: "$_id",
-        //     invoices: { $first: "$invoices" },
-        //     invoicesTotal: { $first: "$invoicesTotal" },
-        //     devicesTotal: { $first: "$devicesTotal" },
-        //     menuItemsTotal: { $first: "$menuItemsTotal" },
-        //     closedByUser: { $first: "$closedByUser" },
-        //     invoicemenus: { $push: "$invoicemenus" },
-        //     menuItemsPriceTotal: { $sum: { $multiply: ["$invoicemenus.price", "$invoicemenus.quantity"] } },
-        //     menuItemsQuantityTotal: { $sum: "$invoicemenus.quantity" },
-        //   },
-        // },
-        // {
-        //   $addFields: {
-        //     totalMenuItemsPrice: "$menuItemsPriceTotal",
-        //     totalMenuItemsQuantity: "$menuItemsQuantityTotal",
-        //   },
-        // },
-
-      ]);
-      // const invoices = await Invoice.aggregate([
-      //   {
-      //     $match: {
-      //       activeState: false,
-      //     },
-      //   },
-      //   {
-      //     $group: {
-      //       _id: "$closedBy",
-      //       invoices: { $push: "$$ROOT" },
-      //       invoicesTotal: { $sum: "$total" },
-      //       devicesTotal: { $sum: "$devicesTotal" },
-      //       menuItemsTotal: { $sum: "$menuItemsTotal" },
-      //     },
-      //   },
-      //   {
-      //     $lookup: {
-      //       from: 'auths',
-      //       localField: '_id',
-      //       foreignField: '_id',
-      //       as: 'closedByUser',
-      //     },
-      //   },
-      //   {
-      //     $lookup: {
-      //       from: 'invoicemenus',
-      //       localField: '_id',
-      //       foreignField: 'closedBy',
-      //       as: 'invoicemenus',
-      //     },
-      //   },
-      //   {
-      //     $unwind: {
-      //       path: "$invoicemenus",
-      //       preserveNullAndEmptyArrays: true,
-      //     },
-      //   },
-      //   {
-      //     $unwind: {
-      //       path: "$invoicemenus.menuItems",
-      //       preserveNullAndEmptyArrays: true,
-      //     },
-      //   },
-      //   {
-      //     $group: {
-      //       _id: "$_id",
-      //       invoices: { $first: "$invoices" },
-      //       invoicesTotal: { $first: "$invoicesTotal" },
-      //       devicesTotal: { $first: "$devicesTotal" },
-      //       menuItemsTotal: { $first: "$menuItemsTotal" },
-      //       closedByUser: { $first: "$closedByUser" },
-      //       invoicemenus: { $push: "$invoicemenus" },
-      //       menuItemsPriceTotal: { $sum: { $multiply: ["$invoicemenus.menuItems.price", "$invoicemenus.menuItems.quantity"] } },
-      //       menuItemsQuantityTotal: { $sum: "$invoicemenus.menuItems.quantity" },
-      //     },
-      //   },
-      //   {
-      //     $addFields: {
-      //       totalMenuItemsPrice: "$menuItemsPriceTotal",
-      //       totalMenuItemsQuantity: "$menuItemsQuantityTotal",
-      //     },
-      //   },
-      // ]);
-
-      res.status(201).json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: invoices,
-      });
-    } catch (error) {
-      console.error("Error fetching grouped invoices:", error);
-      res.status(500).json({
-        success: true,
-        errors: [error],
-        status: 200,
-        message: '',
-        data: [],
-      });
-    }
-  }
-
   async getPlatformKpiSummary(req: Request, res: Response) {
     try {
       const filterObg = typeof req.query.Filter === 'string'

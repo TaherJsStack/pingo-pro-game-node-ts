@@ -1,10 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
-import  Auth from '../../models/auth';
-import Password from '../../models/password';
-import { generateBcryptHash, compareBcryptHash, generateToken } from '../../util/jwtUtil';
+import { Request, Response } from 'express';
+import Auth from '../../models/auth';
 import { IAuth } from '../../models/interfaces/auth.interface';
-import { IPassword } from '../../models/interfaces/password.interface';
-// import { SendResponse } from './base/sendResponse';
 import { SendResponse } from '../base/sendResponse';
 
 export class AuthController extends SendResponse{
@@ -13,33 +9,21 @@ export class AuthController extends SendResponse{
         super();
     }
     
-    getAll = (req: Request, res: Response, next: NextFunction) => {
-    
-        const authQuery = Auth.find().sort({ createdAt: -1 });
-        let fetchedList: IAuth[] = [];
-   
-        authQuery
-            .then((documents: IAuth[]) => {
-                fetchedList = documents;
-                return Auth.countDocuments();
-            })
-            .then((count: number) => {
-    
-                // res.status(200).json({
-                //     message: "members fetched successfully!",
-                //     list: fetchedList,
-                //     count: count,
-                //     status: 200
-                // });
-                this.sendResponse(req, res, 200, fetchedList);
-            })
-            .catch((err: Error) => {
-    
-                res.status(500).json({
-                    message: err + ' users fetched',
-                    status: 500
-                });
-            });
+    getAll = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const pageNo = Math.max(Number(req.query.PageNo ?? 1), 1);
+            const pageSize = Math.max(Number(req.query.PageSize ?? 10), 1);
+            const skip = (pageNo - 1) * pageSize;
+
+            const [fetchedList, totalData] = await Promise.all([
+                Auth.find().sort({ createdAt: -1 }).skip(skip).limit(pageSize),
+                Auth.countDocuments(),
+            ]);
+
+            this.sendResponse(req, res, 200, fetchedList as IAuth[], totalData);
+        } catch (err: any) {
+            this.sendErrorResponse(req, res, err);
+        }
     };
     
 }
