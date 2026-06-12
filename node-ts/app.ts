@@ -58,8 +58,6 @@ class App {
         'Authorization',
         'AppLanguage',
         'Allowencrypt',
-        'cartId',
-        'favoriteId',
         'Idempotency-Key',
       ],
     };
