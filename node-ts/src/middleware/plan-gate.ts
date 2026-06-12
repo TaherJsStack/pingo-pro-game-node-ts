@@ -81,7 +81,7 @@ export function createPlanGate(options: PlanGateOptions = {}) {
       }
 
       const requestedUnits = resolveRequestedUnits(req, options.getRequestedUnits);
-      const branchId = req.body?.brancheId;
+      const branchId = req.authData?.brancheId;
 
       if (branchId && requestedUnits > 0) {
         const branchObjectId = assertObjectId(branchId, 'brancheId');
