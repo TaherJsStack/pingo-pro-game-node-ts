@@ -11,6 +11,7 @@ import auditRouterAPI from './api-admin/audit';
 import billingRouterAPI from './api-admin/billing';
 import paymentAdminRouterAPI from './api-admin/payment-admin';
 import plansAdminRouter from './api-admin/plans';
+import tenantAdminRouter from './api-admin/tenant';
 
 import signReqData from '../middleware/sign-req-data';
 import rootAuthGuard from '../middleware/root-auth.guard';
@@ -34,6 +35,7 @@ routerAPI.use("/inbox",                 inboxRouterAPI);
 routerAPI.use("/audit",                 auditRouterAPI);
 routerAPI.use("/billing",               billingRouterAPI);
 routerAPI.use("/plans",                 plansAdminRouter);
+routerAPI.use("/tenants",               tenantAdminRouter);
 // Root-only payment operations (subscriptions / payments / payment-methods / webhook-events).
 routerAPI.use(paymentAdminRouterAPI);
 
