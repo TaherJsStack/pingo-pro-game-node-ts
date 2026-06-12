@@ -1,20 +1,20 @@
 import express from 'express';
 
-import statisticsRouterAPI           from './api-admin/statistics';
-import authsRouterAPI                from './api-admin/auths';
-import complaintsSuggestionRouterAPI from './api-admin/complaints-suggestion';
-import brancheRouterAPI from './api-admin/branche';
-import devicesRouterAPI from './api-admin/device';
-import clientRouterAPI from './api-admin/client';
-import inboxRouterAPI from './api-admin/inbox';
-import auditRouterAPI from './api-admin/audit';
-import billingRouterAPI from './api-admin/billing';
-import paymentAdminRouterAPI from './api-admin/payment-admin';
-import plansAdminRouter from './api-admin/plans';
-import tenantAdminRouter from './api-admin/tenant';
+import statisticsRouterAPI              from './api-admin/statistics';
+import authsRouterAPI                   from './api-admin/auths';
+import complaintsSuggestionRouterAPI    from './api-admin/complaints-suggestion';
+import brancheRouterAPI                 from './api-admin/branche';
+import devicesRouterAPI                 from './api-admin/device';
+import clientRouterAPI                  from './api-admin/client';
+import inboxRouterAPI                   from './api-admin/inbox';
+import auditRouterAPI                   from './api-admin/audit';
+import billingRouterAPI                 from './api-admin/billing';
+import paymentAdminRouterAPI            from './api-admin/payment-admin';
+import plansAdminRouter                 from './api-admin/plans';
+import tenantAdminRouter                from './api-admin/tenant';
 
-import signReqData from '../middleware/sign-req-data';
-import rootAuthGuard from '../middleware/root-auth.guard';
+import signReqData      from '../middleware/sign-req-data';
+import rootAuthGuard    from '../middleware/root-auth.guard';
 
 const routerAPI = express();
 
