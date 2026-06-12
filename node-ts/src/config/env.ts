@@ -63,7 +63,12 @@ function parseOrigins(value: string): string[] {
     .map((origin) => origin.trim())
     .filter(Boolean);
 
-  return origins.length > 0 ? origins : ['*'];
+  const resolvedOrigins = origins.length > 0 ? origins : ['*'];
+  if (resolvedOrigins.includes('*') && (process.env.NODE_ENV || 'development') === 'production') {
+    throw new Error('CORS_ORIGINS must be set to an explicit origin list in production; wildcard is not allowed.');
+  }
+
+  return resolvedOrigins;
 }
 
 function trimTrailingSlash(value: string): string {
