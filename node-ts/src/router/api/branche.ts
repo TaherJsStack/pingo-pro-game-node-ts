@@ -1,13 +1,13 @@
 import express, { Router, Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
-import {BrancheController} from '../../controllers/api/branche';
+import { BrancheController } from '../../controllers/api/branche';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
 import upload from '../../middleware/multer-config';
 import { AuthenticatedRequest } from '../../types/auth';
 
 const router: Router = express.Router();
-const brancheController:BrancheController = new BrancheController();
+const brancheController: BrancheController = new BrancheController();
 
 // Route: POST /items (Create item)
 router.post(
@@ -26,7 +26,7 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
     console.log('req.body -->', req.body);
-    
+
     // Call controller method to create item
     await brancheController.createItem(req as AuthenticatedRequest, res);
   }
@@ -60,6 +60,6 @@ router.put(
 // Other routes for GET (Read) and DELETE operations...
 router.get("", signReqData, brancheController.getAllItems);
 
-router.get("/getBranche/:id", signReqData, brancheController.getItemById);
+router.get("/:id", signReqData, brancheController.getItemById);
 
 export default router;

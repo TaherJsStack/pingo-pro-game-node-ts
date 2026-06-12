@@ -1,56 +1,45 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
-import {EmployeesController} from "../../controllers/api/employees";
+import { EmployeesController } from '../../controllers/api/employees';
 import signReqData from '../../middleware/sign-req-data';
 import { check, validationResult } from 'express-validator';
-import Auth from '../../models/auth';
+import { authRepository } from '../../repositories/instances';
 
 const employeesRouter = express.Router();
-const employeesController:EmployeesController = new EmployeesController();
-const { saveAuth, updateOne, updatePassword, getAllItems, checkEmail, getById, deleteOne } = new EmployeesController();
-
-// employeesRouter.post("/", saveAuth);
+const employeesController = new EmployeesController();
 
 employeesRouter.post(
     '',
     signReqData,
     [
-        //  Validation rules using express-validator
-        //  check('branche').notEmpty().withMessage('branche is required'),
-        //  check('address').notEmpty().withMessage('address is required'),
-      check('email').notEmpty().withMessage('email is required'),
-      check('email').isEmail().withMessage('Email is invalid'),
+        check('email').notEmpty().withMessage('email is required'),
+        check('email').isEmail().withMessage('Email is invalid'),
     ],
     async (req: Request, res: Response, next: NextFunction) => {
-      // Check for validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-      
-      const { email } = req.body;
-      const employee = await Auth.findOne({ email });
-  
-      if (employee) {
-        return res.status(400).json({ errors: [{ path: 'email', msg: 'Email is already taken' }] });
-      }
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
 
-      // Call controller method to create item
-    //   await saveAuth(req, res);
-      await employeesController.saveAuth(req, res, next);
-    
+        const { email } = req.body;
+        const scope = { tenantId: (req as any).authData?.tenantId, requireTenant: true };
+        const existing = await authRepository.findOne({ email }, scope);
+
+        if (existing) {
+            return res.status(400).json({ errors: [{ path: 'email', msg: 'Email is already taken' }] });
+        }
+
+        await employeesController.saveAuth(req, res, next);
     }
-  );
+);
 
-employeesRouter.put("/member/:id", signReqData, updateOne);
+employeesRouter.put('/member/:id', signReqData, employeesController.updateOne);
 
-employeesRouter.put("/updatePassword", signReqData, updatePassword);
+employeesRouter.put('/updatePassword', signReqData, employeesController.updatePassword);
 
-employeesRouter.get("/", signReqData, getAllItems);
+employeesRouter.get('/', signReqData, employeesController.getAllItems);
 
-employeesRouter.get("/checkEmail/:email", checkEmail);
+employeesRouter.get('/getById/:authId', signReqData, employeesController.getById);
 
-employeesRouter.get("/getById/:authId", signReqData, getById);
-
-employeesRouter.delete("/:id", signReqData, deleteOne);
+employeesRouter.delete('/:id', signReqData, employeesController.deleteOne);
 
 export default employeesRouter;

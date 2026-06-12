@@ -1,12 +1,12 @@
 import express, { Router, Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
-import {ComplaintsSuggestionController} from '../../controllers/api/complaints-suggestion';
+import { ComplaintsSuggestionController } from '../../controllers/api/complaints-suggestion';
 // import checkAuth from '../../middleware/check-auth';
 import signReqData from '../../middleware/sign-req-data';
 import { AuthenticatedRequest } from '../../types/auth';
 
 const router: Router = express.Router();
-const controller:ComplaintsSuggestionController = new ComplaintsSuggestionController();
+const controller: ComplaintsSuggestionController = new ComplaintsSuggestionController();
 // Route: POST /items (Create item)
 router.post(
   '',
@@ -22,7 +22,7 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     // Call controller method to create item
     await controller.createItem(req as AuthenticatedRequest, res);
   }
@@ -55,6 +55,6 @@ router.put(
 // Other routes for GET (Read) and DELETE operations...
 router.get("", signReqData, controller.getAllItems);
 
-router.get("/getBranche/:id", signReqData, controller.getItemById);
+router.get("/:id", signReqData, controller.getItemById);
 
 export default router;

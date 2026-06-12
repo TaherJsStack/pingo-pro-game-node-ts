@@ -1,19 +1,14 @@
-import express, { NextFunction, Request, Response } from 'express';
+import express from 'express';
 import PaymentManager from '../../controllers/api/payment-manager';
 import PaymentMethodManager from '../../controllers/api/payment-method-manager';
 import signReqData from '../../middleware/sign-req-data';
 import { createRateLimit } from '../../middleware/rate-limit';
+import { asyncHandler } from '../../util/asyncHandler';
 
 const router = express.Router();
 const paymentManager = new PaymentManager();
 const paymentMethodManager = new PaymentMethodManager();
 const initiateRateLimit = createRateLimit(10, 60 * 1000);
-
-function asyncHandler(handler: (req: Request, res: Response) => Promise<void>) {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    handler(req, res).catch(next);
-  };
-}
 
 router.post('/initiate', signReqData, initiateRateLimit, asyncHandler(paymentManager.initiate as any));
 

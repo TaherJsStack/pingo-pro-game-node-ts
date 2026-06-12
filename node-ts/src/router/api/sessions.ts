@@ -80,7 +80,7 @@ router.get("", signReqData, sessionController.getAllItems);
 
 router.delete('/:id', signReqData, idempotencyMiddleware, sessionController.deleteItem)
 router.delete(
-  '/deleteAllReletedToBill/:id',
+  '/related-to-bill/:id',
   signReqData,
   [
     check('ids').isArray({ min: 1, max: 100 }).withMessage('ids must be a non-empty array with max 100 items'),
@@ -93,7 +93,7 @@ router.delete(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    await sessionController.deleteAllReletedToBill(req, res);
+    await sessionController.deleteAllRelatedToBill(req, res);
   }
 )
 

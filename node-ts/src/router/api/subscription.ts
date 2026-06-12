@@ -1,4 +1,4 @@
-import express, { NextFunction, Request, Response, Router } from 'express';
+import express, { Request, Response, Router } from 'express';
 import { check, validationResult } from 'express-validator';
 import SubscriptionManager from '../../controllers/api/subscription-manager';
 import signReqData from '../../middleware/sign-req-data';
@@ -9,6 +9,7 @@ import { planRepository, subscriptionRepository } from '../../repositories/insta
 import PaymentService from '../../services/payment.service';
 import SubscriptionService from '../../services/subscription.service';
 import { MaybeAuthenticatedRequest as AuthRequest } from '../../types/auth';
+import { asyncHandler } from '../../util/asyncHandler';
 
 class SubscriptionResponse extends SendResponse {
   ok(req: Request, res: Response, statusCode: number, data: any[], totalData?: number) {
@@ -19,12 +20,6 @@ class SubscriptionResponse extends SendResponse {
 const router: Router = express.Router();
 const response = new SubscriptionResponse();
 const subscriptionManager = new SubscriptionManager();
-
-function asyncHandler(handler: (req: AuthRequest, res: Response) => Promise<void>) {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    handler(req as AuthRequest, res).catch(next);
-  };
-}
 
 function requireUser(req: AuthRequest): string {
   const userId = req.authData?.id;
