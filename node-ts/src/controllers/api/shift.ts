@@ -38,7 +38,7 @@ export class ShiftController extends CRUDController<IShift> {
 
   getCurrentShift = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const shift = await ShiftService.getCurrentShift(req.authData.id, req.query.brancheId as string, req.authData.tenantId);
+      const shift = await ShiftService.getCurrentShift(req.authData.id, req.authData?.brancheId as string, req.authData.tenantId);
       this.sendResponse(req, res, 200, shift ? [shift] : [], shift ? 1 : 0);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
@@ -47,7 +47,7 @@ export class ShiftController extends CRUDController<IShift> {
 
   getDailySummary = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const data = await ShiftService.getDailySummary(req.query.brancheId as string, req.query.date as string | undefined, req.authData.tenantId);
+      const data = await ShiftService.getDailySummary(req.authData?.brancheId as string, req.query.date as string | undefined, req.authData.tenantId);
       this.sendResponse(req, res, 200, [data], 1);
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);

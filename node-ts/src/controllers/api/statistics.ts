@@ -34,7 +34,8 @@ export class StatisticsController {
 
     let filterObg = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
 
-    let { ownerId, brancheId, filter } = filterObg;
+    let { ownerId, filter } = filterObg;
+    const brancheId = req.authData?.brancheId;
     let { startDate, endDate, activeState } = filter;
 
     // console.log('getGroupedInvoicesByClosedBy filter', filterObg);
@@ -113,7 +114,8 @@ export class StatisticsController {
     let _id = req.params.id;
     let filterObg = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : req.query.Filter;
 
-    let { ownerId, brancheId, filter, startDate, endDate, activeState } = filterObg;
+    let { ownerId, filter, startDate, endDate, activeState } = filterObg;
+    const brancheId = req.authData?.brancheId;
     // let {  } = filter;
 
     // console.log('getGroupedInvoicesByClosedBy filter', filterObg);
@@ -239,7 +241,7 @@ export class StatisticsController {
         : ((req.query.Filter as any) || {});
 
       const innerFilter = filterObg.filter || filterObg;
-      const brancheId = filterObg.brancheId || innerFilter.brancheId;
+      const brancheId = req.authData?.brancheId;
       const parsedLimit = Number(innerFilter.limit || filterObg.limit || 5);
       const limit = Number.isFinite(parsedLimit) ? Math.max(parsedLimit, 1) : 5;
       const createdAtMatch: any = {};
@@ -330,7 +332,7 @@ export class StatisticsController {
         : ((req.query.Filter as any) || {});
 
       const innerFilter = filterObg.filter || filterObg;
-      const brancheId = filterObg.brancheId || innerFilter.brancheId;
+      const brancheId = req.authData?.brancheId;
       const startDate = innerFilter.startDate ? new Date(innerFilter.startDate) : new Date(0);
       const endDate = innerFilter.endDate ? new Date(innerFilter.endDate) : new Date();
       const allowedPeriods: KpiPeriod[] = Object.values(KpiPeriod);

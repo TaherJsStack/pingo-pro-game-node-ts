@@ -21,7 +21,7 @@ class PaymentManager extends SendResponse {
     if (!userId) {
       throw new ValidationError('Authenticated user is required.');
     }
-    const brancheId = req.body.brancheId;
+    const brancheId = req.authData?.brancheId;
     if (!brancheId) {
       throw new ValidationError('brancheId is required.');
     }

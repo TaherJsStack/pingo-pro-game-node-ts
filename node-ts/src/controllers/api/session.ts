@@ -57,7 +57,7 @@ export class SessionController extends SendResponse {
 
   getAllItems = async (req: Request, res: Response) => {
     let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
-    let { brancheId } = filter;
+    const brancheId = (req as any).authData?.brancheId;
 
     try {
       const items = await sessionRepository.find({ brancheId }, { sort: { createdAt: -1, activeState: 1 }, scope: this.getScope(req) });

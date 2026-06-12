@@ -15,7 +15,7 @@ export class ClientController extends CRUDController<IClient> {
     // let { activeState, ...otherFilters } = req.query; // Assuming additional filters are sent via query params
 
     let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
-    let { brancheId } = filter;
+    const brancheId = (req as any).authData?.brancheId;
     // console.log('filter---> ', filter);
     // const filter2 = this.parseFilter(req.query.Filter);
 
