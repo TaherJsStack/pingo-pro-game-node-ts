@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { logger } from '../../util/logger';
 
 export abstract class SendResponse {
     public sendResponse(req: Request, res: Response, statusCode: number, data: any, totalData?: number, message?: string) {
@@ -23,7 +24,7 @@ export abstract class SendResponse {
         } else {
             errorMessage = 'An unknown error occurred';
         }
-        console.error('Error:', err?.message ?? err);
+        logger.error('request error', { statusCode, message: errorMessage });
         res.status(statusCode).json({
             success: false,
             errors: [errorMessage],

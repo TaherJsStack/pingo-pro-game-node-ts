@@ -8,6 +8,7 @@ import { UpdateOperation } from '../interfaces/UpdateOperation';
 import { SendResponse } from './sendResponse';
 import { IRepository, RepositoryScope } from '../../repositories/interfaces/IRepository';
 import { buildUploadUrl } from '../../util/uploads';
+import { NotFoundError, ValidationError } from '../../errors/AppError';
 
 export abstract class CRUDController<T extends object> extends SendResponse
   implements CreateOperation<T>, ReadOperation<T>, UpdateOperation<T>, DeleteOperation<T> {
@@ -36,9 +37,6 @@ export abstract class CRUDController<T extends object> extends SendResponse
   }
 
   public createItem = async (req: CreateItemRequest<T>, res: Response): Promise<void> => {
-
-    // console.log('CRUDController createItem req.body -->', req.body, req.authData);
-
     try {
       if (req.file) {
         (req.body as any)['logo'] = buildUploadUrl(req, req.file.filename);
@@ -67,9 +65,6 @@ export abstract class CRUDController<T extends object> extends SendResponse
 
   public getAllItems = async (req: Request, res: Response): Promise<void> => {
     try {
-
-      // console.clear();
-      // console.log('CRUDController getAllItems filter -->', req.query.Filter);
       const filter = this.parseFilter(req.query.Filter);
       const page = filter['pageNo'] || 1;
       const pageSize = filter['pageSize'] || 10;
@@ -85,7 +80,7 @@ export abstract class CRUDController<T extends object> extends SendResponse
     try {
       const item = await this.repository.findById(req.params.id, this.getRequestScope(req));
       if (!item) {
-        res.status(404).json({ msg: 'Item not found' });
+        this.sendErrorResponse(req, res, new NotFoundError('Item not found'));
         return;
       }
       this.sendResponse(req, res, 200, [item]);
@@ -95,32 +90,15 @@ export abstract class CRUDController<T extends object> extends SendResponse
   };
 
   public updateItem = async (req: Request, res: Response): Promise<void> => {
-
-    // console.log('updateItem -->', req.params.id)
     try {
-
-      // let fileData = {};
       if (req.file) {
-        // Construct the full URL for the uploaded file
-        // const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-        // Get file metadata
-        // fileData = await {
-        //   originalName: req.file.originalname,
-        //   storageName: req.file.filename,
-        //   size: req.file.size,
-        //   mimeType: req.file.mimetype,
-        //   path: req.file.path,
-        // };
         req.body['logo'] = buildUploadUrl(req, req.file.filename);
       }
-
-      // console.log('req.body -->', req.rawHeaders);
-      // console.log('req.body -->', req.body, fileData);
 
       (req.body as any)._id = req.params.id;
       const updatedItem = await this.repository.updateById(req.params.id, req.body as any, this.getRequestScope(req));
       if (!updatedItem) {
-        res.status(404).json({ msg: 'Item not found' });
+        this.sendErrorResponse(req, res, new NotFoundError('Item not found'));
         return;
       }
       this.sendResponse(req, res, 200, [updatedItem]);
@@ -130,20 +108,14 @@ export abstract class CRUDController<T extends object> extends SendResponse
   };
 
   public updateManyItems = async (req: Request, res: Response): Promise<void> => {
-
     try {
-
-      // console.log('updateManyItems -->', req.body);
-
-      let ids: string[] = req.body.map((item: any) => item._id);
-
-      const updates = req.body; // Array of updates from the request body
-
+      const updates = req.body;
       if (!Array.isArray(updates)) {
-        res.status(400).json({ msg: 'Updates should be an array' });
+        this.sendErrorResponse(req, res, new ValidationError('Updates should be an array'));
         return;
       }
 
+      const ids: string[] = updates.map((item: any) => item._id);
       const scope = this.getRequestScope(req);
       const updatePromises = updates.map((item) => this.repository.updateById(item._id, { stock: item.stock } as any, scope));
 
@@ -160,7 +132,7 @@ export abstract class CRUDController<T extends object> extends SendResponse
       const scope = this.getRequestScope(req);
       const deletedItem = await this.repository.deleteById(req.params.id, scope);
       if (!deletedItem) {
-        res.status(404).json({ msg: 'Item not found' });
+        this.sendErrorResponse(req, res, new NotFoundError('Item not found'));
         return;
       }
       const totalData = await this.repository.countDocuments({}, scope);
@@ -172,7 +144,32 @@ export abstract class CRUDController<T extends object> extends SendResponse
 
   protected parseFilter(filter: any) {
     try {
-      return typeof filter === 'string' ? JSON.parse(filter) : {};
+      const parsed = typeof filter === 'string' ? JSON.parse(filter) : {};
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return {};
+      }
+
+      const sanitized: Record<string, any> = {};
+      for (const [key, value] of Object.entries(parsed)) {
+        if (key.startsWith('$')) {
+          continue;
+        }
+
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          const nested: Record<string, any> = {};
+          for (const [nestedKey, nestedValue] of Object.entries(value)) {
+            if (!nestedKey.startsWith('$')) {
+              nested[nestedKey] = nestedValue;
+            }
+          }
+          sanitized[key] = nested;
+          continue;
+        }
+
+        sanitized[key] = value;
+      }
+
+      return sanitized;
     } catch {
       return {};
     }
