@@ -18,6 +18,37 @@ interface Filter {
 }
 
 export class StatisticsController {
+  private parseFilter(filter: any) {
+    try {
+      const parsed = typeof filter === 'string' ? JSON.parse(filter) : {};
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return {};
+      }
+
+      const sanitized: Record<string, any> = {};
+      for (const [key, value] of Object.entries(parsed)) {
+        if (key.startsWith('$')) {
+          continue;
+        }
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          const nested: Record<string, any> = {};
+          for (const [nestedKey, nestedValue] of Object.entries(value)) {
+            if (!nestedKey.startsWith('$')) {
+              nested[nestedKey] = nestedValue;
+            }
+          }
+          sanitized[key] = nested;
+          continue;
+        }
+        sanitized[key] = value;
+      }
+
+      return sanitized;
+    } catch {
+      return {};
+    }
+  }
+
   private getTenantMatch(req: MaybeAuthenticatedRequest) {
     // Owner-facing statistics must always be tenant-scoped. Refuse (rather than aggregate
     // across every tenant) when the caller's token carries no tenantId. Cross-tenant platform
@@ -32,7 +63,7 @@ export class StatisticsController {
   getGroupedInvoicesByClosedBy = async (req: MaybeAuthenticatedRequest, res: Response) => {
     // let filter: Filter = JSON.parse(req.query.Filter);
 
-    let filterObg = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
+    let filterObg = this.parseFilter(req.query.Filter);
 
     let { ownerId, filter } = filterObg;
     const brancheId = req.authData?.brancheId;
@@ -112,7 +143,7 @@ export class StatisticsController {
   getGroupedInvoicesByClosedByMemberId = async (req: MaybeAuthenticatedRequest, res: Response) => {
     // let filter: Filter = JSON.parse(req.query.Filter);
     let _id = req.params.id;
-    let filterObg = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : req.query.Filter;
+    let filterObg = this.parseFilter(req.query.Filter);
 
     let { ownerId, filter, startDate, endDate, activeState } = filterObg;
     const brancheId = req.authData?.brancheId;
@@ -236,9 +267,7 @@ export class StatisticsController {
 
   getTopCustomers = async (req: MaybeAuthenticatedRequest, res: Response) => {
     try {
-      const filterObg = typeof req.query.Filter === 'string'
-        ? JSON.parse(req.query.Filter)
-        : ((req.query.Filter as any) || {});
+      const filterObg = this.parseFilter(req.query.Filter);
 
       const innerFilter = filterObg.filter || filterObg;
       const brancheId = req.authData?.brancheId;

@@ -16,6 +16,18 @@ export class AuthController extends SendResponse {
         return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
     }
 
+    private parseFilter(filter: any) {
+        try {
+            if (typeof filter !== 'string') {
+                return {};
+            }
+
+            return JSON.parse(filter);
+        } catch {
+            return {};
+        }
+    }
+
     checkPhone = async (req: Request, res: Response, next: NextFunction) => {
         // console.log('checkPhone req.params ---> ', req.params)
         try {
@@ -36,29 +48,20 @@ export class AuthController extends SendResponse {
 
     };
 
-    checkEmail = (req: Request, res: Response, next: NextFunction) => {
-        authRepository.findByEmail(req.params.email)
-            .then((user: IAuth | any) => {
-                if (!user || user === null) {
-                    throw new Error('this email doesn\'t exist');
-                }
-                if (user && !user['activeState']) {
-                    throw new Error('this account has been blocked');
-                }
+    checkEmail = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const user: IAuth | any = await authRepository.findByEmail(req.params.email);
+            if (!user || user === null) {
+                throw new Error('this email doesn\'t exist');
+            }
+            if (user && !user['activeState']) {
+                throw new Error('this account has been blocked');
+            }
 
-                return res.status(200).json({
-                    userId: user._id,
-                    message: 'Welcome....',
-                    status: 200
-                });
-            })
-            .catch((err: Error) => {
-
-                return res.status(500).json({
-                    message: 'check Email ' + err,
-                    status: 500
-                });
-            });
+            this.sendResponse(req, res, 200, [user]);
+        } catch (err: any) {
+            this.sendErrorResponse(req, res, err);
+        }
     };
 
     checkPassword = async (req: Request, res: Response, next: NextFunction) => {
@@ -96,15 +99,9 @@ export class AuthController extends SendResponse {
     saveAuth = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { token, user } = await authService.register(req.body);
-            res.status(200).json({
-                success: true,
-                errors: [],
-                status: 200,
-                message: token,
-                data: user
-            });
-        } catch (err) {
-            next(err);
+            this.sendResponse(req, res, 200, [user], 1, token);
+        } catch (err: any) {
+            this.sendErrorResponse(req, res, err);
         }
     };
 
@@ -129,57 +126,43 @@ export class AuthController extends SendResponse {
     }
 
     login = async (req: Request, res: Response, next: NextFunction) => {
-        let fetchedData: IAuth;
-        authRepository.findByEmail(req.body.email)
-            .then(async (user: IAuth | any) => {
-                if (!user || user === null) {
-                    throw new Error('email doesn\'t exist');
-                }
-                if (user && !user['activeState']) {
-                    throw new Error('this account has been blocked');
-                }
+        try {
+            const user: IAuth | any = await authRepository.findByEmail(req.body.email);
+            if (!user || user === null) {
+                throw new Error('email doesn\'t exist');
+            }
+            if (user && !user['activeState']) {
+                throw new Error('this account has been blocked');
+            }
 
-                fetchedData = user;
-                let confirmedPassword = await compareLoginPassword(req, user._id, req.body.password);
-                return await user ? confirmedPassword : new Error(`Login error message { statusCode: 404 }`);
-            })
-            .then(async (result: boolean | any) => {
-                if (!result) {
-                    throw new Error('password not matched');
-                }
-                let token = await tokenManager.generateToken({
-                    _id: fetchedData._id.toString(),
-                    email: fetchedData.email,
-                    name: fetchedData.lastName + ' ' + fetchedData.firstName,
-                    tenantId: fetchedData.tenantId?.toString?.() ?? fetchedData.tenantId,
-                    brancheId: fetchedData.brancheId?.toString?.() ?? null,
-                    role: fetchedData.role,
-                    permission: fetchedData.permission,
-                    permissions: fetchedData.permissions,
-                    authType: fetchedData.authType
-                });
+            const confirmedPassword = await compareLoginPassword(req, user._id, req.body.password);
+            if (!confirmedPassword) {
+                throw new Error('password not matched');
+            }
 
-                res.status(200).json({
-                    status: 200,
-                    message: token,
-                    success: true,
-                    errors: [],
-                    data: fetchedData
-                });
-            })
-            .catch((err: Error) => {
-                return res.status(500).json({
-                    message: `${err.message}`,
-                    status: 500
-                });
+            const token = await tokenManager.generateToken({
+                _id: user._id.toString(),
+                email: user.email,
+                name: user.lastName + ' ' + user.firstName,
+                tenantId: user.tenantId?.toString?.() ?? user.tenantId,
+                brancheId: user.brancheId?.toString?.() ?? null,
+                role: user.role,
+                permission: user.permission,
+                permissions: user.permissions,
+                authType: user.authType
             });
+
+            this.sendResponse(req, res, 200, [user], 1, token);
+        } catch (err: any) {
+            this.sendErrorResponse(req, res, err);
+        }
     };
 
     getAll = (req: Request, res: Response, next: NextFunction) => {
         const pageSize = req.query.PageSize ? +req.query.PageSize : 10;
         const pageNo = req.query.PageNo ? +req.query.PageNo : 1;
 
-        const filter = JSON.parse(req.query.filter as string);
+        const filter = this.parseFilter(req.query.filter);
         const listType = req.query.listType as string;
 
         const scope = this.getScope(req);
@@ -216,26 +199,17 @@ export class AuthController extends SendResponse {
             });
     };
 
-    getById = (req: Request, res: Response, next: NextFunction) => {
-        authRepository.findOne({ _id: req.params.authId }, this.getScope(req))
-            .then((member: IAuth | any) => {
-                if (member == null) {
-                    throw new Error('user no data found { statusCode: 404 }');
-                }
+    getById = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const member = await authRepository.findOne({ _id: req.params.id }, this.getScope(req));
+            if (member == null) {
+                throw new Error('user no data found { statusCode: 404 }');
+            }
 
-                return res.status(200).json({
-                    member,
-                    message: 'get member Info ::: DB',
-                    status: 200
-                });
-            })
-            .catch((err: Error) => {
-
-                return res.status(500).json({
-                    message: `err => ::: error catch ${err.message}`,
-                    status: 500
-                });
-            });
+            this.sendResponse(req, res, 200, [member]);
+        } catch (err: any) {
+            this.sendErrorResponse(req, res, err);
+        }
     };
 
     selectBranch = async (req: Request, res: Response, next: NextFunction) => {
@@ -268,21 +242,13 @@ export class AuthController extends SendResponse {
         }
     };
 
-    deleteOne = (req: Request, res: Response, next: NextFunction) => {
-        authRepository.deleteById(req.params.id, this.getScope(req))
-            .then((admin: IAuth | any) => {
-                res.status(200).json({
-                    message: "deleted successfully",
-                    Auth: admin,
-                    status: 200
-                });
-            })
-            .catch((err: Error) => {
-                res.status(500).json({
-                    message: err + ' auth ',
-                    status: 500
-                });
-            });
+    deleteOne = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const admin = await authRepository.deleteById(req.params.id, this.getScope(req));
+            this.sendResponse(req, res, 200, [admin]);
+        } catch (err: any) {
+            this.sendErrorResponse(req, res, err);
+        }
     };
 
 }
@@ -302,4 +268,3 @@ async function compareLoginPassword(req: Request, userId: string, userPassword: 
         throw error;
     }
 }
-

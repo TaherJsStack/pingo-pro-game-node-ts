@@ -25,6 +25,37 @@ export class SessionController extends SendResponse {
     return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
   }
 
+  private parseFilter(filter: any) {
+    try {
+      const parsed = typeof filter === 'string' ? JSON.parse(filter) : {};
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return {};
+      }
+
+      const sanitized: Record<string, any> = {};
+      for (const [key, value] of Object.entries(parsed)) {
+        if (key.startsWith('$')) {
+          continue;
+        }
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          const nested: Record<string, any> = {};
+          for (const [nestedKey, nestedValue] of Object.entries(value)) {
+            if (!nestedKey.startsWith('$')) {
+              nested[nestedKey] = nestedValue;
+            }
+          }
+          sanitized[key] = nested;
+          continue;
+        }
+        sanitized[key] = value;
+      }
+
+      return sanitized;
+    } catch {
+      return {};
+    }
+  }
+
   createItem = async (req: CreateItemRequest, res: Response) => {
     try {
       const body = { ...req.body, brancheId: (req as any).authData?.brancheId };
@@ -56,7 +87,7 @@ export class SessionController extends SendResponse {
   };
 
   getAllItems = async (req: Request, res: Response) => {
-    let filter = typeof req.query.Filter === 'string' ? JSON.parse(req.query.Filter) : {};
+    let filter = this.parseFilter(req.query.Filter);
     const brancheId = (req as any).authData?.brancheId;
 
     try {
@@ -144,7 +175,7 @@ export class SessionController extends SendResponse {
     }
   };
 
-  deleteAllReletedToBill = async (req: Request, res: Response) => {
+  deleteAllRelatedToBill = async (req: Request, res: Response) => {
     try {
       const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
       await sessionRepository.deleteManyByIds(ids, this.getScope(req));
