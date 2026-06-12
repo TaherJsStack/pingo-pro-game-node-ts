@@ -40,6 +40,9 @@ router.post(
   }
 );
 router.post('/refresh',            authController.refreshToken.bind(authController));
+// INTENTIONAL EXCEPTION: select-branch is the token-issuance step.
+// The client must send brancheId here because this is how it gets encoded into the JWT.
+// All other authenticated routes must use req.authData.brancheId instead.
 router.post(
   '/select-branch',
   signReqData,
