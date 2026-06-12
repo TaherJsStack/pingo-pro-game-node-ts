@@ -56,19 +56,21 @@ export class AuthService implements IAuthService {
       await this.passwordRepository.create({ userId: savedUser._id, password: bcryptHash });
       await this.addressRepository.create({ ownerId: savedUser._id });
       const fallbackBranchName = `${payload.username || payload.email || 'Main'} Main Branch`;
-      const branchName =
+      const branchName = String(
         payload?.branche ||
         payload?.club?.branche ||
         payload?.club?.name ||
         payload?.club ||
-        fallbackBranchName;
-      const tenantName =
+        fallbackBranchName
+      ).trim();
+      const tenantName = String(
         payload?.club?.name ||
         payload?.club?.branche ||
         payload?.club ||
         payload?.username ||
         payload?.email ||
-        'Pingo Tenant';
+        'Pingo Tenant'
+      ).trim();
       const tenantSlugBase = String(tenantName)
         .trim()
         .toLowerCase()
