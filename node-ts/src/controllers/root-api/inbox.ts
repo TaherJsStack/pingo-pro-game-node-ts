@@ -1,13 +1,11 @@
 import { Request, Response } from 'express';
 import InboxModel from '../../models/inbox';
-// import { CRUDController } from './base/CRUDController';
 import { IInbox } from '../../models/interfaces/inbox.interface';
 import { CRUDController } from '../base/CRUDController';
 import { BaseRepository } from '../../repositories/BaseRepository';
 import { InboxType } from '../../enums/inbox-type.enum';
 import { RealtimeEvent } from '../../enums/realtime-event.enum';
 import { getIo, getUserRoom } from '../../../socket';
-import { AuthenticatedRequest } from '../../types/auth';
 const { ObjectId } = require('mongoose').Types;
 
 
@@ -36,7 +34,6 @@ export class InboxController extends CRUDController<IInbox> {
         title: string;
         context: string;
       };
-      const authReq = req as AuthenticatedRequest;
       const createdItems: IInbox[] = [];
 
       for (const ownerId of ownerIds) {
@@ -53,7 +50,7 @@ export class InboxController extends CRUDController<IInbox> {
         getIo().to(getUserRoom(String(ownerId))).emit(RealtimeEvent.InboxMessage, createdDoc);
       }
 
-      res.json({ sent: createdItems.length });
+      this.sendResponse(req, res, 200, createdItems, createdItems.length, 'Messages sent');
     } catch (err: any) {
       this.sendErrorResponse(req, res, err);
     }
