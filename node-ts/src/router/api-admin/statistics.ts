@@ -10,7 +10,6 @@ const controller = new StatisticsController();
 router.use(signReqData, rootAuthGuard);
 
 // Route to get a statistics
-router.get("/aggregate", controller.getAggregate);
 router.get("", controller.getCollectionStatistics);
 router.get("/kpi", controller.getPlatformKpiSummary);
 
