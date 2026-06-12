@@ -46,7 +46,7 @@ export class InboxController extends CRUDController<IInbox> {
 
       const items = await this.repository.find(filter, {
         sort: { createdAt: -1 },
-        scope: this.getRequestScope(req),
+        // scope: this.getRequestScope(req),
       });
       this.sendResponse(req, res, 200, items);
     } catch (err: any) {
