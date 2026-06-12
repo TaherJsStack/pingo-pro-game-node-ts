@@ -5,7 +5,7 @@ type PlanSeedSpec = Pick<IPlan, 'code' | 'tier' | 'name' | 'price' | 'durationMo
 
 // Default global plan catalog. `code` is the stable idempotency key — the validate
 // hook on the Plan model derives amountMinor/billingIntervalMonths/deviceLimit/featureFlags.
-const PLAN_SEEDS: PlanSeedSpec[] = [
+export const PLAN_SEEDS: PlanSeedSpec[] = [
   {
     code: 'free',
     tier: 'basic',
