@@ -123,7 +123,7 @@ class ShiftService {
     return shift;
   }
 
-  async closeShift(shiftId: string, payload: { closingCash?: number }, tenantId?: string): Promise<any> {
+  async closeShift(shiftId: string, payload: { closingCash?: number; notes?: string }, tenantId?: string): Promise<any> {
     const scope = { tenantId, requireTenant: true };
     const shift = await shiftRepository.findById(shiftId, scope);
     if (!shift) throw new NotFoundError('Shift not found.');
@@ -163,7 +163,7 @@ class ShiftService {
     }
     const sessionsEnded = await SessionModel.countDocuments(sessionsEndedFilter as any);
 
-    const updatedShift = await shiftRepository.updateById(shiftId, {
+    const updatePayload: Record<string, any> = {
       closedAt,
       closingCash: Number(payload.closingCash ?? 0),
       status: ShiftStatus.Closed,
@@ -171,7 +171,12 @@ class ShiftService {
       invoicesTotal: Number(invoiceSummary?.[0]?.invoicesTotal ?? 0),
       sessionsStarted,
       sessionsEnded,
-    } as any, scope);
+    };
+    if (payload.notes !== undefined) {
+      updatePayload['notes'] = String(payload.notes).trim();
+    }
+
+    const updatedShift = await shiftRepository.updateById(shiftId, updatePayload as any, scope);
 
     if (tenantId) {
       await AnalyticsService.recordEvent({
@@ -210,6 +215,13 @@ class ShiftService {
     }
 
     return updatedShift;
+  }
+
+  async updateNotes(shiftId: string, notes: string, tenantId?: string): Promise<any> {
+    const scope = { tenantId, requireTenant: true };
+    const shift = await shiftRepository.findById(shiftId, scope);
+    if (!shift) throw new NotFoundError('Shift not found.');
+    return shiftRepository.updateById(shiftId, { notes: notes.trim() } as any, scope);
   }
 
   async getDailySummary(brancheId: string, date?: string, tenantId?: string): Promise<any> {
