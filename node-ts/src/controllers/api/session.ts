@@ -4,6 +4,8 @@ import { ISession } from '../../types';
 import { sessionRepository } from '../../repositories/instances';
 import { SendResponse } from '../base/sendResponse';
 import { AuthenticatedRequest } from '../../types/auth';
+import { NotFoundError } from '../../errors/AppError';
+import { parseFilter } from '../../util/parse-filter';
 
 const sessionService = new SessionService();
 
@@ -25,37 +27,6 @@ export class SessionController extends SendResponse {
     return { tenantId: (req as any).authData?.tenantId, requireTenant: true };
   }
 
-  private parseFilter(filter: any) {
-    try {
-      const parsed = typeof filter === 'string' ? JSON.parse(filter) : {};
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        return {};
-      }
-
-      const sanitized: Record<string, any> = {};
-      for (const [key, value] of Object.entries(parsed)) {
-        if (key.startsWith('$')) {
-          continue;
-        }
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-          const nested: Record<string, any> = {};
-          for (const [nestedKey, nestedValue] of Object.entries(value)) {
-            if (!nestedKey.startsWith('$')) {
-              nested[nestedKey] = nestedValue;
-            }
-          }
-          sanitized[key] = nested;
-          continue;
-        }
-        sanitized[key] = value;
-      }
-
-      return sanitized;
-    } catch {
-      return {};
-    }
-  }
-
   createItem = async (req: CreateItemRequest, res: Response) => {
     try {
       const body = { ...req.body, brancheId: (req as any).authData?.brancheId };
@@ -72,33 +43,19 @@ export class SessionController extends SendResponse {
         : { item: result, wasAddedToExisting: false };
 
       const responseStatus = savedItem?.activeState ? 201 : 200;
-
-      res.status(responseStatus).json({
-        success: true,
-        errors: [],
-        status: responseStatus,
-        message: '',
-        data: [savedItem],
-        wasAddedToExisting,
-      });
+      this.sendResponse(req, res, responseStatus, [savedItem], 1, '', { wasAddedToExisting });
     } catch (err) {
       this.sendErrorResponse(req, res, err);
     }
   };
 
   getAllItems = async (req: Request, res: Response) => {
-    let filter = this.parseFilter(req.query.Filter);
+    parseFilter(req.query.Filter);
     const brancheId = (req as any).authData?.brancheId;
 
     try {
       const items = await sessionRepository.find({ brancheId }, { sort: { createdAt: -1, activeState: 1 }, scope: this.getScope(req) });
-      res.status(201).json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: items,
-      });
+      this.sendResponse(req, res, 200, items);
     } catch (err) {
       this.sendErrorResponse(req, res, err);
     }
@@ -108,15 +65,9 @@ export class SessionController extends SendResponse {
     try {
       const item = await sessionRepository.findById(req.params.id, this.getScope(req));
       if (!item) {
-        return res.status(404).json({ msg: 'Item not found' });
+        throw new NotFoundError('Item not found');
       }
-      res.status(200).json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: [item],
-      });
+      this.sendResponse(req, res, 200, [item]);
     } catch (err) {
       this.sendErrorResponse(req, res, err);
     }
@@ -124,17 +75,15 @@ export class SessionController extends SendResponse {
 
   updateItem = async (req: Request, res: Response) => {
     try {
-      const updatedItem = await sessionRepository.updateById(req.params.id, req.body as any, this.getScope(req));
+      const allowed: Record<string, any> = {};
+      if ('description' in req.body) allowed.description = req.body.description;
+      if ('clientId' in req.body) allowed.clientId = req.body.clientId;
+
+      const updatedItem = await sessionRepository.updateById(req.params.id, allowed as any, this.getScope(req));
       if (!updatedItem) {
-        return res.status(404).json({ msg: 'Item not found' });
+        throw new NotFoundError('Item not found');
       }
-      res.status(201).json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: [updatedItem],
-      });
+      this.sendResponse(req, res, 200, [updatedItem]);
     } catch (err) {
       this.sendErrorResponse(req, res, err);
     }
@@ -143,15 +92,7 @@ export class SessionController extends SendResponse {
   endSession = async (req: EndSessionRequest, res: Response) => {
     try {
       const result = await sessionService.endSession(req.params.id, req.body, req.authData.id, req.authData.tenantId);
-
-      res.status(200).json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: result.message,
-        data: [result.session],
-        bill: result.bill,
-      });
+      this.sendResponse(req, res, 200, [result.session], 1, result.message, { bill: result.bill });
     } catch (err) {
       this.sendErrorResponse(req, res, err);
     }
@@ -161,15 +102,9 @@ export class SessionController extends SendResponse {
     try {
       const deletedItem = await sessionRepository.deleteById(req.params.id, this.getScope(req));
       if (!deletedItem) {
-        return res.status(404).json({ msg: 'Item not found' });
+        throw new NotFoundError('Item not found');
       }
-      res.status(201).json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: [deletedItem],
-      });
+      this.sendResponse(req, res, 200, [deletedItem]);
     } catch (err) {
       this.sendErrorResponse(req, res, err);
     }
@@ -179,17 +114,9 @@ export class SessionController extends SendResponse {
     try {
       const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
       await sessionRepository.deleteManyByIds(ids, this.getScope(req));
-
-      res.status(201).json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: ids,
-        data: ids,
-      });
+      this.sendResponse(req, res, 200, ids, ids.length);
     } catch (err) {
       this.sendErrorResponse(req, res, err);
     }
   };
 }
-

@@ -7,52 +7,12 @@ import SessionModel from '../../models/session';
 import { KpiPeriod } from '../../enums/kpi-period.enum';
 import { ShiftStatus } from '../../enums/shift-status.enum';
 import AnalyticsService from '../../services/analytics.service';
+import { SendResponse } from '../base/sendResponse';
+import { parseFilter } from '../../util/parse-filter';
 const { ObjectId } = require('mongoose').Types;
 
-interface Filter {
-  ownerId: string;
-  brancheId: string;
-  startDate: string;
-  endDate: string;
-  activeState: boolean;
-}
-
-export class StatisticsController {
-  private parseFilter(filter: any) {
-    try {
-      const parsed = typeof filter === 'string' ? JSON.parse(filter) : {};
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        return {};
-      }
-
-      const sanitized: Record<string, any> = {};
-      for (const [key, value] of Object.entries(parsed)) {
-        if (key.startsWith('$')) {
-          continue;
-        }
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-          const nested: Record<string, any> = {};
-          for (const [nestedKey, nestedValue] of Object.entries(value)) {
-            if (!nestedKey.startsWith('$')) {
-              nested[nestedKey] = nestedValue;
-            }
-          }
-          sanitized[key] = nested;
-          continue;
-        }
-        sanitized[key] = value;
-      }
-
-      return sanitized;
-    } catch {
-      return {};
-    }
-  }
-
+export class StatisticsController extends SendResponse {
   private getTenantMatch(req: MaybeAuthenticatedRequest) {
-    // Owner-facing statistics must always be tenant-scoped. Refuse (rather than aggregate
-    // across every tenant) when the caller's token carries no tenantId. Cross-tenant platform
-    // stats live in controllers/root-api/statistics.ts behind rootAuthGuard.
     const tenantId = req.authData?.tenantId;
     if (!tenantId) {
       throw new Error('Tenant scope is required for statistics.');
@@ -61,19 +21,13 @@ export class StatisticsController {
   }
 
   getGroupedInvoicesByClosedBy = async (req: MaybeAuthenticatedRequest, res: Response) => {
-    // let filter: Filter = JSON.parse(req.query.Filter);
-
-    let filterObg = this.parseFilter(req.query.Filter);
-
-    let { ownerId, filter } = filterObg;
+    const filterObg = parseFilter(req.query.Filter);
+    const { ownerId, filter } = filterObg;
     const brancheId = req.authData?.brancheId;
-    let { startDate, endDate, activeState } = filter;
-
-    // console.log('getGroupedInvoicesByClosedBy filter', filterObg);
+    const { startDate, endDate, activeState } = filter ?? {};
 
     try {
       const invoices = await invoiceRepository.aggregate([
-
         {
           $match: {
             ...this.getTenantMatch(req),
@@ -84,11 +38,11 @@ export class StatisticsController {
         },
         {
           $group: {
-            _id: "$closedBy",
-            invoices: { $push: "$$ROOT" },
-            invoicesTotal: { $sum: "$total" },
-            devicesTotal: { $sum: "$devicesTotal" },
-            menuItemsTotal: { $sum: "$menuItemsTotal" },
+            _id: '$closedBy',
+            invoices: { $push: '$$ROOT' },
+            invoicesTotal: { $sum: '$total' },
+            devicesTotal: { $sum: '$devicesTotal' },
+            menuItemsTotal: { $sum: '$menuItemsTotal' },
           },
         },
         {
@@ -107,194 +61,34 @@ export class StatisticsController {
             as: 'invoicemenus',
           },
         },
-        {
-          $unwind: {
-            path: "$closedByUser",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $unwind: {
-            path: "$invoicemenus",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-
+        { $unwind: { path: '$closedByUser', preserveNullAndEmptyArrays: true } },
+        { $unwind: { path: '$invoicemenus', preserveNullAndEmptyArrays: true } },
       ]);
 
-      res.status(201).json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: invoices,
-      });
-    } catch (error) {
-      console.error("Error fetching grouped invoices:", error);
-      res.status(500).json({
-        success: true,
-        errors: [error],
-        status: 200,
-        message: '',
-        data: [],
-      });
+      this.sendResponse(req, res, 200, invoices);
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
-  }
-  getGroupedInvoicesByClosedByMemberId = async (req: MaybeAuthenticatedRequest, res: Response) => {
-    // let filter: Filter = JSON.parse(req.query.Filter);
-    let _id = req.params.id;
-    let filterObg = this.parseFilter(req.query.Filter);
-
-    let { ownerId, filter, startDate, endDate, activeState } = filterObg;
-    const brancheId = req.authData?.brancheId;
-    // let {  } = filter;
-
-    // console.log('getGroupedInvoicesByClosedBy filter', filterObg);
-
-    try {
-
-      const invoices = await invoiceRepository.aggregate([
-        {
-          $match: {
-            ...this.getTenantMatch(req),
-            // createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
-            brancheId: new ObjectId(brancheId),
-            activeState,
-            closedBy: new ObjectId(_id),
-          },
-        },
-        {
-          $group: {
-            _id: "$closedBy",
-            invoices: { $push: "$$ROOT" },
-            invoicesTotal: { $sum: "$total" },
-            devicesTotal: { $sum: "$devicesTotal" },
-            menuItemsTotal: { $sum: "$menuItemsTotal" },
-          },
-        },
-        {
-          $lookup: {
-            from: 'auths',
-            localField: '_id',
-            foreignField: '_id',
-            as: 'closedByUser',
-          },
-        },
-        {
-          $lookup: {
-            from: 'invoicemenus',
-            localField: '_id',
-            foreignField: 'closedBy',
-            as: 'invoicemenus',
-          },
-        },
-        {
-          $unwind: {
-            path: "$closedByUser",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $unwind: {
-            path: "$invoicemenus",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-
-        {
-          $project: {
-            "closedByUser._id": 1,
-            "closedByUser.firstName": 1,
-            "closedByUser.lastName": 1,
-            "closedByUser.phone": 1,
-            "closedByUser.image": 1,
-            "closedByUser.activeState": 1,
-            "closedByUser.role": 1,
-            "closedByUser.permission": 1,
-            "closedByUser.createdAt": 1,
-            "closedByUser.description": 1,
-            "closedByUser.authType": 1,
-            "closedByUser.brancheId": 1,
-            "closedByUser.email": 1,
-            "closedByUser.updatedAt": 1,
-            "closedByUser.__v": 1,
-            invoices: {
-              $map: {
-                input: "$invoices",
-                as: "invoice",
-                in: {
-                  _id: "$$invoice._id",
-                  createdBy: "$$invoice.createdBy",
-                  brancheId: "$$invoice.brancheId",
-                  deviceId: "$$invoice.deviceId",
-                  sessionId: "$$invoice.sessionId",
-                  activeState: "$$invoice.activeState",
-                  createdAt: "$$invoice.createdAt",
-                  description: "$$invoice.description",
-                  total: "$$invoice.total",
-                  devicesTotal: "$$invoice.devicesTotal",
-                  menuItemsTotal: "$$invoice.menuItemsTotal",
-                  devices: "$$invoice.devices",
-                  menuItems: "$$invoice.menuItems",
-                  updatedAt: "$$invoice.updatedAt",
-                  __v: "$$invoice.__v",
-                  closedBy: "$$invoice.closedBy"
-                }
-              }
-            }
-          },
-        },
-      ]);
-
-      res.status(201).json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: invoices,
-      });
-    } catch (error) {
-      console.error("Error fetching grouped invoices:", error);
-      res.status(500).json({
-        success: true,
-        errors: [error],
-        status: 200,
-        message: '',
-        data: [],
-      });
-    }
-  }
+  };
 
   getTopCustomers = async (req: MaybeAuthenticatedRequest, res: Response) => {
     try {
-      const filterObg = this.parseFilter(req.query.Filter);
-
+      const filterObg = parseFilter(req.query.Filter);
       const innerFilter = filterObg.filter || filterObg;
       const brancheId = req.authData?.brancheId;
       const parsedLimit = Number(innerFilter.limit || filterObg.limit || 5);
       const limit = Number.isFinite(parsedLimit) ? Math.max(parsedLimit, 1) : 5;
       const createdAtMatch: any = {};
 
-      if (innerFilter.startDate) {
-        createdAtMatch.$gte = new Date(innerFilter.startDate);
-      }
-
-      if (innerFilter.endDate) {
-        createdAtMatch.$lte = new Date(innerFilter.endDate);
-      }
+      if (innerFilter.startDate) createdAtMatch.$gte = new Date(innerFilter.startDate);
+      if (innerFilter.endDate) createdAtMatch.$lte = new Date(innerFilter.endDate);
 
       const matchStage: any = {
         clientId: { $ne: null },
         ...this.getTenantMatch(req),
       };
-
-      if (brancheId) {
-        matchStage.brancheId = new ObjectId(brancheId);
-      }
-
-      if (Object.keys(createdAtMatch).length) {
-        matchStage.createdAt = createdAtMatch;
-      }
+      if (brancheId) matchStage.brancheId = new ObjectId(brancheId);
+      if (Object.keys(createdAtMatch).length) matchStage.createdAt = createdAtMatch;
 
       const customers = await invoiceRepository.aggregate([
         { $match: matchStage },
@@ -309,20 +103,8 @@ export class StatisticsController {
         },
         { $sort: { totalSpent: -1 } },
         { $limit: limit },
-        {
-          $lookup: {
-            from: 'clients',
-            localField: '_id',
-            foreignField: '_id',
-            as: 'client',
-          },
-        },
-        {
-          $unwind: {
-            path: '$client',
-            preserveNullAndEmptyArrays: true,
-          },
-        },
+        { $lookup: { from: 'clients', localField: '_id', foreignField: '_id', as: 'client' } },
+        { $unwind: { path: '$client', preserveNullAndEmptyArrays: true } },
         {
           $project: {
             _id: 0,
@@ -335,30 +117,24 @@ export class StatisticsController {
         },
       ]);
 
-      res.status(200).json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: customers,
-      });
-    } catch (error) {
-      console.error('Error fetching top customers:', error);
-      res.status(500).json({ success: false, errors: [String(error)], status: 500, message: '', data: [] });
+      this.sendResponse(req, res, 200, customers);
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
-  }
+  };
 
   getKpiSummary = async (req: MaybeAuthenticatedRequest, res: Response) => {
     try {
       const tenantId = req.authData?.tenantId;
       if (!tenantId) {
-        res.status(400).json({ success: false, errors: ['Tenant scope is required.'], status: 400, message: '', data: [] });
+        this.sendErrorResponse(req, res, { statusCode: 400, message: 'Tenant scope is required.' });
         return;
       }
 
-      const filterObg = typeof req.query.Filter === 'string'
-        ? JSON.parse(req.query.Filter)
-        : ((req.query.Filter as any) || {});
+      const filterObg =
+        typeof req.query.Filter === 'string'
+          ? JSON.parse(req.query.Filter)
+          : ((req.query.Filter as any) || {});
 
       const innerFilter = filterObg.filter || filterObg;
       const brancheId = req.authData?.brancheId;
@@ -367,6 +143,7 @@ export class StatisticsController {
       const allowedPeriods: KpiPeriod[] = Object.values(KpiPeriod);
       const requested = innerFilter.period || filterObg.period || KpiPeriod.Day;
       const period: KpiPeriod = allowedPeriods.includes(requested) ? requested : KpiPeriod.Day;
+
       const summary = await AnalyticsService.getTenantKpiSummary({
         tenantId,
         brancheId: brancheId ? String(brancheId) : undefined,
@@ -375,16 +152,9 @@ export class StatisticsController {
         period,
       });
 
-      res.status(200).json({
-        success: true,
-        errors: [],
-        status: 200,
-        message: '',
-        data: [summary],
-      });
-    } catch (error) {
-      console.error('Error fetching KPI summary:', error);
-      res.status(500).json({ success: false, errors: [String(error)], status: 500, message: '', data: [] });
+      this.sendResponse(req, res, 200, [summary]);
+    } catch (err) {
+      this.sendErrorResponse(req, res, err);
     }
-  }
+  };
 }

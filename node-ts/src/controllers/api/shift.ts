@@ -55,18 +55,5 @@ export class ShiftController extends CRUDController<IShift> {
     }
   };
 
-  seedMockShifts = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    try {
-      const monthsBack = Number(req.body.monthsBack ?? 6);
-      const result = await ShiftSeederService.seedForBranch({
-        tenantId: req.authData.tenantId as string,
-        brancheId: req.authData.brancheId as string,
-        openedBy: req.authData.id,
-        monthsBack,
-      });
-      this.sendResponse(req, res, 201, [result], 1, `Seeded ${result.created} shifts for ${result.employeeCount} employees`);
-    } catch (err: any) {
-      this.sendErrorResponse(req, res, err);
-    }
-  };
+
 }

@@ -54,42 +54,5 @@ export class ClientController extends CRUDController<IClient> {
     }
   };
 
-  getAllItemsPagination = async (req: Request, res: Response) => {
-    try {
-      let { page = 1, limit = 10, filterBy, filterValue } = req.query;
-
-      let filter: any = {};
-      // if (filterBy && filterValue) {
-      //   filter[filterBy] = { $regex: new RegExp(filterValue, 'i') };
-      // }
-
-      const pageNo = Number(page) || 1;
-      const pageSize = Number(limit) || 10;
-      const items = await this.repository.find(filter, {
-        skip: (pageNo - 1) * pageSize,
-        limit: pageSize,
-        scope: this.getScope(req),
-      });
-
-      const totalCount = await this.repository.countDocuments(filter, this.getScope(req));
-
-      res.status(200).json({
-        success: true,
-        data: {
-          items,
-          pagination: {
-            currentPage: pageNo,
-            totalPages: Math.ceil(totalCount / pageSize),
-            totalItems: totalCount,
-            itemsPerPage: pageSize,
-          },
-        },
-      });
-    } catch (err: any) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
-    }
-  };
-
 }
 

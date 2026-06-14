@@ -6,6 +6,7 @@ import { CRUDController } from '../base/CRUDController';
 import { NotFoundError } from '../../errors/AppError';
 import { authRepository, passwordRepository } from '../../repositories/instances';
 
+const ALLOWED_UPDATE_FIELDS = ['firstName', 'lastName', 'phone', 'image', 'role', 'description', 'permissions', 'brancheId'];
 
 export class EmployeesController extends CRUDController<IAuth> {
     constructor() {
@@ -13,9 +14,7 @@ export class EmployeesController extends CRUDController<IAuth> {
     }
 
     updatePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-
         try {
-            // Only allow resetting the password of a user that belongs to the caller's tenant.
             const target = await authRepository.findOne({ _id: req.body.id }, this.getScope(req));
             if (!target) {
                 this.sendErrorResponse(req, res, new NotFoundError('user not found'));
@@ -31,36 +30,33 @@ export class EmployeesController extends CRUDController<IAuth> {
     }
 
     saveAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-
-        let bcryptHash = await generateBcryptHash(req.body.password, 10)
-        let password = await bcryptHash;
+        const password = await generateBcryptHash(req.body.password, 10);
         const authData = (req as any).authData;
         const payload: any = { ...(req.body as any) };
         if (authData?.id) {
             payload.ownerId = new Types.ObjectId(authData.id);
         }
-        // Pass the tenant scope so the new employee is stamped with the creator's tenantId
-        // (BaseRepository.create injects scope.tenantId into the payload).
         authRepository.create(payload, this.getScope(req))
             .then(async (saved: any) => {
-
-                let savedPassword = await saveNewPassword(saved._id, password)
-
+                const savedPassword = await EmployeesController.saveNewPassword(saved._id, password);
                 if (!savedPassword) {
-                    await authRepository.deleteById(saved._id.toString())
-                    throw new Error('new user not added !!!')
+                    await authRepository.deleteById(saved._id.toString());
+                    throw new Error('new user not added !!!');
                 }
                 this.sendResponse(req, res, 201, [saved], undefined, 'new employee added successfully');
             })
             .catch((err: Error) => {
                 this.sendErrorResponse(req, res, err);
-            })
+            });
     }
 
     updateOne = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-
         try {
-            const updatedItem = await authRepository.updateById(req.params.id, req.body as any, this.getScope(req));
+            const allowed: Record<string, any> = {};
+            for (const field of ALLOWED_UPDATE_FIELDS) {
+                if (field in req.body) allowed[field] = req.body[field];
+            }
+            const updatedItem = await authRepository.updateById(req.params.id, allowed as any, this.getScope(req));
             if (!updatedItem) {
                 this.sendErrorResponse(req, res, new NotFoundError('Item not found'));
                 return;
@@ -74,15 +70,14 @@ export class EmployeesController extends CRUDController<IAuth> {
     getById = (req: Request, res: Response, next: NextFunction): void => {
         authRepository.findOne({ _id: req.params.authId }, this.getScope(req))
             .then((member: any) => {
-
                 if (member == null) {
-                    throw new NotFoundError(' user no data found');
+                    throw new NotFoundError('user no data found');
                 }
                 this.sendResponse(req, res, 200, [member]);
             })
             .catch((err: Error) => {
                 this.sendErrorResponse(req, res, err);
-            })
+            });
     }
 
     deleteOne = (req: Request, res: Response, next: NextFunction): void => {
@@ -92,16 +87,14 @@ export class EmployeesController extends CRUDController<IAuth> {
             })
             .catch((err: Error) => {
                 this.sendErrorResponse(req, res, err);
-            })
+            });
     }
 
-}
-
-async function saveNewPassword(userId: string, password: string): Promise<any> {
-
-    try {
-        return await passwordRepository.create({ userId, password } as any);
-    } catch (err) {
-        throw Error('error in saving password')
+    private static async saveNewPassword(userId: string, password: string): Promise<any> {
+        try {
+            return await passwordRepository.create({ userId, password } as any);
+        } catch (err) {
+            throw new Error('error in saving password');
+        }
     }
 }
