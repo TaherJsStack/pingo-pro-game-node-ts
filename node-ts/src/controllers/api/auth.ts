@@ -152,7 +152,7 @@ export class AuthController extends SendResponse {
                 authType: user.authType
             });
 
-            this.sendResponse(req, res, 200, [user], 1, token);
+            this.sendResponse(req, res, 200, user, 1, token);
         } catch (err: any) {
             this.sendErrorResponse(req, res, err);
         }
