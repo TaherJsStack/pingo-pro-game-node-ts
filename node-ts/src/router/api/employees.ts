@@ -17,7 +17,7 @@ employeesRouter.post(
     async (req: Request, res: Response, next: NextFunction) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ success: false, errors: errors.array().map((e: any) => e.msg), status: 400, message: '', data: {} });
         }
 
         const { email } = req.body;
@@ -25,7 +25,7 @@ employeesRouter.post(
         const existing = await authRepository.findOne({ email }, scope);
 
         if (existing) {
-            return res.status(400).json({ errors: [{ path: 'email', msg: 'Email is already taken' }] });
+            return res.status(400).json({ success: false, errors: ['Email is already taken'], status: 400, message: '', data: {} });
         }
 
         await employeesController.saveAuth(req, res, next);

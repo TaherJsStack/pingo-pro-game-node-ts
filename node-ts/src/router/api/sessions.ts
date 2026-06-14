@@ -8,9 +8,18 @@ import { AuthenticatedRequest } from '../../types/auth';
 
 const router: Router = express.Router();
 
-const sessionController: SessionController = new SessionController()
+const sessionController: SessionController = new SessionController();
 
-// Route: POST /items (Create item)
+const validationFail = (req: Request, res: Response): boolean => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400).json({ success: false, errors: errors.array().map((e: any) => e.msg), status: 400, message: '', data: {} });
+    return true;
+  }
+  return false;
+};
+
+// Route: POST /sessions (Create session)
 router.post(
   '',
   signReqData,
@@ -24,19 +33,15 @@ router.post(
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
+    if (validationFail(req, res)) return;
     await sessionController.createItem(req as AuthenticatedRequest, res);
   }
 );
 
-// Route: GET /items/:id (Get item by id)
+// Route: GET /sessions/:id
 router.get('/:id', signReqData, sessionController.getItemById);
 
-// Route: PUT /items/:id (Update item)
+// Route: PUT /sessions/:id (Update session)
 router.put(
   '/:id',
   signReqData,
@@ -46,15 +51,12 @@ router.put(
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
+    if (validationFail(req, res)) return;
     await sessionController.updateItem(req, res);
   }
 );
 
+// Route: PUT /sessions/endSession/:id
 router.put(
   '/endSession/:id',
   signReqData,
@@ -66,21 +68,20 @@ router.put(
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
+    if (validationFail(req, res)) return;
     await sessionController.endSession(req as AuthenticatedRequest, res);
   }
 );
 
-// Other routes for GET (Read) and DELETE operations...
-router.get("", signReqData, sessionController.getAllItems);
+// Route: GET /sessions
+router.get('', signReqData, sessionController.getAllItems);
 
-router.delete('/:id', signReqData, idempotencyMiddleware, sessionController.deleteItem)
+// Route: DELETE /sessions/:id
+router.delete('/:id', signReqData, idempotencyMiddleware, sessionController.deleteItem);
+
+// Route: DELETE /sessions/related-to-bill (ids in body)
 router.delete(
-  '/related-to-bill/:id',
+  '/related-to-bill',
   signReqData,
   [
     check('ids').isArray({ min: 1, max: 100 }).withMessage('ids must be a non-empty array with max 100 items'),
@@ -88,13 +89,9 @@ router.delete(
   ],
   idempotencyMiddleware,
   async (req: Request, res: Response) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
+    if (validationFail(req, res)) return;
     await sessionController.deleteAllRelatedToBill(req, res);
   }
-)
+);
 
 export default router;
