@@ -5,13 +5,48 @@ import SessionModel from '../models/session';
 import { shiftRepository } from '../repositories/instances';
 import { ShiftStatus } from '../enums/shift-status.enum';
 import AnalyticsService from './analytics.service';
-import { ConflictError } from '../errors/AppError';
+import { ConflictError, NotFoundError } from '../errors/AppError';
 import RealtimeService from './realtime.service';
 import { RealtimeEvent } from '../enums';
 import NotificationService from './notification.service';
 import { assertObjectId } from '../util/object-id';
 
 class ShiftService {
+  private async afterShiftOpened(params: {
+    tenantId: string;
+    brancheId: string;
+    shiftId: string;
+    openingCash: number;
+    employeeId: string;
+    openedAt: Date;
+  }): Promise<void> {
+    const { tenantId, brancheId, shiftId, openingCash, employeeId, openedAt } = params;
+
+    await AnalyticsService.recordEvent({
+      tenantId,
+      brancheId,
+      shiftId,
+      deviceType: 'shift',
+      eventType: 'shift_opened',
+      amount: 0,
+      occurredAt: openedAt,
+      metadata: { openingCash, employeeId },
+    });
+
+    RealtimeService.emitToTenant(tenantId, RealtimeEvent.ShiftOpened, {
+      tenantId,
+      brancheId,
+      shiftId,
+      employeeId,
+      openingCash,
+      status: ShiftStatus.Open,
+    });
+
+    void NotificationService.queueShiftOpened({ tenantId, shiftId, openingCash }).catch((error) => {
+      console.warn('Failed to queue shift opened notification', error);
+    });
+  }
+
   async getCurrentShift(employeeId: string, brancheId: string, tenantId?: string): Promise<any> {
     const filter: Record<string, any> = {
       employeeId: assertObjectId(employeeId, 'employeeId'),
@@ -60,33 +95,13 @@ class ShiftService {
         requireTenant: true,
       });
       if (result.created && payload.tenantId) {
-        await AnalyticsService.recordEvent({
+        await this.afterShiftOpened({
           tenantId: payload.tenantId,
           brancheId: payload.brancheId,
           shiftId: String(result.item._id),
-          deviceType: 'shift',
-          eventType: 'shift_opened',
-          amount: 0,
-          occurredAt: new Date(result.item.openedAt ?? new Date()),
-          metadata: {
-            openingCash: Number(payload.openingCash ?? 0),
-            employeeId: payload.employeeId,
-          },
-        });
-        RealtimeService.emitToTenant(payload.tenantId, RealtimeEvent.ShiftOpened, {
-          tenantId: payload.tenantId,
-          brancheId: payload.brancheId,
-          shiftId: String(result.item._id),
+          openingCash: Number(payload.openingCash ?? 0),
           employeeId: payload.employeeId,
-          openingCash: Number(payload.openingCash ?? 0),
-          status: ShiftStatus.Open,
-        });
-        void NotificationService.queueShiftOpened({
-          tenantId: payload.tenantId,
-          shiftId: String(result.item._id),
-          openingCash: Number(payload.openingCash ?? 0),
-        }).catch((error) => {
-          console.warn('Failed to queue shift opened notification', error);
+          openedAt: new Date(result.item.openedAt ?? new Date()),
         });
       }
       return result.item;
@@ -95,33 +110,13 @@ class ShiftService {
     const shift = await shiftRepository.create(shiftPayload, { tenantId: payload.tenantId, requireTenant: true });
 
     if (payload.tenantId) {
-      await AnalyticsService.recordEvent({
+      await this.afterShiftOpened({
         tenantId: payload.tenantId,
         brancheId: payload.brancheId,
         shiftId: String(shift._id),
-        deviceType: 'shift',
-        eventType: 'shift_opened',
-        amount: 0,
-        occurredAt: new Date(shift.openedAt ?? new Date()),
-        metadata: {
-          openingCash: Number(payload.openingCash ?? 0),
-          employeeId: payload.employeeId,
-        },
-      });
-      RealtimeService.emitToTenant(payload.tenantId, RealtimeEvent.ShiftOpened, {
-        tenantId: payload.tenantId,
-        brancheId: payload.brancheId,
-        shiftId: String(shift._id),
+        openingCash: Number(payload.openingCash ?? 0),
         employeeId: payload.employeeId,
-        openingCash: Number(payload.openingCash ?? 0),
-        status: ShiftStatus.Open,
-      });
-      void NotificationService.queueShiftOpened({
-        tenantId: payload.tenantId,
-        shiftId: String(shift._id),
-        openingCash: Number(payload.openingCash ?? 0),
-      }).catch((error) => {
-        console.warn('Failed to queue shift opened notification', error);
+        openedAt: new Date(shift.openedAt ?? new Date()),
       });
     }
 
@@ -131,7 +126,7 @@ class ShiftService {
   async closeShift(shiftId: string, payload: { closingCash?: number }, tenantId?: string): Promise<any> {
     const scope = { tenantId, requireTenant: true };
     const shift = await shiftRepository.findById(shiftId, scope);
-    if (!shift) throw new Error('Shift not found.');
+    if (!shift) throw new NotFoundError('Shift not found.');
     if (shift.status === ShiftStatus.Closed) {
       throw new ConflictError('Shift is already closed.', 'SHIFT_ALREADY_CLOSED');
     }
@@ -152,7 +147,6 @@ class ShiftService {
 
     const sessionsStartedFilter: Record<string, any> = {
       shiftId: new Types.ObjectId(shiftId),
-      createdAt: { $gte: openedAt, $lte: closedAt },
     };
     if (tenantId) {
       sessionsStartedFilter.tenantId = new Types.ObjectId(tenantId);
