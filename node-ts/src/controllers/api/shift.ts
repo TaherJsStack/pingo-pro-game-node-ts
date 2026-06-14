@@ -3,6 +3,7 @@ import { CRUDController } from '../base/CRUDController';
 import { shiftRepository } from '../../repositories/instances';
 import ShiftService from '../../services/shift.service';
 import ShiftSeederService from '../../services/shift-seeder.service';
+import DataSeederService from '../../services/data-seeder.service';
 import { IShift } from '../../models/interfaces/shift.interface';
 import { AuthenticatedRequest } from '../../types/auth';
 
@@ -55,5 +56,28 @@ export class ShiftController extends CRUDController<IShift> {
     }
   };
 
+  updateNotes = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const shift = await ShiftService.updateNotes(req.params.id, req.body.notes ?? '', req.authData.tenantId);
+      this.sendResponse(req, res, 200, [shift], 1, 'Notes updated');
+    } catch (err: any) {
+      this.sendErrorResponse(req, res, err);
+    }
+  };
+
+  seedDataset = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const result = await DataSeederService.seedForBranch({
+        branchId: req.body.branchId,
+        tenantId: req.authData.tenantId as string,
+        createdBy: req.authData.id,
+        seed: req.body.seed !== undefined ? Number(req.body.seed) : undefined,
+      });
+      const msg = `Seeded ${result.shiftsCreated} shifts / ${result.sessionsCreated} sessions / ${result.invoicesCreated} invoices / ${result.invoiceMenusCreated} orders for ${result.employeeCount} employees`;
+      this.sendResponse(req, res, 201, [result], 1, msg);
+    } catch (err: any) {
+      this.sendErrorResponse(req, res, err);
+    }
+  };
 
 }
