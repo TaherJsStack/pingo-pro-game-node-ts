@@ -9,7 +9,7 @@ export interface IShift extends BaseEntity, ActivityFields {
   clientRequestId?: string;
   brancheId: ObjectId;
   openedBy: ObjectId;
-  closedBy: ObjectId;
+  closedBy?: ObjectId | null;
   openedAt: Date;
   closedAt: Date | null;
   openingCash: number;

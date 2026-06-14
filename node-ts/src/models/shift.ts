@@ -11,7 +11,7 @@ const shiftSchema: Schema<IShift, ShiftModel> = new Schema<IShift, ShiftModel>(
     clientRequestId: { type: String, trim: true, index: true },
     brancheId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branche', required: true },
     openedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
-    closedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', required: true },
+    closedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Auth', default: null },
     openedAt: { type: Date, default: Date.now },
     closedAt: { type: Date, default: null },
     openingCash: { type: Number, default: 0 },
