@@ -2,14 +2,15 @@ import { Request, Response } from 'express';
 import { logger } from '../../util/logger';
 
 export abstract class SendResponse {
-    public sendResponse(req: Request, res: Response, statusCode: number, data: any, totalData?: number, message?: string) {
+    public sendResponse(req: Request, res: Response, statusCode: number, data: any, totalData?: number, message?: string, extra?: Record<string, any>) {
         res.status(statusCode).json({
             success: true,
             errors: [],
             status: statusCode,
             message: message || '',
-            data: data,
-            totalData
+            data,
+            totalData,
+            ...extra,
         });
     }
 
