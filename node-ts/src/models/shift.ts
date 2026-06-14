@@ -24,6 +24,7 @@ const shiftSchema: Schema<IShift, ShiftModel> = new Schema<IShift, ShiftModel>(
     activeState: { type: Boolean, default: true },
     createdAt: { type: Date, default: Date.now },
     description: { type: String, default: '' },
+    notes: { type: String, default: '' },
   },
   {
     timestamps: true,

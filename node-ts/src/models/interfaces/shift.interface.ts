@@ -19,4 +19,5 @@ export interface IShift extends BaseEntity, ActivityFields {
   sessionsStarted: number;
   sessionsEnded: number;
   workedMinutes: number;
+  notes?: string;
 }
